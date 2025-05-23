@@ -114,7 +114,7 @@ export function UserTable({
     const fetchAreas = async () => {
       try {
         const response = await fetch(
-          "http://localhost:3000/api/userAdministration/get-all-users"
+          "http://10.103.1.88:3000/api/userAdministration/get-all-users"
         );
         if (response.ok) {
           const data = await response.json();
@@ -147,7 +147,7 @@ export function UserTable({
   const confirmDelete = async () => {
     try {
       const response = await fetch(
-        `http://localhost:3000/api/userAdministration/delete-user/${selectedUserId}`,
+        `http://10.103.1.88:3000/api/userAdministration/delete-user/${selectedUserId}`,
         {
           method: "PUT",
           headers: {
@@ -171,7 +171,7 @@ export function UserTable({
   const confirmResetPassword = async () => {
     try {
       const response = await fetch(
-        "http://localhost:3000/api/userAdministration/reset-password",
+        "http://10.103.1.88:3000/api/userAdministration/reset-password",
         {
           method: "PUT",
           headers: {

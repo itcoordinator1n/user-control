@@ -143,7 +143,7 @@ export function AuditLog() {
   useEffect(() => {
     const fetchAuditorias = async () => {
       try {
-        const res = await fetch('http://localhost:3000/api/audit/get-audit', {
+        const res = await fetch('http://10.103.1.88:3000/api/audit/get-audit', {
           method: 'GET',
           headers: {
             "Content-Type": "application/json",

@@ -60,7 +60,7 @@ export default function RequestDetail({
         comentario: feedback,
       };
       const response = await fetch(
-        `http://localhost:3000/api/requests/request-detail/${request.idSolicitud}/handle-request`,
+        `http://10.103.1.88:3000/api/requests/request-detail/${request.idSolicitud}/handle-request`,
         {
           method: "PUT",
           headers: {

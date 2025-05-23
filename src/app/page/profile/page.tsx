@@ -54,7 +54,7 @@ export default function ProfilePage() {
         try {
           setLoading(true);
           const res = await fetch(
-            "http://localhost:3000/api/attendance/attendance-get-entry",
+            "http://10.103.1.88:3000/api/attendance/attendance-get-entry",
             {
               method: "POST",
               headers: {
@@ -112,7 +112,7 @@ export default function ProfilePage() {
   const handleMarkEntry = async () => {
     try {
       const res = await fetch(
-        "http://localhost:3000/api/attendance/attendance-entry",
+        "http://10.103.1.88:3000/api/attendance/attendance-entry",
         {
           method: "POST",
           headers: {
@@ -144,7 +144,7 @@ export default function ProfilePage() {
   const handleMarkExit = async () => {
     try {
       const res = await fetch(
-        "http://localhost:3000/api/attendance/attendance-exit",
+        "http://10.103.1.88:3000/api/attendance/attendance-exit",
         {
           method: "PUT",
           headers: {
@@ -168,7 +168,7 @@ export default function ProfilePage() {
   useEffect(() => {
     // Asegúrate de que el token esté disponible
     if (session?.user?.accessToken) {
-      fetch("http://localhost:3000/api/profile/profile_info", {
+      fetch("http://10.103.1.88:3000/api/profile/profile_info", {
         method: "GET",
         headers: {
           Authorization: `Bearer ${session?.user.accessToken}`,
@@ -320,7 +320,7 @@ export default function ProfilePage() {
                       </p>
                     </div>
                     <div className="space-y-1">
-                      <p className="text-sm font-medium">Salida Estimada</p>
+                      <p className="text-sm font-medium">Hora de Salida</p>
                       <p className="text-lg">
                         {exitDate?.toLocaleTimeString("en-US", {
                           hour: "numeric",
@@ -331,12 +331,14 @@ export default function ProfilePage() {
                     </div>
                   </div>
 
+                  
+                  
+                  {/* 
                   <Alert className="bg-amber-50 border-amber-200">
                     <AlertDescription className="text-amber-800">
                       Recuerda que debes completar 8 horas de trabajo diario.
                     </AlertDescription>
                   </Alert>
-
                   <div className="grid grid-cols-2 gap-4 pt-4">
                     <Button
                       className="bg-green-600 hover:bg-green-700"
@@ -353,6 +355,7 @@ export default function ProfilePage() {
                       Marcar Salida
                     </Button>
                   </div>
+                  */}
                 </div>
 
                 <div className="pt-4">
