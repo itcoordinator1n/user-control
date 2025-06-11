@@ -40,7 +40,7 @@ export function UserAvatarMenu({
   useEffect(() => {
     // Asegúrate de que el token esté disponible
     if (session?.user?.accessToken) {
-      fetch("http://10.103.1.88:3000/api/profile/profile_info", {
+      fetch("http://localhost:3000/api/profile/profile_info", {
         method: "GET",
         headers: {
           Authorization: `Bearer ${session?.user.accessToken}`,

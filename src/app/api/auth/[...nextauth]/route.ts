@@ -1,5 +1,6 @@
 import CredentialsProvider from "next-auth/providers/credentials";
 import NextAuth, { DefaultSession } from "next-auth";
+import { Session } from "inspector/promises";
 
 declare module "next-auth" {
   interface Session {
@@ -19,12 +20,13 @@ const handler = NextAuth({
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials, req) {
-        const res = await fetch("http://10.103.1.88:3000/api/auth/login", {
+        const res = await fetch("http://localhost:3000/api/auth/login", {
           method: 'POST',
           body: JSON.stringify({ credentials }),
           headers: { "Content-Type": "application/json" }
         });
         const data = await res.json();
+        console.log("Acceso en el servidor data:", data)
         if (res.ok && data) {
           return {
             id: data.user.id_usuario,
@@ -44,6 +46,7 @@ const handler = NextAuth({
       return token;
     },
     async session({ session, token }) {
+      
       if (session) {
         session.user.accessToken = token.accessToken as string;
       }

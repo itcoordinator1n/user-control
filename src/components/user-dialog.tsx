@@ -61,7 +61,7 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
     const fetchRoles = async () => {
       try {
         const response = await fetch(
-          "http://10.103.1.88:3000/api/rolAdministration/get-roles"
+          "http://localhost:3000/api/rolAdministration/get-roles"
         );
         if (response.ok) {
           const data = await response.json();
@@ -80,7 +80,7 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
     const fetchAreas = async () => {
       try {
         const response = await fetch(
-          "http://10.103.1.88:3000/api/areaAdministration/get-areas", {
+          "http://localhost:3000/api/areaAdministration/get-areas", {
             method: "GET",
             headers: {
               "Content-Type": "application/json",
@@ -183,7 +183,7 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
     if (isEditing) {
       try {
         const response = await fetch(
-          `http://10.103.1.88:3000/api/userAdministration/update-user/${
+          `http://localhost:3000/api/userAdministration/update-user/${
             (user as any).id
           }`,
           {
@@ -208,7 +208,7 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
     } else {
       try {
         const response = await fetch(
-          "http://10.103.1.88:3000/api/userAdministration/create-user",
+          "http://localhost:3000/api/userAdministration/create-user",
           {
             method: "POST",
             headers: {

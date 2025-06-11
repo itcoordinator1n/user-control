@@ -95,7 +95,7 @@ export default function PermisosVacaciones() {
   };
 
   useEffect(() => {
-    fetch('http://10.103.1.88:3000/api/requests/get-my-vacation-requests', {
+    fetch('http://localhost:3000/api/requests/get-my-vacation-requests', {
       method: 'GET',
       headers: {
         "Content-Type": "application/json",
@@ -181,7 +181,7 @@ export default function PermisosVacaciones() {
 
       try {
         const res = await fetch(
-          "http://10.103.1.88:3000/api/permissions/request-permission",
+          "http://localhost:3000/api/permissions/request-permission",
           {
             method: "POST",
             headers: {
@@ -210,7 +210,7 @@ export default function PermisosVacaciones() {
       };
 
       try {
-        const res = await fetch("http://10.103.1.88:3000/api/permissions/request-vacations", {
+        const res = await fetch("http://localhost:3000/api/permissions/request-vacations", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -241,7 +241,7 @@ export default function PermisosVacaciones() {
 
   
   useEffect(() => {
-    fetch(`http://10.103.1.88:3000/api/permissions/vacation-days`, {
+    fetch(`http://localhost:3000/api/permissions/vacation-days`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${session?.user.accessToken}`,
@@ -259,7 +259,7 @@ export default function PermisosVacaciones() {
 
   useEffect(() => {
     // Ajusta la URL según la configuración de tu endpoint
-    fetch('http://10.103.1.88:3000/api/requests/get-my-requests', {
+    fetch('http://localhost:3000/api/requests/get-my-requests', {
       method: "GET",
       headers: {
         Authorization: `Bearer ${session?.user.accessToken}`,

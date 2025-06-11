@@ -92,6 +92,7 @@ export default function LoginForm() {
       username: values.user,
       password: values.password,
     });
+    console.log("Token de acceso",session);
     if(session?.user.accessToken){
       const payload:TokenPayload = jwtDecode(session?.user.accessToken);
     }

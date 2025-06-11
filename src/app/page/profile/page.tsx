@@ -48,71 +48,65 @@ export default function ProfilePage() {
     entryDate: string;
   }
 
-  useEffect(() => {
-    if (session?.user.accessToken) {
-      const fetchEntryDate = async () => {
-        try {
-          setLoading(true);
-          const res = await fetch(
-            "http://10.103.1.88:3000/api/attendance/attendance-get-entry",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${session?.user.accessToken}`,
-              },
-            }
-          );
+useEffect(() => {
+  let interval: NodeJS.Timeout;
+  let isMounted = true;
 
-          if (!res.ok) {
-            throw new Error(`Error ${res.status}: ${res.statusText}`);
-          }
+  if (session?.user.accessToken) {
+    const fetchEntryDate = async () => {
+      try {
+        setLoading(true);
+        const res = await fetch("http://localhost:3000/api/attendance/attendance-get-entry", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.user.accessToken}`,
+          },
+        });
 
-          const data: EntryDateResponse = await res.json();
-          const entry = new Date(data.entryDate);
-          if (data.entryDate !== "1970-01-01 00:00:00") {
-            const now = new Date();
-            setAccumulatedTime(differenceInSeconds(now, entry));
-            setEntryDate(entry);
-
-            // Calcular la hora de salida sumando 9 horas
-            const calculatedExitDate = addHours(entry, 9);
-            setExitDate(calculatedExitDate);
-            // Calcular los segundos transcurridos y el tiempo restante
-            const interval = setInterval(() => {
-              setAccumulatedTime((prev) => prev + 1);
-            }, 1000);
-            // const interval = setInterval(() => {
-            //   const now = new Date();
-            //   setElapsedSeconds(differenceInSeconds(now, entry));
-
-            //   setAccumulatedTime(differenceInSeconds(now, entry))
-
-            //   // Calcular tiempo restante
-            //   if (isBefore(now, calculatedExitDate)) {
-            //     setRemainingTime(formatDistanceToNow(calculatedExitDate, { addSuffix: true }));
-            //   } else {
-            //     setRemainingTime('Jornada completa');
-            //   }
-            // }, 1000);
-
-            return () => clearInterval(interval);
-          }
-        } catch (error) {
-          console.error("Error al obtener la fecha de entrada:", error);
-        } finally {
-          setLoading(false);
+        if (!res.ok) {
+          throw new Error(`Error ${res.status}: ${res.statusText}`);
         }
-      };
 
-      fetchEntryDate();
-    }
-  }, [session]);
+        const data: EntryDateResponse = await res.json();
+        const entry = new Date(data.entryDate);
+
+        if (data.entryDate !== "1970-01-01 00:00:00") {
+          const now = new Date();
+          if (!isMounted) return;
+
+          setAccumulatedTime(differenceInSeconds(now, entry));
+          setEntryDate(entry);
+
+          const calculatedExitDate = addHours("1970-01-01 00:00:00", 16.75);
+          setExitDate(calculatedExitDate);
+
+          interval = setInterval(() => {
+            setAccumulatedTime((prev) => prev + 1);
+          }, 1000);
+        }
+      } catch (err) {
+        console.error("Error al obtener la fecha de entrada:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEntryDate();
+  }
+
+  return () => {
+    isMounted = false;
+    if (interval) clearInterval(interval);
+  };
+}, []);
+
+
 
   const handleMarkEntry = async () => {
     try {
       const res = await fetch(
-        "http://10.103.1.88:3000/api/attendance/attendance-entry",
+        "http://localhost:3000/api/attendance/attendance-entry",
         {
           method: "POST",
           headers: {
@@ -144,7 +138,7 @@ export default function ProfilePage() {
   const handleMarkExit = async () => {
     try {
       const res = await fetch(
-        "http://10.103.1.88:3000/api/attendance/attendance-exit",
+        "http://localhost:3000/api/attendance/attendance-exit",
         {
           method: "PUT",
           headers: {
@@ -168,7 +162,7 @@ export default function ProfilePage() {
   useEffect(() => {
     // Asegúrate de que el token esté disponible
     if (session?.user?.accessToken) {
-      fetch("http://10.103.1.88:3000/api/profile/profile_info", {
+      fetch("http://localhost:3000/api/profile/profile_info", {
         method: "GET",
         headers: {
           Authorization: `Bearer ${session?.user.accessToken}`,
