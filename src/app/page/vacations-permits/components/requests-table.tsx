@@ -1,5 +1,5 @@
 "use client"
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -7,6 +7,7 @@ import { ChevronLeft, ChevronRight, FileText, Calendar, Clock, User } from "luci
 import { RequestStatusBadge } from "./request-status-badge"
 import { RequestDetailsModal } from "./request-details-modal"
 import { TableFilters, type FilterState } from "./table-filters"
+import {  useSession } from "next-auth/react";
 
 interface PermitRequest {
   id: string
@@ -48,6 +49,7 @@ interface RequestsTableProps {
 }
 
 export function RequestsTable({ type, onRequestDeleted }: RequestsTableProps) {
+  const { data: session, status } = useSession()
   const [selectedRequest, setSelectedRequest] = useState<any>(null)
   const [showDetailsModal, setShowDetailsModal] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
@@ -58,6 +60,35 @@ export function RequestsTable({ type, onRequestDeleted }: RequestsTableProps) {
     startDate: undefined,
     endDate: undefined,
   })
+  const [requests, setRequests] = useState<(PermitRequest | VacationRequest)[]>([])
+  const token = session?.user.accessToken
+
+  useEffect(() => {
+    console.log(token)
+    // No lanzamos la petición hasta tener token válido
+    if (status !== "authenticated" || !token) return
+
+    fetch("http://localhost:3000/api/permissions/get-all-requests", {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => {
+        console.log(res)
+        if (!res.ok) throw new Error("Error al cargar solicitudes")
+        return res.json() as Promise<{
+          permits: PermitRequest[]
+          vacations: VacationRequest[]
+        }>
+      })
+      .then(({ permits, vacations }) => {
+        // Actualizamos según el `type` actual
+        if (type === "permits") setRequests(permits)
+        else setRequests(vacations)
+      })
+      .catch(err => {
+        console.error("Error fetching requests:", err)
+        // Aquí podrías setear un estado de error si quieres
+      })
+  }, [])
 
 //   const [requests, setRequests] = useState(() => {
 //     // Datos de ejemplo para permisos
@@ -247,7 +278,7 @@ export function RequestsTable({ type, onRequestDeleted }: RequestsTableProps) {
 
 //     return type === "permits" ? permitRequests : vacationRequests
 //   })
-const [requests, setRequests] = useState<Request[]>([]);
+//const [requests, setRequests] = useState<Request[]>([]);
 
   // Función para filtrar las solicitudes
   const filteredRequests = useMemo(() => {
@@ -308,11 +339,11 @@ const [requests, setRequests] = useState<Request[]>([]);
     setShowDetailsModal(true)
   }
 
-  const handleDeleteRequest = (requestId: string) => {
-    setRequests((prev) => prev.filter((req) => req.id !== requestId))
-    setShowDetailsModal(false)
-    onRequestDeleted?.()
-  }
+ const handleDeleteRequest = (requestId: string) => {
+  setRequests(prev => prev.filter(req => req.id !== requestId))
+  setShowDetailsModal(false)
+  onRequestDeleted?.()
+}
 
   const goToPage = (page: number) => {
     setCurrentPage(page)

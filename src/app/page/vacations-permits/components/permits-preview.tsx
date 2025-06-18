@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Calendar, Clock, User, FileText, Send } from "lucide-react"
+import {  useSession } from "next-auth/react";
 
 interface PermitPreviewProps {
   open: boolean
@@ -21,6 +22,8 @@ interface PermitPreviewProps {
 }
 
 export function PermitPreview({ open, onOpenChange, data, onSubmitSuccess }: PermitPreviewProps) {
+    const { data: session, status } = useSession()
+  console.log("Hora de inicio",data.startTime)
   const supervisor = {
     name: "María González Rodríguez",
     position: "Gerente de Recursos Humanos",
@@ -46,8 +49,53 @@ export function PermitPreview({ open, onOpenChange, data, onSubmitSuccess }: Per
     )
   }
 
-  const handleSubmit = () => {
-    // Aquí iría la lógica para enviar la solicitud
+  const handleSubmit = async () => {
+    try {
+      if (status !== "authenticated") {
+        throw new Error("No estás autenticado")
+      }
+
+      // 1. Extraer YYYY-MM-DD de la fecha
+      const datePart = data?.date?.toISOString().split("T")[0]  // p.ej. "2025-06-17"
+
+      // 2. Construir strings ISO‑8601
+      const startDateTime = `${datePart} ${data.startTime}:00`  // "2025-06-17 09:00:00"
+      const endDateTime   = `${datePart} ${data.endTime}:00`    // "2025-06-17 16:00:00"
+
+      // 3. Montar FormData
+      const formData = new FormData()
+      if (data.files?.length) {
+        formData.append("documento", data.files[0])
+      }
+      formData.append("startDateTime", startDateTime)
+      formData.append("endDateTime",   endDateTime)
+      formData.append("reason",        data.reason)
+      formData.append("comment",      data.comments)
+
+      // 4. Llamada al endpoint con token desde session
+      const token = session.user.accessToken
+      const res = await fetch("http://localhost:3000/api/permissions/request-permission", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          // NO Content-Type: lo gestiona automáticamente FormData
+        },
+        body: formData,
+      })
+
+      if (!res.ok) {
+        const err = await res.json()
+        console.error("Error al enviar solicitud:", err)
+        return
+      }
+
+      console.log("Solicitud enviada con éxito")
+      onOpenChange(false)
+      onSubmitSuccess?.()
+
+    } catch (error: any) {
+      console.error("handleSubmit error:", error.message || error)
+    }
     console.log("Enviando solicitud de permiso:", data)
     onOpenChange(false)
     onSubmitSuccess?.()

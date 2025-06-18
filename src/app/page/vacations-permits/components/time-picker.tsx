@@ -11,13 +11,14 @@ interface TimePickerProps {
 }
 
 export function TimePicker({ value, onChange, placeholder = "Seleccionar hora" }: TimePickerProps) {
-  const [hour, setHour] = useState(value?.split(":")[0] || "")
-  const [minute, setMinute] = useState(value?.split(":")[1] || "")
+  const [hour, setHour] = useState(value?.split(":")[0] || "00")
+  const [minute, setMinute] = useState(value?.split(":")[1] || "00")
 
   const hours = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, "0"))
   const minutes = Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, "0"))
 
   const handleHourChange = (newHour: string) => {
+    console.log("Nueva hora",newHour)
     setHour(newHour)
     if (minute && onChange) {
       onChange(`${newHour}:${minute}`)

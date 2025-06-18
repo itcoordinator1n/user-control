@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Calendar, User, Send, Clock } from "lucide-react"
+import { useSession } from "next-auth/react"
+import { useEffect, useState } from "react"
 
 interface VacationPreviewProps {
   open: boolean
@@ -16,6 +18,17 @@ interface VacationPreviewProps {
   }
   onSubmitSuccess?: () => void
 }
+interface UserProfile {
+    id: number;
+    name: string;
+    position: string;
+    creationDate: string;
+    area: string;
+    country: string;
+    supervisorName: string;
+    supervisorArea:string;
+    supervisorPosition:string;
+  }
 
 export function VacationPreview({ open, onOpenChange, data, onSubmitSuccess }: VacationPreviewProps) {
   const supervisor = {
@@ -23,7 +36,32 @@ export function VacationPreview({ open, onOpenChange, data, onSubmitSuccess }: V
     position: "Gerente de Recursos Humanos",
     department: "Administración",
   }
-
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+    const [error, setError] = useState<string | null>(null);
+  const { data: session, status } = useSession()
+    useEffect(() => {
+      // Asegúrate de que el token esté disponible
+      if (session?.user?.accessToken) {
+        fetch("http://localhost:3000/api/profile/profile_info", {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${session?.user.accessToken}`,
+          },
+        })
+          .then((res) => {
+            if (!res.ok) {
+              throw new Error("Error al obtener el perfil");
+            }
+            return res.json();
+          })
+          .then((data: UserProfile) => {
+            console.log("Informacion del perfil", data)
+            setProfile(data);
+          })
+          .catch((err: Error) => setError(err.message));
+      }
+    }, [session]);
+  
   const calculateDays = () => {
     if (!data.startDate || !data.endDate) return { total: 0, workdays: 0 }
 
@@ -35,9 +73,37 @@ export function VacationPreview({ open, onOpenChange, data, onSubmitSuccess }: V
 
   const { total, workdays } = calculateDays()
 
-  const handleSubmit = () => {
-    // Aquí iría la lógica para enviar la solicitud
-    console.log("Enviando solicitud de vacaciones:", data)
+  const handleSubmit = async () => {
+    try {
+    const token = session?.user.accessToken // O de donde tomes el token
+    const payload = {
+      fechaInicio: data?.startDate?.toISOString().split('T')[0], // "2025-06-03"
+      fechaFin: data?.endDate?.toISOString().split('T')[0],       // "2025-06-12"
+      comentario: data.comments,
+    }
+
+    const res = await fetch("http://localhost:3000/api/permissions/request-vacations", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    })
+
+    const result = await res.json()
+
+    if (!res.ok) {
+      console.error("Error al enviar la solicitud:", result.error)
+      return
+    }
+
+    console.log("Solicitud enviada:", result)
+    onOpenChange(false)
+    onSubmitSuccess?.()
+  } catch (err) {
+    console.error("Error inesperado:", err)
+  }
     onOpenChange(false)
     onSubmitSuccess?.()
   }
@@ -144,10 +210,10 @@ export function VacationPreview({ open, onOpenChange, data, onSubmitSuccess }: V
                   <User className="h-6 w-6 text-blue-600" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900">{supervisor.name}</h3>
-                  <p className="text-sm text-gray-600">{supervisor.position}</p>
+                  <h3 className="font-semibold text-gray-900">{profile?.supervisorName}</h3>
+                  <p className="text-sm text-gray-600">{profile?.supervisorPosition}</p>
                   <Badge variant="secondary" className="mt-1">
-                    {supervisor.department}
+                    {profile?.supervisorArea}
                   </Badge>
                 </div>
               </div>

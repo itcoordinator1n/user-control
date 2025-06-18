@@ -33,6 +33,9 @@ export function UserAvatarMenu({
     creationDate: string;
     area: string;
     country: string;
+    supervisorName: string;
+    supervisorArea:string;
+    supervisorPosition:string;
   }
   const { data: session, status } = useSession();
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -53,6 +56,7 @@ export function UserAvatarMenu({
           return res.json();
         })
         .then((data: UserProfile) => {
+          console.log("Informacion del perfil", data)
           setProfile(data);
         })
         .catch((err: Error) => setError(err.message));

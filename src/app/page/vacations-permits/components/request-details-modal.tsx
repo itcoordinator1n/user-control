@@ -17,7 +17,8 @@ import {
   AlertTriangle,
 } from "lucide-react"
 import { RequestStatusBadge } from "./request-status-badge"
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { useSession } from "next-auth/react"
 
 interface RequestDetailsModalProps {
   open: boolean
@@ -27,8 +28,44 @@ interface RequestDetailsModalProps {
   onDelete?: (requestId: string) => void
 }
 
+  interface UserProfile {
+    id: number;
+    name: string;
+    position: string;
+    creationDate: string;
+    area: string;
+    country: string;
+    supervisorName:string;
+    supervisorArea:string;
+    supervisorPosition:string;
+  }
 export function RequestDetailsModal({ open, onOpenChange, request, type, onDelete }: RequestDetailsModalProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const { data: session, status } = useSession();
+    const [error, setError] = useState<string | null>(null);
+      const [profile, setProfile] = useState<UserProfile | null>(null);
+  useEffect(() => {
+      // Asegúrate de que el token esté disponible
+      if (session?.user?.accessToken) {
+        fetch("http://localhost:3000/api/profile/profile_info", {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${session?.user.accessToken}`,
+          },
+        })
+          .then((res) => {
+            if (!res.ok) {
+              throw new Error("Error al obtener el perfil");
+            }
+            return res.json();
+          })
+          .then((data: UserProfile) => {
+            console.log("Informacion del perfil", data)
+            setProfile(data);
+          })
+          .catch((err: Error) => setError(err.message));
+      }
+    }, [session]);
 
   if (!request) return null
 
@@ -66,9 +103,9 @@ SOLICITUD DE ${type === "permits" ? "PERMISO" : "VACACIONES"}
 Número de Solicitud: ${request.id}
 
 INFORMACIÓN DEL EMPLEADO:
-- Nombre: Juan Carlos Pérez López
-- Cargo: Desarrollador Senior
-- Departamento: Tecnología
+- Nombre: ${profile?.name}
+- Cargo: ${profile?.position}
+- Departamento: ${profile?.area}
 - Fecha de Solicitud: ${request.submittedDate}
 
 DETALLES DE LA SOLICITUD:
@@ -170,15 +207,15 @@ Fecha de generación: ${new Date().toLocaleDateString("es-ES")}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Empleado</p>
-                  <p className="font-semibold">Juan Carlos Pérez López</p>
+                  <p className="font-semibold">{profile?.name}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-600">Cargo</p>
-                  <p className="font-semibold">Desarrollador Senior</p>
+                  <p className="font-semibold">{profile?.position}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-600">Departamento</p>
-                  <p className="font-semibold">Tecnología</p>
+                  <p className="font-semibold">{profile?.area}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-600">Fecha de Solicitud</p>
@@ -344,9 +381,9 @@ Fecha de generación: ${new Date().toLocaleDateString("es-ES")}
                 </div>
                 <div className="flex-1">
                   <h3 className="font-semibold text-gray-900">{request.approver}</h3>
-                  <p className="text-sm text-gray-600">Gerente de Recursos Humanos</p>
+                  <p className="text-sm text-gray-600">{profile?.supervisorName}</p>
                   <Badge variant="secondary" className="mt-1">
-                    Administración
+                    {profile?.supervisorArea}
                   </Badge>
                 </div>
               </div>
