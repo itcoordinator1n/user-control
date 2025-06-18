@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -13,9 +13,14 @@ import { Textarea } from "@/components/ui/textarea"
 import { Calendar, Clock, Download, Filter, Search, User, X } from "lucide-react"
 import jsPDF from "jspdf"
 import "jspdf-autotable"
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
+
+
 
 // Add line-clamp utility for text truncation
 import "../../../globals.css"
+import {  useSession } from "next-auth/react";
 
 interface PermitRequest {
   id: string
@@ -55,8 +60,11 @@ interface VacationRequest {
   department: string
   position: string
 }
-
 type Request = (PermitRequest | VacationRequest) & { type: "permit" | "vacation" }
+type RequestsToMe = {
+  permits: PermitRequest[],
+  vacations: VacationRequest[]
+}
 
 const mockRequests: Request[] = [
   {
@@ -107,6 +115,8 @@ const mockRequests: Request[] = [
     attachments: [{ name: "cita_medica.pdf", type: "pdf", url: "#" }],
   },
 ]
+
+
 
 const generatePDF = (request: Request) => {
   const doc = new jsPDF()
@@ -318,7 +328,9 @@ const generatePDF = (request: Request) => {
 }
 
 export default function SupervisorDashboard() {
-  const [requests, setRequests] = useState<Request[]>(mockRequests)
+
+
+  const [requests, setRequests] = useState<Request[]>()
   const [selectedRequest, setSelectedRequest] = useState<Request | null>(null)
   const [isDetailOpen, setIsDetailOpen] = useState(false)
   const [filterType, setFilterType] = useState<string>("all")
@@ -328,16 +340,52 @@ export default function SupervisorDashboard() {
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(10)
 
-  const filteredRequests = requests.filter((request) => {
+  const filteredRequests = requests?.filter((request) => {
     const matchesType = filterType === "all" || request.type === filterType
     const matchesStatus = filterStatus === "all" || request.status === filterStatus
     const matchesSearch = request.employeeName.toLowerCase().includes(searchTerm.toLowerCase())
     return matchesType && matchesStatus && matchesSearch
   })
+  var totalPages = 0
+  if(filteredRequests){
+     totalPages = Math.ceil(filteredRequests.length / itemsPerPage)
 
-  const totalPages = Math.ceil(filteredRequests.length / itemsPerPage)
+  }
   const startIndex = (currentPage - 1) * itemsPerPage
-  const paginatedRequests = filteredRequests.slice(startIndex, startIndex + itemsPerPage)
+  const paginatedRequests = filteredRequests?.slice(startIndex, startIndex + itemsPerPage)
+  const [error, setError] = useState<string | null>(null);
+  const { data: session, status } = useSession()
+    useEffect(() => {
+      // Asegúrate de que el token esté disponible
+      if (session?.user?.accessToken) {
+        fetch("http://localhost:3000/api/permissions/get-all-request-to-me", {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${session?.user.accessToken}`,
+          },
+        })
+          .then((res) => {
+            if (!res.ok) {
+              throw new Error("Error al obtener el perfil");
+            }
+            return res.json();
+          })
+          .then((data: RequestsToMe) => {
+            
+            const { permits, vacations } = data
+
+            const combinedRequests: Request[] = [
+              ...permits.map(p => ({ ...p, type: "permit" as const })),
+              ...vacations.map(v => ({ ...v, type: "vacation" as const }))
+            ]
+
+            setRequests(combinedRequests)
+            console.log("De las solicitudes", combinedRequests)
+
+          })
+          .catch((err: Error) => setError(err.message));
+      }
+    }, [session]);
 
   // Reset to first page when filters change
   const handleFilterChange = () => {
@@ -349,10 +397,9 @@ export default function SupervisorDashboard() {
     setSupervisorComments(request.comments || "")
     setIsDetailOpen(true)
   }
-
-  const handleApprove = () => {
+  const handleApprove = async (status:string) => {
     if (selectedRequest) {
-      const updatedRequests = requests.map((req) =>
+      const updatedRequests = requests?.map((req) =>
         req.id === selectedRequest.id
           ? {
               ...req,
@@ -362,33 +409,94 @@ export default function SupervisorDashboard() {
             }
           : req,
       )
+
+      try {
+    const response = await fetch("http://localhost:3000/api/permissions/handle-request", {
+      method: "PUT", // o POST según cómo configuraste tu endpoint
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session?.user.accessToken}` // si usas JWT
+      },
+      body: JSON.stringify({
+        id: selectedRequest.id,                  // Ej: "PER-24" o "VAC-10"
+        status: status,              // "Aprovada" o "Rechazada"
+        comments: supervisorComments || ""         // texto del comentario del aprobador
+      })
+    });
+    console.log("Comentarios del supervisor:",supervisorComments)
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || "Ocurrió un error al actualizar la solicitud");
+    }
+
+    console.log("✅ Solicitud actualizada:", result);
+    // Actualizar el estado o mostrar notificación
+  } catch (e) {
+    console.error("❌ Error aprobando/rechazando solicitud:");
+  }
+      console.log("Actualizacion:",updatedRequests)
+      console.log("Actualizacion Seleccionada:",selectedRequest)
       setRequests(updatedRequests)
       setIsDetailOpen(false)
     }
   }
 
-  const handleReject = () => {
-    if (selectedRequest) {
-      const updatedRequests = requests.map((req) =>
-        req.id === selectedRequest.id
-          ? {
-              ...req,
-              status: "Rechazada" as const,
-              comments: supervisorComments,
-              responseDate: new Date().toLocaleDateString("es-ES"),
-            }
-          : req,
-      )
-      setRequests(updatedRequests)
-      setIsDetailOpen(false)
-    }
+
+const handleExport = () => {
+  if (!filteredRequests || filteredRequests.length === 0) {
+    alert("No hay datos para exportar");
+    return;
   }
 
-  const handleExport = () => {
-    // In a real application, this would generate and download an Excel file
-    console.log("Exporting to Excel...", filteredRequests)
-    alert("Funcionalidad de exportación implementada. Los datos se exportarían a Excel.")
-  }
+  // 1. Mapear los datos a un formato plano
+  const data = filteredRequests.map((req) => {
+    if (req.type === "permit") {
+      return {
+        ID: req.id,
+        Empleado: req.employeeName,
+        Estado: req.status,
+        Aprobador: req.approver,
+        Enviado: req.submittedDate,
+        Respondido: req.responseDate || "",
+        ComentarioEmpleado: req.employeeComments || "",
+        ComentarioAprobador: req.comments || "",
+        Departamento: req.department,
+        Puesto: req.position || "",
+      };
+    } else {
+      return {
+        ID: req.id,
+        Empleado: req.employeeName,
+        Estado: req.status,
+        Aprobador: req.approver,
+        Enviado: req.submittedDate,
+        Respondido: req.responseDate || "",
+        ComentarioEmpleado: req.employeeComments || "",
+        ComentarioAprobador: req.comments || "",
+        Departamento: req.department,
+        Puesto: req.position || "",
+      };
+    }
+  });
+
+  // 2. Crear hoja de Excel
+  const worksheet = XLSX.utils.json_to_sheet(data);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Solicitudes");
+
+  // 3. Generar archivo y descargar
+  const excelBuffer = XLSX.write(workbook, {
+    bookType: "xlsx",
+    type: "array",
+  });
+
+  const blob = new Blob([excelBuffer], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
+
+  saveAs(blob, `solicitudes_${new Date().toISOString().split("T")[0]}.xlsx`);
+};
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -527,7 +635,7 @@ export default function SupervisorDashboard() {
         <Card>
           <CardHeader>
             <CardTitle>
-              Solicitudes ({filteredRequests.length}) - Página {currentPage} de {totalPages}
+              Solicitudes ({filteredRequests?.length}) - Página {currentPage} de {totalPages}
             </CardTitle>
             <CardDescription>Lista de todas las solicitudes de vacaciones y permisos</CardDescription>
           </CardHeader>
@@ -546,7 +654,7 @@ export default function SupervisorDashboard() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {paginatedRequests.map((request) => (
+                    {paginatedRequests?.map((request) => (
                       <TableRow
                         key={request.id}
                         className="cursor-pointer hover:bg-gray-50 transition-colors"
@@ -599,7 +707,7 @@ export default function SupervisorDashboard() {
 
             {/* Mobile Card View */}
             <div className="md:hidden space-y-4">
-              {paginatedRequests.map((request) => (
+              {paginatedRequests?.map((request) => (
                 <div
                   key={request.id}
                   className="bg-white border border-gray-200 rounded-lg p-4 cursor-pointer hover:shadow-md transition-shadow border-l-4 border-l-blue-500"
@@ -673,7 +781,7 @@ export default function SupervisorDashboard() {
               ))}
 
               {/* Empty State for Mobile */}
-              {paginatedRequests.length === 0 && (
+              {paginatedRequests?.length === 0 && (
                 <div className="text-center py-8 text-gray-500">
                   <div className="text-lg font-medium mb-2">No se encontraron solicitudes</div>
                   <div className="text-sm">Intente ajustar los filtros de búsqueda</div>
@@ -701,7 +809,7 @@ export default function SupervisorDashboard() {
                     <SelectItem value="15">15</SelectItem>
                   </SelectContent>
                 </Select>
-                <span>de {filteredRequests.length} solicitudes</span>
+                <span>de {filteredRequests?.length} solicitudes</span>
               </div>
 
               <div className="flex items-center gap-2">
@@ -902,10 +1010,10 @@ export default function SupervisorDashboard() {
                     <Button variant="outline" onClick={() => setIsDetailOpen(false)}>
                       Cancelar
                     </Button>
-                    <Button onClick={handleApprove} className="bg-green-600 hover:bg-green-700">
+                    <Button onClick={()=>handleApprove("Aprovada")} className="bg-green-600 hover:bg-green-700">
                       Aprobar
                     </Button>
-                    <Button onClick={handleReject} className="bg-red-600 hover:bg-red-700">
+                    <Button onClick={()=>handleApprove("Rechazada")} className="bg-red-600 hover:bg-red-700">
                       Rechazar
                     </Button>
                   </div>
