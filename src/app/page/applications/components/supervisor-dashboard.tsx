@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Textarea } from "@/components/ui/textarea"
-import { Calendar, Clock, Download, Filter, Search, User, X } from "lucide-react"
+import { Calendar, Clock, Download, FileText, Filter, MessageSquare, Search, User, X } from "lucide-react"
 import jsPDF from "jspdf"
 import "jspdf-autotable"
 import * as XLSX from "xlsx";
@@ -331,7 +331,7 @@ export default function SupervisorDashboard() {
 
 
   const [requests, setRequests] = useState<Request[]>()
-  const [selectedRequest, setSelectedRequest] = useState<Request | null>(null)
+  const [selectedRequest, setSelectedRequest] = useState<any>(null)
   const [isDetailOpen, setIsDetailOpen] = useState(false)
   const [filterType, setFilterType] = useState<string>("all")
   const [filterStatus, setFilterStatus] = useState<string>("all")
@@ -391,7 +391,7 @@ export default function SupervisorDashboard() {
   const handleFilterChange = () => {
     setCurrentPage(1)
   }
-
+  console.log("Request que le llega al jefe",selectedRequest)
   const handleViewDetails = (request: Request) => {
     setSelectedRequest(request)
     setSupervisorComments(request.comments || "")
@@ -401,9 +401,14 @@ export default function SupervisorDashboard() {
     if (selectedRequest) {
       const updatedRequests = requests?.map((req) =>
         req.id === selectedRequest.id
-          ? {
+          ? status=="Aprovada"?{
               ...req,
               status: "Aprovada" as const,
+              comments: supervisorComments,
+              responseDate: new Date().toLocaleDateString("es-ES"),
+            }:{
+              ...req,
+              status: "Rechazada" as const,
               comments: supervisorComments,
               responseDate: new Date().toLocaleDateString("es-ES"),
             }
@@ -944,7 +949,59 @@ const handleExport = () => {
                   </div>
                   <div>{getStatusBadge(selectedRequest.status)}</div>
                 </div>
-
+                {selectedRequest.attachments   && selectedRequest.attachments.length > 0 && (
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg flex items-center">
+                        <FileText className="mr-2 h-5 w-5" />
+                        Documentos Adjuntos
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <a target="_blank" href={selectedRequest.attachments[0].url} className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {selectedRequest.attachments.map((file: any, index: number) => (
+                          <div key={index} className="text-center p-3 border rounded-lg">
+                            <div className="flex justify-center mb-2">
+                              {file.type.startsWith("image/") ? (
+                                <img
+                                  src={selectedRequest.attachments[0].url || "/placeholder.svg"}
+                                  alt={file.name}
+                                  className="w-16 h-16 object-cover rounded"
+                                />
+                              ) : (
+                                <div className="w-16 h-16 bg-gray-100 rounded flex items-center justify-center">
+                                  <FileText className="h-8 w-8 text-gray-400" />
+                                </div>
+                              )}
+                            </div>
+                            <p className="text-xs truncate" title={file.name}>
+                              {file.name}
+                            </p>
+                          </div>
+                        ))}
+                      </a>
+                    </CardContent>
+                  </Card>
+          )}
+          {selectedRequest.employeeComments && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center">
+                  <MessageSquare className="mr-2 h-5 w-5" />
+                  Comentarios del Empleado
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="bg-gray-50 p-4 rounded-lg border-l-4 border-gray-400">
+                  <div
+                    className="formatted-content text-sm"
+                    dangerouslySetInnerHTML={{ __html: selectedRequest.employeeComments }}
+                    style={{ direction: "ltr", textAlign: "left" }}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          )}
                 {/* Request Details */}
                 <Card>
                   <CardContent className="pt-6">
@@ -996,7 +1053,22 @@ const handleExport = () => {
                   </CardContent>
                 </Card>
 
-                {/* Supervisor Comments */}
+                          {selectedRequest.comments && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center">
+                  <MessageSquare className="mr-2 h-5 w-5" />
+                  Comentarios del Supervisor
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-400">
+                  <p className="text-sm text-blue-900">{selectedRequest.comments}</p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+           {/* Supervisor Comments */}
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
                     <Label className="text-sm font-medium text-gray-500">Comentarios del Supervisor</Label>

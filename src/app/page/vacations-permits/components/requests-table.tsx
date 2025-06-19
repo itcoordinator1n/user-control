@@ -88,7 +88,7 @@ export function RequestsTable({ type, onRequestDeleted }: RequestsTableProps) {
         console.error("Error fetching requests:", err)
         // Aquí podrías setear un estado de error si quieres
       })
-  }, [])
+  }, [session])
 
 //   const [requests, setRequests] = useState(() => {
 //     // Datos de ejemplo para permisos

@@ -44,6 +44,9 @@ export function RequestDetailsModal({ open, onOpenChange, request, type, onDelet
   const { data: session, status } = useSession();
     const [error, setError] = useState<string | null>(null);
       const [profile, setProfile] = useState<UserProfile | null>(null);
+
+
+      console.log("El request que le llega al jefe",request)
   useEffect(() => {
       // Asegúrate de que el token esté disponible
       if (session?.user?.accessToken) {
@@ -308,7 +311,7 @@ Fecha de generación: ${new Date().toLocaleDateString("es-ES")}
               )}
             </CardContent>
           </Card>
-
+          
           {/* Comentarios del Empleado */}
           {request.employeeComments && (
             <Card>
@@ -340,13 +343,13 @@ Fecha de generación: ${new Date().toLocaleDateString("es-ES")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <a target="_blank" href={request.attachments[0].url} className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {request.attachments.map((file: any, index: number) => (
                     <div key={index} className="text-center p-3 border rounded-lg">
                       <div className="flex justify-center mb-2">
                         {file.type.startsWith("image/") ? (
                           <img
-                            src={file.url || "/placeholder.svg"}
+                            src={request.attachments[0].url || "/placeholder.svg"}
                             alt={file.name}
                             className="w-16 h-16 object-cover rounded"
                           />
@@ -361,7 +364,7 @@ Fecha de generación: ${new Date().toLocaleDateString("es-ES")}
                       </p>
                     </div>
                   ))}
-                </div>
+                </a>
               </CardContent>
             </Card>
           )}
