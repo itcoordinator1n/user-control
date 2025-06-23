@@ -1191,7 +1191,7 @@ useEffect(() => {
   if (session?.user.accessToken) {
     const fetchEntryDate = async () => {
       try {
-        const res = await fetch("http://localhost:3000/api/requests/assistance-detail-resume", {
+        const res = await fetch("https://infarmaserver-production.up.railway.app/api/requests/assistance-detail-resume", {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -1224,7 +1224,7 @@ useEffect(() => {
   if (session?.user.accessToken) {
     const fetchEntryDate = async () => {
       try {
-        const res = await fetch("http://localhost:3000/api/requests/get-monthly-attendance", {
+        const res = await fetch("https://infarmaserver-production.up.railway.app/api/requests/get-monthly-attendance", {
           method: "GET",
           headers: {
             "Content-Type": "application/json",

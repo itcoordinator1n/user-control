@@ -114,11 +114,13 @@ export function UserTable({
     const fetchAreas = async () => {
       try {
         const response = await fetch(
-          "http://localhost:3000/api/userAdministration/get-all-users"
+          "https://infarmaserver-production.up.railway.app/api/userAdministration/get-all-users"
         );
+        console.log(response)
         if (response.ok) {
           const data = await response.json();
           setUsers(data);
+          console.log("La data que necesito",data)
         } else {
           console.error("Error al obtener los roles");
         }
@@ -147,7 +149,7 @@ export function UserTable({
   const confirmDelete = async () => {
     try {
       const response = await fetch(
-        `http://localhost:3000/api/userAdministration/delete-user/${selectedUserId}`,
+        `https://infarmaserver-production.up.railway.app/api/userAdministration/delete-user/${selectedUserId}`,
         {
           method: "PUT",
           headers: {
@@ -171,7 +173,7 @@ export function UserTable({
   const confirmResetPassword = async () => {
     try {
       const response = await fetch(
-        "http://localhost:3000/api/userAdministration/reset-password",
+        "https://infarmaserver-production.up.railway.app/api/userAdministration/reset-password",
         {
           method: "PUT",
           headers: {

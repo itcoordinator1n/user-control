@@ -61,8 +61,9 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
     const fetchRoles = async () => {
       try {
         const response = await fetch(
-          "http://localhost:3000/api/rolAdministration/get-roles"
+          "https://infarmaserver-production.up.railway.app/api/rolAdministration/get-roles"
         );
+        console.log("Respuesta",response)
         if (response.ok) {
           const data = await response.json();
           setRoles(data.roles);
@@ -80,7 +81,7 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
     const fetchAreas = async () => {
       try {
         const response = await fetch(
-          "http://localhost:3000/api/areaAdministration/get-areas", {
+          "https://infarmaserver-production.up.railway.app/api/areaAdministration/get-areas", {
             method: "GET",
             headers: {
               "Content-Type": "application/json",
@@ -88,6 +89,7 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
             },
           }
         );
+        console.log("Respuesta de error",response)
         if (response.ok) {
           const data = await response.json();
           setAreas(data);
@@ -183,7 +185,7 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
     if (isEditing) {
       try {
         const response = await fetch(
-          `http://localhost:3000/api/userAdministration/update-user/${
+          `https://infarmaserver-production.up.railway.app/api/userAdministration/update-user/${
             (user as any).id
           }`,
           {
@@ -208,7 +210,7 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
     } else {
       try {
         const response = await fetch(
-          "http://localhost:3000/api/userAdministration/create-user",
+          "https://infarmaserver-production.up.railway.app/api/userAdministration/create-user",
           {
             method: "POST",
             headers: {
