@@ -16,7 +16,6 @@ import {
   Plane,
   FileText,
   UserCheck,
-  UserX,
   CalendarDays,
   User,
   MapPin,
@@ -66,18 +65,18 @@ import React from "react";
 import PermissionsDashboard from "./permissions-dashboard";
 import { useSession } from "next-auth/react";
 
-interface AttendanceDetail {
-  area: string;
-  total: number;
-  present: number;
-  percentage: number;
-  trend: number;
-  employees: {
-    name: string;
-    attendance: number;
-    status: "excellent" | "good" | "regular" | "poor";
-  }[];
-}
+// interface AttendanceDetail {
+//   area: string;
+//   total: number;
+//   present: number;
+//   percentage: number;
+//   trend: number;
+//   employees: {
+//     name: string;
+//     attendance: number;
+//     status: "excellent" | "good" | "regular" | "poor";
+//   }[];
+// }
 
 interface AttendanceRecord {
   id: string;
@@ -1156,7 +1155,6 @@ export default function AttendanceDashboard() {
   const [selectedArea, setSelectedArea] = useState("Planta");
   const [selectedPeriod, setSelectedPeriod] = useState("Este Mes");
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeTab, setActiveTab] = useState("Resumen");
   const [showAttendanceDetail, setShowAttendanceDetail] = useState(false);
   const [showVacationDetail, setShowVacationDetail] = useState(false);
   const [selectedEmployee, setSelectedEmployee] =
@@ -1179,7 +1177,7 @@ export default function AttendanceDashboard() {
   const [showFilters, setShowFilters] = useState(true);
   const [showAreaCards, setShowAreaCards] = useState(true);
   const [monthlyData, setmonthlyData] = useState<any>();
-    const { data: session, status } = useSession();
+    const { data: session } = useSession();
   // Reset employee page when filters change
   useEffect(() => {
     setCurrentEmployeePage(1);

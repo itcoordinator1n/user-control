@@ -1,6 +1,5 @@
 import CredentialsProvider from "next-auth/providers/credentials";
 import NextAuth, { DefaultSession } from "next-auth";
-import { Session } from "inspector/promises";
 
 declare module "next-auth" {
   interface Session {
@@ -8,6 +7,13 @@ declare module "next-auth" {
       id: string;
       accessToken: string;
     } & DefaultSession["user"];
+  }
+}
+
+declare module "next-auth/jwt" {
+  interface JWT {
+    id: string;
+    accessToken: string;
   }
 }
 
@@ -19,7 +25,7 @@ const handler = NextAuth({
         username: { label: "Username", type: "text" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials, req) {
+      async authorize(credentials) {
         const res = await fetch("https://infarmaserver-production.up.railway.app/api/auth/login", {
           method: 'POST',
           body: JSON.stringify({ credentials }),

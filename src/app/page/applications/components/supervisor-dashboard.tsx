@@ -101,56 +101,56 @@ type RequestsToMe = {
   vacations: VacationRequest[];
 };
 
-const mockRequests: Request[] = [
-  {
-    id: "PER-24",
-    type: "permit",
-    employeeName: "Sara Eloisa Vega Acosta",
-    date: "19 de junio de 2025",
-    timeRange: "04:00 - 06:00",
-    reason: "Salida a comer",
-    status: "Pendiente",
-    approver: "",
-    submittedDate: "17 de junio de 2025",
-    department: "Planta",
-    position: "Operario",
-    employeeComments:
-      "Necesito salir para una cita médica importante que no pude programar en otro horario.",
-  },
-  {
-    id: "VAC-15",
-    type: "vacation",
-    employeeName: "Carlos Rodriguez Martinez",
-    period: "1-15 julio 2025",
-    days: 15,
-    workDays: 11,
-    status: "Aprovada",
-    approver: "Manager",
-    submittedDate: "10 de junio de 2025",
-    responseDate: "12 de junio de 2025",
-    startDate: "1 de julio de 2025",
-    endDate: "15 de julio de 2025",
-    department: "Administración",
-    position: "Analista",
-    comments: "Aprobado. Disfrute sus vacaciones.",
-  },
-  {
-    id: "PER-25",
-    type: "permit",
-    employeeName: "Ana Maria Gonzalez",
-    date: "20 de junio de 2025",
-    timeRange: "14:00 - 16:00",
-    reason: "Cita médica",
-    status: "Rechazada",
-    approver: "Manager",
-    submittedDate: "18 de junio de 2025",
-    responseDate: "19 de junio de 2025",
-    department: "Ventas",
-    position: "Ejecutiva",
-    comments: "No se puede aprobar debido a la carga de trabajo del día.",
-    attachments: [{ name: "cita_medica.pdf", type: "pdf", url: "#" }],
-  },
-];
+// const mockRequests: Request[] = [
+//   {
+//     id: "PER-24",
+//     type: "permit",
+//     employeeName: "Sara Eloisa Vega Acosta",
+//     date: "19 de junio de 2025",
+//     timeRange: "04:00 - 06:00",
+//     reason: "Salida a comer",
+//     status: "Pendiente",
+//     approver: "",
+//     submittedDate: "17 de junio de 2025",
+//     department: "Planta",
+//     position: "Operario",
+//     employeeComments:
+//       "Necesito salir para una cita médica importante que no pude programar en otro horario.",
+//   },
+//   {
+//     id: "VAC-15",
+//     type: "vacation",
+//     employeeName: "Carlos Rodriguez Martinez",
+//     period: "1-15 julio 2025",
+//     days: 15,
+//     workDays: 11,
+//     status: "Aprovada",
+//     approver: "Manager",
+//     submittedDate: "10 de junio de 2025",
+//     responseDate: "12 de junio de 2025",
+//     startDate: "1 de julio de 2025",
+//     endDate: "15 de julio de 2025",
+//     department: "Administración",
+//     position: "Analista",
+//     comments: "Aprobado. Disfrute sus vacaciones.",
+//   },
+//   {
+//     id: "PER-25",
+//     type: "permit",
+//     employeeName: "Ana Maria Gonzalez",
+//     date: "20 de junio de 2025",
+//     timeRange: "14:00 - 16:00",
+//     reason: "Cita médica",
+//     status: "Rechazada",
+//     approver: "Manager",
+//     submittedDate: "18 de junio de 2025",
+//     responseDate: "19 de junio de 2025",
+//     department: "Ventas",
+//     position: "Ejecutiva",
+//     comments: "No se puede aprobar debido a la carga de trabajo del día.",
+//     attachments: [{ name: "cita_medica.pdf", type: "pdf", url: "#" }],
+//   },
+// ];
 
 const generatePDF = (request: Request) => {
   const doc = new jsPDF();
@@ -408,7 +408,7 @@ export default function SupervisorDashboard() {
       .includes(searchTerm.toLowerCase());
     return matchesType && matchesStatus && matchesSearch;
   });
-  var totalPages = 0;
+  let totalPages = 0;
   if (filteredRequests) {
     totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
   }
@@ -507,7 +507,7 @@ export default function SupervisorDashboard() {
         console.log("✅ Solicitud actualizada:", result);
         // Actualizar el estado o mostrar notificación
       } catch (e) {
-        console.error("❌ Error aprobando/rechazando solicitud:");
+        console.error("❌ Error aprobando/rechazando solicitud:",e);
       }
       console.log("Actualizacion:", updatedRequests);
       console.log("Actualizacion Seleccionada:", selectedRequest);

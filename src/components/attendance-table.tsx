@@ -271,14 +271,14 @@ export default function AttendanceTable() {
                 <TableCell>
                   <div
                     className={`flex items-center gap-2 ${
-                      isLateEntry(record.hora_entrada)
+                      isLateEntry(record.hora_entrada ?? "")
                         ? "text-red-600 font-medium"
                         : ""
                     }`}
                   >
                     <ClockIcon className="h-4 w-4 text-muted-foreground" />
                     <span>{formatTime(record.hora_entrada)}</span>
-                    {isLateEntry(record.hora_entrada) && (
+                    {isLateEntry(record.hora_entrada ?? "") && (
                       <Badge variant="destructive" className="ml-2">
                         Tarde
                       </Badge>
