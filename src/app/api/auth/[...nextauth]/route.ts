@@ -60,7 +60,7 @@ const handler = NextAuth({
     },
     async redirect({ baseUrl }) {
       // En lugar de redirigir a /page/admin, se recarga la página actual
-      return baseUrl;
+      return `${baseUrl}/page/admin`;
     }
   },
   pages: {
