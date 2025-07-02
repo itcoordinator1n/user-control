@@ -94,10 +94,10 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
           const data = await response.json();
           setAreas(data);
         } else {
-          console.error("Error al obtener los roles");
+          console.log("Error al obtener los roles");
         }
       } catch (error) {
-        console.error("Error de red:", error);
+        console.log("Error de red:", error);
       }
     };
 
