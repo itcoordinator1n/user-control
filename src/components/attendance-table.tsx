@@ -1,5 +1,5 @@
 "use client";
-
+import { toZonedTime } from "date-fns-tz";
 import { useEffect, useState } from "react";
 import { CalendarIcon, ClockIcon, UserIcon } from "lucide-react";
 import {
@@ -10,6 +10,7 @@ import {
   setHours,
   setMinutes,
   getDay,
+  isValid,
 } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -217,15 +218,43 @@ export default function AttendanceTable() {
   };
 
   // Format time from ISO string
-  const formatTime = (timeString: string | null) => {
-    if (!timeString) return "-";
-    return format(parseISO(timeString), "h:mm a", { locale: es });
-  };
+const formatTime = (date: string, timeString: string | null) => {
+  if (!timeString) return "-";
+  try {
+    const datePart = date.split("T")[0]; // "2025-07-03"
+    const isoString = `${datePart}T${timeString}Z`; // UTC ISO: "2025-07-03T12:45:44Z"
+
+    const parsedDate = parseISO(isoString);
+    if (!isValid(parsedDate)) return "-";
+
+    // Convertir a hora local de Honduras (UTC-6)
+    const timeZone = "America/Tegucigalpa";
+    const zonedDate = toZonedTime(parsedDate, timeZone);
+
+    return format(zonedDate, "h:mm a", { locale: es });
+  } catch {
+    return "-";
+  }
+};
 
   // Format date from ISO string
   const formatDate = (dateString: string) => {
     return format(parseISO(dateString), "dd/MM/yyyy", { locale: es });
   };
+
+
+  // const formatTime = (timeString: string | null) => {
+  //  if (!timeString) return "-";
+  // const zonedDate = toZonedTime(parseISO(timeString), "America/Tegucigalpa");
+  // console.log(timeString, zonedDate, format(zonedDate, "h:mm a", { locale: es }))
+  // return format(zonedDate, "h:mm a", { locale: es });
+  // };
+
+  // // Format date from ISO string
+  // const formatDate = (dateString: string) => {
+  //   const zonedDate = toZonedTime(parseISO(dateString), "America/Tegucigalpa");
+  // return format(zonedDate, "dd/MM/yyyy", { locale: es });
+  // };
 
   // Pagination logic
   const totalPages = Math.ceil(historial.length / itemsPerPage);
@@ -277,7 +306,7 @@ export default function AttendanceTable() {
                     }`}
                   >
                     <ClockIcon className="h-4 w-4 text-muted-foreground" />
-                    <span>{formatTime(record.hora_entrada)}</span>
+                    <span>{formatTime(record.fecha,record.hora_entrada)}</span>
                     {isLateEntry(record.hora_entrada ?? "") && (
                       <Badge variant="destructive" className="ml-2">
                         Tarde
@@ -295,7 +324,7 @@ export default function AttendanceTable() {
                     }`}
                   >
                     <ClockIcon className="h-4 w-4 text-muted-foreground" />
-                    <span>{formatTime(record.hora_salida)}</span>
+                    <span>{formatTime(record.fecha,record.hora_salida)}</span>
                     {record.hora_salida &&
                       isEarlyDeparture(record.hora_salida, record.fecha) && (
                         <Badge
