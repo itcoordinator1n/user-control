@@ -143,7 +143,7 @@ export default function AttendanceTable() {
   useEffect(() => {
     const obtenerHistorial = async () => {
       try {
-        const response = await fetch("http://localhost:3000/api/attendance/attendance-history", {
+        const response = await fetch("https://infarmaserver-production.up.railway.app/api/attendance/attendance-history", {
           method: "GET",
           headers: {
             "Content-Type": "application/json",

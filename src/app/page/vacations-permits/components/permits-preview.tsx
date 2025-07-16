@@ -74,7 +74,7 @@ export function PermitPreview({ open, onOpenChange, data, onSubmitSuccess }: Per
 
       // 4. Llamada al endpoint con token desde session
       const token = session.user.accessToken
-      const res = await fetch("http://localhost:3000/api/permissions/request-permission", {
+      const res = await fetch("https://infarmaserver-production.up.railway.app/api/permissions/request-permission", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,

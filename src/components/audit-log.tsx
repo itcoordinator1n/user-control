@@ -143,7 +143,7 @@ export function AuditLog() {
   useEffect(() => {
     const fetchAuditorias = async () => {
       try {
-        const res = await fetch('http://localhost:3000/api/audit/get-audit', {
+        const res = await fetch('https://infarmaserver-production.up.railway.app/api/audit/get-audit', {
           method: 'GET',
           headers: {
             "Content-Type": "application/json",

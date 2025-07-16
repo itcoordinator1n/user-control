@@ -50,7 +50,7 @@ export function RequestDetailsModal({ open, onOpenChange, request, type, onDelet
   useEffect(() => {
       // Asegúrate de que el token esté disponible
       if (session?.user?.accessToken) {
-        fetch("http://localhost:3000/api/profile/profile_info", {
+        fetch("https://infarmaserver-production.up.railway.app/api/profile/profile_info", {
           method: "GET",
           headers: {
             Authorization: `Bearer ${session?.user.accessToken}`,

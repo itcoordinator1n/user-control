@@ -1582,7 +1582,7 @@ export default function AttendanceDashboard() {
     if (session?.user.accessToken) {
       const fetchEntryDate = async () => {
         try {
-          const res = await fetch("http://localhost:3000/api/requests/assistance-detail-resume", {
+          const res = await fetch("https://infarmaserver-production.up.railway.app/api/requests/assistance-detail-resume", {
             method: "GET",
             headers: {
               "Content-Type": "application/json",
@@ -1606,7 +1606,7 @@ export default function AttendanceDashboard() {
 
       const fetchVacationData = async () => {
         try {
-          const res = await fetch("http://localhost:3000/api/permissions/get-vacation-stats", {
+          const res = await fetch("https://infarmaserver-production.up.railway.app/api/permissions/get-vacation-stats", {
             method: "GET",
             headers: {
               "Content-Type": "application/json",
@@ -1640,7 +1640,7 @@ export default function AttendanceDashboard() {
     if (session?.user.accessToken) {
       const fetchEntryDate = async () => {
         try {
-          const res = await fetch("http://localhost:3000/api/requests/get-monthly-attendance", {
+          const res = await fetch("https://infarmaserver-production.up.railway.app/api/requests/get-monthly-attendance", {
             method: "GET",
             headers: {
               "Content-Type": "application/json",
@@ -1665,7 +1665,7 @@ export default function AttendanceDashboard() {
 
       const getUsersHistory = async () => {
         try {
-          const res = await fetch("http://localhost:3000/api/attendance/attendance-history", {
+          const res = await fetch("https://infarmaserver-production.up.railway.app/api/attendance/attendance-history", {
             method: "GET",
             headers: {
               "Content-Type": "application/json",
