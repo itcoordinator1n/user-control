@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -16,12 +16,15 @@ import { RequestsTable } from "./components/requests-table"
 import { NotificationPill } from "./components/notification-pill"
 import { ToastNotification } from "./components/toast-notification"
 import { RichTextEditor } from "./components/rich-text-editor"
+import { useSession } from "next-auth/react"
 
 export default function AttendanceManagement() {
   const [permitDate, setPermitDate] = useState<Date>()
+  const { data: session, status } = useSession()
   const [startTime, setStartTime] = useState("")
   const [endTime, setEndTime] = useState("")
   const [reason, setReason] = useState("")
+  const [vacationDays, setvacationDays] = useState(0)
   const [permitComments, setPermitComments] = useState("")
   const [vacationStartDate, setVacationStartDate] = useState<Date | null>(null)
   const [vacationEndDate, setVacationEndDate] = useState<Date | null>(null)
@@ -40,6 +43,36 @@ export default function AttendanceManagement() {
     title: "",
     message: "",
   })
+  useEffect(() => {
+    const getData = async () => {
+      try {
+        console.log()
+        if (status !== "authenticated") {
+          throw new Error("No estás autenticado")
+        }
+
+        const token = session.user.accessToken
+        const res = await fetch("http://localhost:3000/api/permissions/vacation-days", {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            // NO Content-Type: lo gestiona automáticamente FormData
+          },
+        })
+
+        
+        const data = await res.json()
+        setvacationDays(data.diasVacaciones || 0)
+        console.log("Dias de vacaciones",data)
+
+      } catch (error: any) {
+        console.error("handleSubmit error:", error.message || error)
+      }
+    }
+    getData();
+  }, []);
+
+
 
   // Simulamos notificaciones - en una app real esto vendría del backend
   const [permitNotifications, setPermitNotifications] = useState(2)
@@ -248,7 +281,7 @@ export default function AttendanceManagement() {
                         <p className="text-sm text-blue-700">Período 2023-2024</p>
                       </div>
                       <div className="text-right">
-                        <div className="text-3xl font-bold text-blue-900">0</div>
+                        <div className="text-3xl font-bold text-blue-900">{vacationDays}</div>
                         <div className="text-sm text-blue-700">días</div>
                       </div>
                     </div>
@@ -258,13 +291,13 @@ export default function AttendanceManagement() {
                   <div className="border rounded-lg p-4">
                     <div className="flex justify-between items-center mb-4">
                       <h4 className="font-medium">Selector de Vacaciones</h4>
-                      <span className="text-sm text-blue-600">0 días disponibles</span>
+                      <span className="text-sm text-blue-600">{vacationDays} días disponibles</span>
                     </div>
                     <p className="text-sm text-gray-600 mb-4">Selecciona un rango de fechas para tus vacaciones</p>
 
                     <VacationCalendar
-                      startDate={vacationStartDate||undefined}
-                      endDate={vacationEndDate||undefined}
+                      startDate={vacationStartDate || undefined}
+                      endDate={vacationEndDate || undefined}
                       onDateRangeChange={(start, end) => {
                         setVacationStartDate(start)
                         setVacationEndDate(end)

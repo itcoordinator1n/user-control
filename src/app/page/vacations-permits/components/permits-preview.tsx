@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Calendar, Clock, User, FileText, Send } from "lucide-react"
-import {  useSession } from "next-auth/react";
+import { useSession } from "next-auth/react";
 
 interface PermitPreviewProps {
   open: boolean
@@ -22,8 +22,8 @@ interface PermitPreviewProps {
 }
 
 export function PermitPreview({ open, onOpenChange, data, onSubmitSuccess }: PermitPreviewProps) {
-    const { data: session, status } = useSession()
-  console.log("Hora de inicio",data.startTime)
+  const { data: session, status } = useSession()
+  console.log("Hora de inicio", data.startTime)
   const supervisor = {
     name: "María González Rodríguez",
     position: "Gerente de Recursos Humanos",
@@ -60,7 +60,7 @@ export function PermitPreview({ open, onOpenChange, data, onSubmitSuccess }: Per
 
       // 2. Construir strings ISO‑8601
       const startDateTime = `${datePart} ${data.startTime}:00`  // "2025-06-17 09:00:00"
-      const endDateTime   = `${datePart} ${data.endTime}:00`    // "2025-06-17 16:00:00"
+      const endDateTime = `${datePart} ${data.endTime}:00`    // "2025-06-17 16:00:00"
 
       // 3. Montar FormData
       const formData = new FormData()
@@ -68,13 +68,13 @@ export function PermitPreview({ open, onOpenChange, data, onSubmitSuccess }: Per
         formData.append("documento", data.files[0])
       }
       formData.append("startDateTime", startDateTime)
-      formData.append("endDateTime",   endDateTime)
-      formData.append("reason",        data.reason)
-      formData.append("comment",      data.comments)
+      formData.append("endDateTime", endDateTime)
+      formData.append("reason", data.reason)
+      formData.append("comment", data.comments)
 
       // 4. Llamada al endpoint con token desde session
       const token = session.user.accessToken
-      const res = await fetch("https://infarmaserver-production.up.railway.app/api/permissions/request-permission", {
+      const res = await fetch("http://localhost:3000/api/permissions/request-permission", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -139,11 +139,11 @@ export function PermitPreview({ open, onOpenChange, data, onSubmitSuccess }: Per
                     <span className="font-medium">
                       {data.date
                         ? data.date.toLocaleDateString("es-ES", {
-                            weekday: "long",
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                          })
+                          weekday: "long",
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })
                         : "No seleccionada"}
                     </span>
                   </div>

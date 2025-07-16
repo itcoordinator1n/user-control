@@ -68,7 +68,7 @@ export function RequestsTable({ type, onRequestDeleted }: RequestsTableProps) {
     // No lanzamos la petición hasta tener token válido
     if (status !== "authenticated" || !token) return
 
-    fetch("https://infarmaserver-production.up.railway.app/api/permissions/get-all-requests", {
+    fetch("http://localhost:3000/api/permissions/get-all-requests", {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(res => {

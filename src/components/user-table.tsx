@@ -114,7 +114,7 @@ export function UserTable({
     const fetchAreas = async () => {
       try {
         const response = await fetch(
-          "https://infarmaserver-production.up.railway.app/api/userAdministration/get-all-users"
+          "http://localhost:3000/api/userAdministration/get-all-users"
         );
         console.log(response)
         if (response.ok) {
@@ -149,7 +149,7 @@ export function UserTable({
   const confirmDelete = async () => {
     try {
       const response = await fetch(
-        `https://infarmaserver-production.up.railway.app/api/userAdministration/delete-user/${selectedUserId}`,
+        `http://localhost:3000/api/userAdministration/delete-user/${selectedUserId}`,
         {
           method: "PUT",
           headers: {
@@ -173,7 +173,7 @@ export function UserTable({
   const confirmResetPassword = async () => {
     try {
       const response = await fetch(
-        "https://infarmaserver-production.up.railway.app/api/userAdministration/reset-password",
+        "http://localhost:3000/api/userAdministration/reset-password",
         {
           method: "PUT",
           headers: {

@@ -65,6 +65,387 @@ import React from "react";
 import PermissionsDashboard from "./permissions-dashboard";
 import { useSession } from "next-auth/react";
 
+
+interface vacationDataInterface {
+    area: string,
+    totalEmployees: number,
+    daysUsed: number,
+    averageDaysPerEmployee: number,
+    accumulatedDays: number,
+    trend: number,
+    employees: [
+      {
+        name: string,
+        daysUsed: number,
+        daysAccumulated: number,
+      },
+    ]
+}
+
+
+// const example = [
+//   {
+//     area: "Planta",
+//     totalEmployees: 12,
+//     daysUsed: 234,
+//     averageDaysPerEmployee: 19.5,
+//     accumulatedDays: 66,
+//     trend: 5.2,
+//     employees: [
+//       {
+//         name: "Juan Pérez",
+//         daysUsed: 22,
+//         daysAccumulated: 3,
+//       },
+//       {
+//         name: "María García",
+//         daysUsed: 18,
+//         daysAccumulated: 7,
+//       },
+//       {
+//         name: "Carlos López",
+//         daysUsed: 15,
+//         daysAccumulated: 10,
+//       },
+//       {
+//         name: "Ana Martínez",
+//         daysUsed: 20,
+//         daysAccumulated: 5,
+//       },
+//       {
+//         name: "Luis Rodríguez",
+//         daysUsed: 23,
+//         daysAccumulated: 2,
+//       },
+//       {
+//         name: "Carmen Silva",
+//         daysUsed: 19,
+//         daysAccumulated: 6,
+//       },
+//       {
+//         name: "Roberto Díaz",
+//         daysUsed: 21,
+//         daysAccumulated: 4,
+//       },
+//       {
+//         name: "Patricia Moreno",
+//         daysUsed: 17,
+//         daysAccumulated: 8,
+//       },
+//       {
+//         name: "Fernando Castro",
+//         daysUsed: 24,
+//         daysAccumulated: 1,
+//       }
+//     ],
+//   },
+//   {
+//     area: "Administración",
+//     totalEmployees: 6,
+//     totalDaysAvailable: 150,
+//     daysUsed: 98,
+//     usagePercentage: 65,
+//     averageDaysPerEmployee: 16.3,
+//     accumulatedDays: 52,
+//     accumulationPercentage: 35,
+//     trend: -2.1,
+//     plannedVsLastMinute: { planned: 75, lastMinute: 25 },
+//     monthlyUsage: [
+//       { month: "Ene", days: 8 },
+//       { month: "Feb", days: 6 },
+//       { month: "Mar", days: 12 },
+//       { month: "Abr", days: 10 },
+//       { month: "May", days: 14 },
+//       { month: "Jun", days: 7 },
+//       { month: "Jul", days: 18 },
+//       { month: "Ago", days: 15 },
+//       { month: "Sep", days: 8 },
+//       { month: "Oct", days: 6 },
+//       { month: "Nov", days: 5 },
+//       { month: "Dic", days: 9 },
+//     ],
+//     yearComparison: { current: 98, previous: 112, change: -12.5 },
+//     employees: [
+//       {
+//         name: "Carlos Mendoza",
+//         daysAvailable: 25,
+//         daysUsed: 12,
+//         daysAccumulated: 13,
+//         plannedPercentage: 60,
+//         productivity: 82,
+//       },
+//       {
+//         name: "Sofía Vargas",
+//         daysAvailable: 25,
+//         daysUsed: 20,
+//         daysAccumulated: 5,
+//         plannedPercentage: 85,
+//         productivity: 95,
+//       },
+//       {
+//         name: "Miguel Ruiz",
+//         daysAvailable: 25,
+//         daysUsed: 16,
+//         daysAccumulated: 9,
+//         plannedPercentage: 70,
+//         productivity: 88,
+//       },
+//       {
+//         name: "Elena Campos",
+//         daysAvailable: 25,
+//         daysUsed: 18,
+//         daysAccumulated: 7,
+//         plannedPercentage: 80,
+//         productivity: 92,
+//       },
+//       {
+//         name: "Andrés Vega",
+//         daysAvailable: 25,
+//         daysUsed: 14,
+//         daysAccumulated: 11,
+//         plannedPercentage: 65,
+//         productivity: 85,
+//       },
+//       {
+//         name: "Lucía Ramírez",
+//         daysAvailable: 25,
+//         daysUsed: 18,
+//         daysAccumulated: 7,
+//         plannedPercentage: 88,
+//         productivity: 93,
+//       },
+//     ],
+//   },
+//   {
+//     area: "Contabilidad",
+//     totalEmployees: 4,
+//     totalDaysAvailable: 100,
+//     daysUsed: 85,
+//     usagePercentage: 85,
+//     averageDaysPerEmployee: 21.3,
+//     accumulatedDays: 15,
+//     accumulationPercentage: 15,
+//     trend: 8.7,
+//     plannedVsLastMinute: { planned: 92, lastMinute: 8 },
+//     monthlyUsage: [
+//       { month: "Ene", days: 6 },
+//       { month: "Feb", days: 4 },
+//       { month: "Mar", days: 8 },
+//       { month: "Abr", days: 7 },
+//       { month: "May", days: 9 },
+//       { month: "Jun", days: 5 },
+//       { month: "Jul", days: 12 },
+//       { month: "Ago", days: 11 },
+//       { month: "Sep", days: 7 },
+//       { month: "Oct", days: 6 },
+//       { month: "Nov", days: 4 },
+//       { month: "Dic", days: 6 },
+//     ],
+//     yearComparison: { current: 85, previous: 72, change: 18.1 },
+//     employees: [
+//       {
+//         name: "Gloria Mendez",
+//         daysAvailable: 25,
+//         daysUsed: 23,
+//         daysAccumulated: 2,
+//         plannedPercentage: 95,
+//         productivity: 97,
+//       },
+//       {
+//         name: "Raúl Ortega",
+//         daysAvailable: 25,
+//         daysUsed: 21,
+//         daysAccumulated: 4,
+//         plannedPercentage: 90,
+//         productivity: 94,
+//       },
+//       {
+//         name: "Mónica Delgado",
+//         daysAvailable: 25,
+//         daysUsed: 20,
+//         daysAccumulated: 5,
+//         plannedPercentage: 88,
+//         productivity: 92,
+//       },
+//       {
+//         name: "Javier Peña",
+//         daysAvailable: 25,
+//         daysUsed: 21,
+//         daysAccumulated: 4,
+//         plannedPercentage: 92,
+//         productivity: 95,
+//       },
+//     ],
+//   },
+//   {
+//     area: "Bodega",
+//     totalEmployees: 5,
+//     totalDaysAvailable: 125,
+//     daysUsed: 102,
+//     usagePercentage: 82,
+//     averageDaysPerEmployee: 20.4,
+//     accumulatedDays: 23,
+//     accumulationPercentage: 18,
+//     trend: 3.8,
+//     plannedVsLastMinute: { planned: 78, lastMinute: 22 },
+//     monthlyUsage: [
+//       { month: "Ene", days: 7 },
+//       { month: "Feb", days: 5 },
+//       { month: "Mar", days: 9 },
+//       { month: "Abr", days: 8 },
+//       { month: "May", days: 11 },
+//       { month: "Jun", days: 6 },
+//       { month: "Jul", days: 14 },
+//       { month: "Ago", days: 13 },
+//       { month: "Sep", days: 9 },
+//       { month: "Oct", days: 7 },
+//       { month: "Nov", days: 6 },
+//       { month: "Dic", days: 7 },
+//     ],
+//     yearComparison: { current: 102, previous: 95, change: 7.4 },
+//     employees: [
+//       {
+//         name: "Pedro Vargas",
+//         daysAvailable: 25,
+//         daysUsed: 19,
+//         daysAccumulated: 6,
+//         plannedPercentage: 75,
+//         productivity: 89,
+//       },
+//       {
+//         name: "Teresa López",
+//         daysAvailable: 25,
+//         daysUsed: 22,
+//         daysAccumulated: 3,
+//         plannedPercentage: 85,
+//         productivity: 95,
+//       },
+//       {
+//         name: "Marcos Guerrero",
+//         daysAvailable: 25,
+//         daysUsed: 18,
+//         daysAccumulated: 7,
+//         plannedPercentage: 70,
+//         productivity: 87,
+//       },
+//       {
+//         name: "Beatriz Soto",
+//         daysAvailable: 25,
+//         daysUsed: 21,
+//         daysAccumulated: 4,
+//         plannedPercentage: 88,
+//         productivity: 93,
+//       },
+//       {
+//         name: "Héctor Navarro",
+//         daysAvailable: 25,
+//         daysUsed: 22,
+//         daysAccumulated: 3,
+//         plannedPercentage: 82,
+//         productivity: 91,
+//       },
+//     ],
+//   },
+// ];
+
+
+
+
+// const employeeVacationProfilesExample = {
+//   "juan-perez": {
+//     id: "EMP001",
+//     name: "Juan Pérez",
+//     area: "Planta",
+//     position: "Operario de Producción",
+//     daysUsed: 22,
+//     daysAccumulated: 3,
+//     areaAverage: 19.5,
+//     requests: [
+//       {
+//         id: "VAC001",
+//         requestDate: "2024-01-10",
+//         startDate: "2024-01-15",
+//         endDate: "2024-01-16",
+//         daysRequested: 2,
+//         status: "approved",
+//         reason: "Asuntos personales",
+//         approvedBy: "Carlos Mendoza",
+//       },
+//       {
+//         id: "VAC002",
+//         requestDate: "2024-02-20",
+//         startDate: "2024-03-01",
+//         endDate: "2024-03-03",
+//         daysRequested: 3,
+//         status: "approved",
+//         reason: "Vacaciones familiares",
+//         approvedBy: "Carlos Mendoza",
+//       },
+//       {
+//         id: "VAC003",
+//         requestDate: "2024-04-01",
+//         startDate: "2024-04-15",
+//         endDate: "2024-04-16",
+//         daysRequested: 2,
+//         status: "approved",
+//         reason: "Descanso personal",
+//         approvedBy: "Carlos Mendoza",
+//       },
+//       {
+//         id: "VAC004",
+//         requestDate: "2024-04-25",
+//         startDate: "2024-05-06",
+//         endDate: "2024-05-09",
+//         daysRequested: 4,
+//         status: "approved",
+//         reason: "Viaje familiar",
+//         approvedBy: "Carlos Mendoza",
+//       },
+//       {
+//         id: "VAC005",
+//         requestDate: "2024-06-15",
+//         startDate: "2024-07-01",
+//         endDate: "2024-07-05",
+//         daysRequested: 5,
+//         status: "approved",
+//         reason: "Vacaciones de verano",
+//         approvedBy: "Carlos Mendoza",
+//       },
+//       {
+//         id: "VAC006",
+//         requestDate: "2024-07-20",
+//         startDate: "2024-08-12",
+//         endDate: "2024-08-14",
+//         daysRequested: 3,
+//         status: "approved",
+//         reason: "Descanso",
+//         approvedBy: "Carlos Mendoza",
+//       },
+//       {
+//         id: "VAC007",
+//         requestDate: "2024-08-25",
+//         startDate: "2024-09-16",
+//         endDate: "2024-09-17",
+//         daysRequested: 2,
+//         status: "approved",
+//         reason: "Asuntos familiares",
+//         approvedBy: "Carlos Mendoza",
+//       },
+//       {
+//         id: "VAC008",
+//         requestDate: "2024-09-30",
+//         startDate: "2024-10-21",
+//         endDate: "2024-10-21",
+//         daysRequested: 1,
+//         status: "approved",
+//         reason: "Cita médica",
+//         approvedBy: "Carlos Mendoza",
+//       },
+//     ],
+//   }
+// };
+
+
 // interface AttendanceDetail {
 //   area: string;
 //   total: number;
@@ -84,12 +465,12 @@ interface AttendanceRecord {
   entryTime: string | null;
   exitTime: string | null;
   status:
-    | "on_time"
-    | "late"
-    | "early_departure"
-    | "absent"
-    | "incomplete"
-    | "early_arrival";
+  | "on_time"
+  | "late"
+  | "early_departure"
+  | "absent"
+  | "incomplete"
+  | "early_arrival";
   notes?: string;
 }
 
@@ -114,7 +495,6 @@ interface VacationRequest {
   status: "approved" | "rejected" | "pending";
   reason: string;
   approvedBy?: string;
-  notes?: string;
 }
 
 interface EmployeeVacationProfile {
@@ -122,347 +502,350 @@ interface EmployeeVacationProfile {
   name: string;
   area: string;
   position: string;
-  daysAvailable: number;
   daysUsed: number;
-  daysPending: number;
   daysAccumulated: number;
-  daysExpiring: number;
-  expirationDate: string;
-  productivity: number;
-  plannedPercentage: number;
-  monthlyUsage: { month: string; days: number }[];
   requests: VacationRequest[];
   areaAverage: number;
 }
 
-const employeeProfiles: { [key: string]: EmployeeProfile } = {
-  "juan-perez": {
-    id: "EMP001",
-    name: "Juan Pérez",
-    area: "Planta",
-    supervisor: "Carlos Mendoza",
-    position: "Operario de Producción",
-    attendanceRate: 98,
-    lateArrivals: 2,
-    absences: 1,
-    records: [
-      {
-        id: "1",
-        date: "2024-01-15",
-        entryTime: "08:00",
-        exitTime: "17:00",
-        status: "on_time",
-      },
-      {
-        id: "2",
-        date: "2024-01-16",
-        entryTime: "08:15",
-        exitTime: "17:00",
-        status: "late",
-        notes: "Tráfico pesado",
-      },
-      {
-        id: "3",
-        date: "2024-01-17",
-        entryTime: "07:45",
-        exitTime: "17:00",
-        status: "early_arrival",
-      },
-      {
-        id: "4",
-        date: "2024-01-18",
-        entryTime: null,
-        exitTime: null,
-        status: "absent",
-        notes: "Cita médica",
-      },
-      {
-        id: "5",
-        date: "2024-01-19",
-        entryTime: "08:00",
-        exitTime: "16:30",
-        status: "early_departure",
-        notes: "Emergencia familiar",
-      },
-      {
-        id: "6",
-        date: "2024-01-20",
-        entryTime: "08:00",
-        exitTime: null,
-        status: "incomplete",
-        notes: "Olvidó marcar salida",
-      },
-      {
-        id: "7",
-        date: "2024-01-21",
-        entryTime: "08:00",
-        exitTime: "17:00",
-        status: "on_time",
-      },
-      {
-        id: "8",
-        date: "2024-01-22",
-        entryTime: "08:10",
-        exitTime: "17:00",
-        status: "late",
-      },
-      {
-        id: "9",
-        date: "2024-01-23",
-        entryTime: "07:55",
-        exitTime: "17:00",
-        status: "on_time",
-      },
-      {
-        id: "10",
-        date: "2024-01-24",
-        entryTime: "08:00",
-        exitTime: "17:00",
-        status: "on_time",
-      },
-      {
-        id: "11",
-        date: "2024-01-25",
-        entryTime: "08:20",
-        exitTime: "17:00",
-        status: "late",
-        notes: "Problema transporte",
-      },
-      {
-        id: "12",
-        date: "2024-01-26",
-        entryTime: "08:00",
-        exitTime: "16:45",
-        status: "early_departure",
-      },
-    ],
-  },
-  "maria-garcia": {
-    id: "EMP002",
-    name: "María García",
-    area: "Planta",
-    supervisor: "Carlos Mendoza",
-    position: "Supervisora de Calidad",
-    attendanceRate: 95,
-    lateArrivals: 3,
-    absences: 2,
-    records: [
-      {
-        id: "1",
-        date: "2024-01-15",
-        entryTime: "08:00",
-        exitTime: "17:00",
-        status: "on_time",
-      },
-      {
-        id: "2",
-        date: "2024-01-16",
-        entryTime: "08:20",
-        exitTime: "17:00",
-        status: "late",
-        notes: "Reunión previa",
-      },
-      {
-        id: "3",
-        date: "2024-01-17",
-        entryTime: "08:00",
-        exitTime: "17:00",
-        status: "on_time",
-      },
-      {
-        id: "4",
-        date: "2024-01-18",
-        entryTime: null,
-        exitTime: null,
-        status: "absent",
-        notes: "Vacaciones",
-      },
-      {
-        id: "5",
-        date: "2024-01-19",
-        entryTime: "08:00",
-        exitTime: "17:00",
-        status: "on_time",
-      },
-      {
-        id: "6",
-        date: "2024-01-20",
-        entryTime: "08:15",
-        exitTime: "17:00",
-        status: "late",
-      },
-      {
-        id: "7",
-        date: "2024-01-21",
-        entryTime: null,
-        exitTime: null,
-        status: "absent",
-        notes: "Enfermedad",
-      },
-      {
-        id: "8",
-        date: "2024-01-22",
-        entryTime: "07:50",
-        exitTime: "17:00",
-        status: "early_arrival",
-      },
-    ],
-  },
-  "carlos-lopez": {
-    id: "EMP003",
-    name: "Carlos López",
-    area: "Planta",
-    supervisor: "Carlos Mendoza",
-    position: "Técnico de Mantenimiento",
-    attendanceRate: 89,
-    lateArrivals: 5,
-    absences: 3,
-    records: [
-      {
-        id: "1",
-        date: "2024-01-15",
-        entryTime: "08:25",
-        exitTime: "17:00",
-        status: "late",
-        notes: "Problema mecánico",
-      },
-      {
-        id: "2",
-        date: "2024-01-16",
-        entryTime: "08:00",
-        exitTime: "17:00",
-        status: "on_time",
-      },
-      {
-        id: "3",
-        date: "2024-01-17",
-        entryTime: null,
-        exitTime: null,
-        status: "absent",
-        notes: "Día personal",
-      },
-      {
-        id: "4",
-        date: "2024-01-18",
-        entryTime: "08:30",
-        exitTime: "17:00",
-        status: "late",
-      },
-      {
-        id: "5",
-        date: "2024-01-19",
-        entryTime: "08:00",
-        exitTime: "16:00",
-        status: "early_departure",
-        notes: "Cita médica",
-      },
-      {
-        id: "6",
-        date: "2024-01-20",
-        entryTime: "08:45",
-        exitTime: "17:00",
-        status: "late",
-        notes: "Transporte público",
-      },
-      {
-        id: "7",
-        date: "2024-01-21",
-        entryTime: null,
-        exitTime: null,
-        status: "absent",
-        notes: "Enfermedad",
-      },
-      {
-        id: "8",
-        date: "2024-01-22",
-        entryTime: "08:35",
-        exitTime: "17:00",
-        status: "late",
-      },
-      {
-        id: "9",
-        date: "2024-01-23",
-        entryTime: null,
-        exitTime: null,
-        status: "absent",
-        notes: "Asunto familiar",
-      },
-      {
-        id: "10",
-        date: "2024-01-24",
-        entryTime: "08:15",
-        exitTime: "16:30",
-        status: "late",
-      },
-    ],
-  },
-};
+interface AtendanceDataInterface {
+  area: string,
+    total: number,
+    present: number,
+    percentage: number,
+    trend: number,
+    employees: [
+      { name: string, attendance: number, status: string }]
+}
 
-const attendanceData = [
-  {
-    area: "Planta",
-    total: 100,
-    present: 98,
-    percentage: 98,
-    trend: 2,
-    employees: [
-      { name: "Juan Pérez", attendance: 98, status: "excellent" },
-      { name: "María García", attendance: 95, status: "excellent" },
-      { name: "Carlos López", attendance: 89, status: "good" },
-      { name: "Ana Martínez", attendance: 92, status: "excellent" },
-      { name: "Luis Rodríguez", attendance: 87, status: "good" },
-      { name: "Carmen Silva", attendance: 94, status: "excellent" },
-      { name: "Roberto Díaz", attendance: 91, status: "good" },
-      { name: "Patricia Moreno", attendance: 88, status: "good" },
-      { name: "Fernando Castro", attendance: 96, status: "excellent" },
-      { name: "Isabel Herrera", attendance: 85, status: "regular" },
-      { name: "Diego Torres", attendance: 93, status: "excellent" },
-      { name: "Rosa Jiménez", attendance: 90, status: "good" },
-    ],
-  },
-  {
-    area: "Administración",
-    total: 50,
-    present: 45,
-    percentage: 90,
-    trend: -5,
-    employees: [
-      { name: "Carlos Mendoza", attendance: 90, status: "regular" },
-      { name: "Sofía Vargas", attendance: 97, status: "excellent" },
-      { name: "Miguel Ruiz", attendance: 89, status: "good" },
-      { name: "Elena Campos", attendance: 94, status: "excellent" },
-      { name: "Andrés Vega", attendance: 86, status: "regular" },
-      { name: "Lucía Ramírez", attendance: 92, status: "excellent" },
-    ],
-  },
-  {
-    area: "Contabilidad",
-    total: 30,
-    present: 28,
-    percentage: 93,
-    trend: 1,
-    employees: [
-      { name: "Gloria Mendez", attendance: 96, status: "excellent" },
-      { name: "Raúl Ortega", attendance: 91, status: "good" },
-      { name: "Mónica Delgado", attendance: 88, status: "good" },
-      { name: "Javier Peña", attendance: 94, status: "excellent" },
-    ],
-  },
-  {
-    area: "Bodega",
-    total: 25,
-    present: 23,
-    percentage: 92,
-    trend: 0.5,
-    employees: [
-      { name: "Pedro Vargas", attendance: 89, status: "good" },
-      { name: "Teresa López", attendance: 95, status: "excellent" },
-      { name: "Marcos Guerrero", attendance: 87, status: "good" },
-      { name: "Beatriz Soto", attendance: 93, status: "excellent" },
-      { name: "Héctor Navarro", attendance: 91, status: "good" },
-    ],
-  },
-];
+// const employeeProfiles: { [key: string]: EmployeeProfile } = {
+//   "juan-perez": {
+//     id: "EMP001",
+//     name: "Juan Pérez",
+//     area: "Planta",
+//     supervisor: "Carlos Mendoza",
+//     position: "Operario de Producción",
+//     attendanceRate: 98,
+//     lateArrivals: 2,
+//     absences: 1,
+//     records: [
+//       { 
+//         id: "1",
+//         date: "2024-01-15",
+//         entryTime: "08:00",
+//         exitTime: "17:00",
+//         status: "on_time",
+//       },
+//       {
+//         id: "2",
+//         date: "2024-01-16",
+//         entryTime: "08:15",
+//         exitTime: "17:00",
+//         status: "late",
+//         notes: "Tráfico pesado",
+//       },
+//       {
+//         id: "3",
+//         date: "2024-01-17",
+//         entryTime: "07:45",
+//         exitTime: "17:00",
+//         status: "early_arrival",
+//       },
+//       {
+//         id: "4",
+//         date: "2024-01-18",
+//         entryTime: null,
+//         exitTime: null,
+//         status: "absent",
+//         notes: "Cita médica",
+//       },
+//       {
+//         id: "5",
+//         date: "2024-01-19",
+//         entryTime: "08:00",
+//         exitTime: "16:30",
+//         status: "early_departure",
+//         notes: "Emergencia familiar",
+//       },
+//       {
+//         id: "6",
+//         date: "2024-01-20",
+//         entryTime: "08:00",
+//         exitTime: null,
+//         status: "incomplete",
+//         notes: "Olvidó marcar salida",
+//       },
+//       {
+//         id: "7",
+//         date: "2024-01-21",
+//         entryTime: "08:00",
+//         exitTime: "17:00",
+//         status: "on_time",
+//       },
+//       {
+//         id: "8",
+//         date: "2024-01-22",
+//         entryTime: "08:10",
+//         exitTime: "17:00",
+//         status: "late",
+//       },
+//       {
+//         id: "9",
+//         date: "2024-01-23",
+//         entryTime: "07:55",
+//         exitTime: "17:00",
+//         status: "on_time",
+//       },
+//       {
+//         id: "10",
+//         date: "2024-01-24",
+//         entryTime: "08:00",
+//         exitTime: "17:00",
+//         status: "on_time",
+//       },
+//       {
+//         id: "11",
+//         date: "2024-01-25",
+//         entryTime: "08:20",
+//         exitTime: "17:00",
+//         status: "late",
+//         notes: "Problema transporte",
+//       },
+//       {
+//         id: "12",
+//         date: "2024-01-26",
+//         entryTime: "08:00",
+//         exitTime: "16:45",
+//         status: "early_departure",
+//       },
+//     ],
+//   },
+//   "maria-garcia": {
+//     id: "EMP002",
+//     name: "María García",
+//     area: "Planta",
+//     supervisor: "Carlos Mendoza",
+//     position: "Supervisora de Calidad",
+//     attendanceRate: 95,
+//     lateArrivals: 3,
+//     absences: 2,
+//     records: [
+//       {
+//         id: "1",
+//         date: "2024-01-15",
+//         entryTime: "08:00",
+//         exitTime: "17:00",
+//         status: "on_time",
+//       },
+//       {
+//         id: "2",
+//         date: "2024-01-16",
+//         entryTime: "08:20",
+//         exitTime: "17:00",
+//         status: "late",
+//         notes: "Reunión previa",
+//       },
+//       {
+//         id: "3",
+//         date: "2024-01-17",
+//         entryTime: "08:00",
+//         exitTime: "17:00",
+//         status: "on_time",
+//       },
+//       {
+//         id: "4",
+//         date: "2024-01-18",
+//         entryTime: null,
+//         exitTime: null,
+//         status: "absent",
+//         notes: "Vacaciones",
+//       },
+//       {
+//         id: "5",
+//         date: "2024-01-19",
+//         entryTime: "08:00",
+//         exitTime: "17:00",
+//         status: "on_time",
+//       },
+//       {
+//         id: "6",
+//         date: "2024-01-20",
+//         entryTime: "08:15",
+//         exitTime: "17:00",
+//         status: "late",
+//       },
+//       {
+//         id: "7",
+//         date: "2024-01-21",
+//         entryTime: null,
+//         exitTime: null,
+//         status: "absent",
+//         notes: "Enfermedad",
+//       },
+//       {
+//         id: "8",
+//         date: "2024-01-22",
+//         entryTime: "07:50",
+//         exitTime: "17:00",
+//         status: "early_arrival",
+//       },
+//     ],
+//   },
+//   "carlos-lopez": {
+//     id: "EMP003",
+//     name: "Carlos López",
+//     area: "Planta",
+//     supervisor: "Carlos Mendoza",
+//     position: "Técnico de Mantenimiento",
+//     attendanceRate: 89,
+//     lateArrivals: 5,
+//     absences: 3,
+//     records: [
+//       {
+//         id: "1",
+//         date: "2024-01-15",
+//         entryTime: "08:25",
+//         exitTime: "17:00",
+//         status: "late",
+//         notes: "Problema mecánico",
+//       },
+//       {
+//         id: "2",
+//         date: "2024-01-16",
+//         entryTime: "08:00",
+//         exitTime: "17:00",
+//         status: "on_time",
+//       },
+//       {
+//         id: "3",
+//         date: "2024-01-17",
+//         entryTime: null,
+//         exitTime: null,
+//         status: "absent",
+//         notes: "Día personal",
+//       },
+//       {
+//         id: "4",
+//         date: "2024-01-18",
+//         entryTime: "08:30",
+//         exitTime: "17:00",
+//         status: "late",
+//       },
+//       {
+//         id: "5",
+//         date: "2024-01-19",
+//         entryTime: "08:00",
+//         exitTime: "16:00",
+//         status: "early_departure",
+//         notes: "Cita médica",
+//       },
+//       {
+//         id: "6",
+//         date: "2024-01-20",
+//         entryTime: "08:45",
+//         exitTime: "17:00",
+//         status: "late",
+//         notes: "Transporte público",
+//       },
+//       {
+//         id: "7",
+//         date: "2024-01-21",
+//         entryTime: null,
+//         exitTime: null,
+//         status: "absent",
+//         notes: "Enfermedad",
+//       },
+//       {
+//         id: "8",
+//         date: "2024-01-22",
+//         entryTime: "08:35",
+//         exitTime: "17:00",
+//         status: "late",
+//       },
+//       {
+//         id: "9",
+//         date: "2024-01-23",
+//         entryTime: null,
+//         exitTime: null,
+//         status: "absent",
+//         notes: "Asunto familiar",
+//       },
+//       {
+//         id: "10",
+//         date: "2024-01-24",
+//         entryTime: "08:15",
+//         exitTime: "16:30",
+//         status: "late",
+//       },
+//     ],
+//   },
+// };
+
+// const attendanceData = [
+//   {
+//     area: "Planta",
+//     total: 100,
+//     present: 98,
+//     percentage: 98,
+//     trend: 2,
+//     employees: [
+//       { name: "Juan Pérez", attendance: 98, status: "excellent" },
+//       { name: "María García", attendance: 95, status: "excellent" },
+//       { name: "Carlos López", attendance: 89, status: "good" },
+//       { name: "Ana Martínez", attendance: 92, status: "excellent" },
+//       { name: "Luis Rodríguez", attendance: 87, status: "good" },
+//       { name: "Carmen Silva", attendance: 94, status: "excellent" },
+//       { name: "Roberto Díaz", attendance: 91, status: "good" },
+//       { name: "Patricia Moreno", attendance: 88, status: "good" },
+//       { name: "Fernando Castro", attendance: 96, status: "excellent" },
+//       { name: "Isabel Herrera", attendance: 85, status: "regular" },
+//       { name: "Diego Torres", attendance: 93, status: "excellent" },
+//       { name: "Rosa Jiménez", attendance: 90, status: "good" },
+//     ],
+//   },
+//   {
+//     area: "Administración",
+//     total: 50,
+//     present: 45,
+//     percentage: 90,
+//     trend: -5,
+//     employees: [
+//       { name: "Carlos Mendoza", attendance: 90, status: "regular" },
+//       { name: "Sofía Vargas", attendance: 97, status: "excellent" },
+//       { name: "Miguel Ruiz", attendance: 89, status: "good" },
+//       { name: "Elena Campos", attendance: 94, status: "excellent" },
+//       { name: "Andrés Vega", attendance: 86, status: "regular" },
+//       { name: "Lucía Ramírez", attendance: 92, status: "excellent" },
+//     ],
+//   },
+//   {
+//     area: "Contabilidad",
+//     total: 30,
+//     present: 28,
+//     percentage: 93,
+//     trend: 1,
+//     employees: [
+//       { name: "Gloria Mendez", attendance: 96, status: "excellent" },
+//       { name: "Raúl Ortega", attendance: 91, status: "good" },
+//       { name: "Mónica Delgado", attendance: 88, status: "good" },
+//       { name: "Javier Peña", attendance: 94, status: "excellent" },
+//     ],
+//   },
+//   {
+//     area: "Bodega",
+//     total: 25,
+//     present: 23,
+//     percentage: 92,
+//     trend: 0.5,
+//     employees: [
+//       { name: "Pedro Vargas", attendance: 89, status: "good" },
+//       { name: "Teresa López", attendance: 95, status: "excellent" },
+//       { name: "Marcos Guerrero", attendance: 87, status: "good" },
+//       { name: "Beatriz Soto", attendance: 93, status: "excellent" },
+//       { name: "Héctor Navarro", attendance: 91, status: "good" },
+//     ],
+//   },
+// ];
 
 const vacationData = [
   {
@@ -1150,9 +1533,19 @@ export default function AttendanceDashboard() {
 
 
 
-    const [showPermissionDetail, setShowPermissionDetail] = useState(true)
-    const [cardsData, setcardsData] = useState<any>()
+  const [showPermissionDetail, setShowPermissionDetail] = useState(true)
+  const [employeeProfiles, setEmployeeProfiles] = useState<{[key: string]: EmployeeProfile}>({})
+  const [vacationData, setVacationData] = useState<vacationDataInterface[]>([])
+  const [employeeVacationProfiles, setEmployeeVacationProfiles] = useState<{ [key: string]: EmployeeVacationProfile }>({})
+  const [attendanceData, setAttendanceData] = useState<AtendanceDataInterface[]>([])
+  const [cardsData, setcardsData] = useState<any>()
   const [selectedArea, setSelectedArea] = useState("Planta");
+  const [mainStatistics, setMainStatistics] = useState({
+    assistance: {
+      assistances: 1000,
+      percentage: 3.3
+    }
+  });
   const [selectedPeriod, setSelectedPeriod] = useState("Este Mes");
   const [searchTerm, setSearchTerm] = useState("");
   const [showAttendanceDetail, setShowAttendanceDetail] = useState(false);
@@ -1177,97 +1570,148 @@ export default function AttendanceDashboard() {
   const [showFilters, setShowFilters] = useState(true);
   const [showAreaCards, setShowAreaCards] = useState(true);
   const [monthlyData, setmonthlyData] = useState<any>();
-    const { data: session } = useSession();
+  const { data: session } = useSession();
   // Reset employee page when filters change
   useEffect(() => {
     setCurrentEmployeePage(1);
   }, [selectedArea, searchTerm]);
 
 
-useEffect(() => {
+  useEffect(() => {
 
-  if (session?.user.accessToken) {
-    const fetchEntryDate = async () => {
-      try {
-        const res = await fetch("https://infarmaserver-production.up.railway.app/api/requests/assistance-detail-resume", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session.user.accessToken}`,
-          },
-        });
+    if (session?.user.accessToken) {
+      const fetchEntryDate = async () => {
+        try {
+          const res = await fetch("http://localhost:3000/api/requests/assistance-detail-resume", {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${session.user.accessToken}`,
+            },
+          });
 
-        if (!res.ok) {
-          throw new Error(`Error ${res.status}: ${res.statusText}`);
+          if (!res.ok) {
+            throw new Error(`Error ${res.status}: ${res.statusText}`);
+          }
+          const data = await res.json();
+          setcardsData(data as any)
+
+        } catch (err) {
+          console.error("Error al obtener la fecha de entrada:", err);
+        } finally {
         }
-        const data = await res.json();
-        console.log(data)
-        setcardsData(data as any)
+      };
 
-      } catch (err) {
-        console.error("Error al obtener la fecha de entrada:", err);
-      } finally {
-      }
-    };
+      fetchEntryDate();
 
-    fetchEntryDate();
-  }
+      const fetchVacationData = async () => {
+        try {
+          const res = await fetch("http://localhost:3000/api/permissions/get-vacation-stats", {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${session.user.accessToken}`,
+            },
+          });
 
-  
-}, []);
+          if (!res.ok) {
+            throw new Error(`Error ${res.status}: ${res.statusText}`);
+          }
+          const data = await res.json();
+          setVacationData(data.stats)
+          setEmployeeVacationProfiles(data.profiles)
+          console.log("Data de vacaciones",data)
 
-
-useEffect(() => {
-
-  if (session?.user.accessToken) {
-    const fetchEntryDate = async () => {
-      try {
-        const res = await fetch("https://infarmaserver-production.up.railway.app/api/requests/get-monthly-attendance", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session.user.accessToken}`,
-          },
-        });
-
-        if (!res.ok) {
-          throw new Error(`Error ${res.status}: ${res.statusText}`);
+        } catch (err) {
+          console.error("Error al obtener la fecha de entrada:", err);
+        } finally {
         }
-        const newData = await res.json();
-        console.log(newData)
-        setmonthlyData(newData)
-      } catch (err) {
-        console.error("Error al obtener la fecha de entrada:", err);
-      } finally {
-      }
-    };
+      };
 
-    fetchEntryDate();
-  }
+      fetchVacationData();
+    }
 
-  
-}, []);
 
-const exportToExcel = ( fileName = "asistencias.xlsx") => {
-  // Crea la hoja
-  const worksheet = XLSX.utils.json_to_sheet(monthlyData);
+  }, []);
 
-  // Crea el libro
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "Asistencias");
 
-  // Genera el archivo
-  const excelBuffer = XLSX.write(workbook, {
-    bookType: "xlsx",
-    type: "array",
-  });
+  useEffect(() => {
 
-  // Guarda el archivo
-  const blob = new Blob([excelBuffer], {
-    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  });
-  saveAs(blob, fileName);
-};
+    if (session?.user.accessToken) {
+      const fetchEntryDate = async () => {
+        try {
+          const res = await fetch("http://localhost:3000/api/requests/get-monthly-attendance", {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${session.user.accessToken}`,
+            },
+          });
+
+          if (!res.ok) {
+            throw new Error(`Error ${res.status}: ${res.statusText}`);
+          }
+          const newData = await res.json();
+          console.log(newData)
+          setmonthlyData(newData)
+        } catch (err) {
+          console.error("Error al obtener la fecha de entrada:", err);
+        } finally {
+        }
+      };
+      fetchEntryDate();
+
+
+
+      const getUsersHistory = async () => {
+        try {
+          const res = await fetch("http://localhost:3000/api/attendance/attendance-history", {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${session.user.accessToken}`,
+            },
+          });
+
+          if (!res.ok) {
+            throw new Error(`Error ${res.status}: ${res.statusText}`);
+          }
+          const newData = await res.json();
+          setAttendanceData(newData.attendanceData)
+          setEmployeeProfiles(newData.byUser)
+          //setmonthlyData(newData)
+        } catch (err) {
+          console.error("Error al obtener la fecha de entrada:", err);
+        } finally {
+        }
+      };
+      getUsersHistory();
+    }
+
+
+  }, []);
+
+
+  const exportToExcel = (fileName = "asistencias.xlsx") => {
+    // Crea la hoja
+    const worksheet = XLSX.utils.json_to_sheet(monthlyData);
+
+    // Crea el libro
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Asistencias");
+
+    // Genera el archivo
+    const excelBuffer = XLSX.write(workbook, {
+      bookType: "xlsx",
+      type: "array",
+    });
+
+    // Guarda el archivo
+    const blob = new Blob([excelBuffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    saveAs(blob, fileName);
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -1298,7 +1742,7 @@ const exportToExcel = ( fileName = "asistencias.xlsx") => {
         return "N/A";
     }
   };
-
+  
   const getRecordStatusColor = (status: string) => {
     switch (status) {
       case "on_time":
@@ -1536,14 +1980,14 @@ const exportToExcel = ( fileName = "asistencias.xlsx") => {
     }
   };
 
-  
+
   const [isClient, setIsClient] = useState(false);
 
-useEffect(() => {
-  setIsClient(true);
-}, []);
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
-  if (!isClient) {return null}else{
+  if (!isClient) { return null } else {
     if (showAttendanceDetail) {
       return (
         <div className="min-h-screen bg-gray-50 p-6">
@@ -1598,13 +2042,13 @@ useEffect(() => {
                     <ChevronDown className="h-4 w-4" />
                   )}
                 </Button>
-                <Button onClick={()=>exportToExcel()} className="flex items-center gap-2">
+                <Button onClick={() => exportToExcel()} className="flex items-center gap-2">
                   <Download className="h-4 w-4" />
                   Exportar Detalle
                 </Button>
               </div>
             </div>
-  
+
             {/* Filters - Collapsible */}
             {showFilters && (
               <div className="flex items-center gap-4 mb-6 p-4 bg-white rounded-lg border shadow-sm transition-all duration-300 ease-in-out">
@@ -1621,7 +2065,7 @@ useEffect(() => {
                     <SelectItem value="Bodega">Bodega</SelectItem>
                   </SelectContent>
                 </Select>
-  
+
                 <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
                   <SelectTrigger className="w-48">
                     <Calendar className="h-4 w-4 mr-2" />
@@ -1637,7 +2081,7 @@ useEffect(() => {
                     <SelectItem value="Este Año">Este Año</SelectItem>
                   </SelectContent>
                 </Select>
-  
+
                 <div className="relative flex-1 max-w-md">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                   <Input
@@ -1649,17 +2093,16 @@ useEffect(() => {
                 </div>
               </div>
             )}
-  
+
             {/* Area Overview Cards - Collapsible */}
             {showAreaCards && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 transition-all duration-300 ease-in-out">
                 {/* Todas las Áreas Card */}
                 <Card
-                  className={`hover:shadow-lg transition-all duration-200 cursor-pointer transform hover:scale-105 ${
-                    selectedArea === "Todas"
+                  className={`hover:shadow-lg transition-all duration-200 cursor-pointer transform hover:scale-105 ${selectedArea === "Todas"
                       ? "ring-2 ring-purple-500 bg-purple-50 shadow-md"
                       : "hover:bg-gray-50"
-                  }`}
+                    }`}
                   onClick={() => {
                     setSelectedArea("Todas");
                     setCurrentEmployeePage(1);
@@ -1691,45 +2134,44 @@ useEffect(() => {
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-600">Promedio</span>
                           <span className="font-medium">
-                              {(() => {
-      const areasObjetivo = ["Planta", "Control de Calidad", "Mantenimiento"];
-  
-      const filtradas =
-  Array.isArray(cardsData) && cardsData.length > 0
-    ? cardsData.filter((area: any) =>
-        areasObjetivo.includes(area.txt_nombre_area)
-      )
-    : [];
-  
-      const totalEmpleados = filtradas.reduce(
-        (acc:any, area:any) => acc + area.total_empleados,
-        0
-      );
-  
-      const totalAsistencias = filtradas.reduce((acc:any, area:any) => {
-        switch (selectedPeriod) {
-          case "Hoy":
-              console.log("Que es acc:",)
-            return acc + area.asistencias_hoy;
-          case "Esta Semana":
-            return acc + area.asistencias_ayer;
-          case "Este Mes":
-            return acc + area.semana_actual;
-          case "Último Trimestre":
-            return acc + area.mes_actual;
-          case "Este Año":
-            return acc + area.trimestre_actual;
-          default:
-            return acc;
-        }
-      }, 0);
-  
-      const porcentaje = totalEmpleados
-        ? Math.round((totalAsistencias * 100) / totalEmpleados)
-        : 0;
-  
-      return `${porcentaje}%`;
-    })()}
+                            {(() => {
+                              const areasObjetivo = ["Planta", "Control de Calidad", "Mantenimiento"];
+
+                              const filtradas =
+                                Array.isArray(cardsData) && cardsData.length > 0
+                                  ? cardsData.filter((area: any) =>
+                                    areasObjetivo.includes(area.txt_nombre_area)
+                                  )
+                                  : [];
+
+                              const totalEmpleados = filtradas.reduce(
+                                (acc: any, area: any) => acc + area.total_empleados,
+                                0
+                              );
+
+                              const totalAsistencias = filtradas.reduce((acc: any, area: any) => {
+                                switch (selectedPeriod) {
+                                  case "Hoy":
+                                    return acc + area.asistencias_hoy;
+                                  case "Esta Semana":
+                                    return acc + area.asistencias_ayer;
+                                  case "Este Mes":
+                                    return acc + area.semana_actual;
+                                  case "Último Trimestre":
+                                    return acc + area.mes_actual;
+                                  case "Este Año":
+                                    return acc + area.trimestre_actual;
+                                  default:
+                                    return acc;
+                                }
+                              }, 0);
+
+                              const porcentaje = totalEmpleados
+                                ? Math.round((totalAsistencias * 100) / totalEmpleados)
+                                : 0;
+
+                              return `${porcentaje}%`;
+                            })()}
                           </span>
                         </div>
                         <Progress
@@ -1752,16 +2194,15 @@ useEffect(() => {
                     </div>
                   </CardContent>
                 </Card>
-  
+
                 {/* Individual Area Cards */}
                 {attendanceData.map((area) => (
                   <Card
                     key={area.area}
-                    className={`hover:shadow-lg transition-all duration-200 cursor-pointer transform hover:scale-105 ${
-                      selectedArea === area.area
+                    className={`hover:shadow-lg transition-all duration-200 cursor-pointer transform hover:scale-105 ${selectedArea === area.area
                         ? "ring-2 ring-blue-500 bg-blue-50 shadow-md"
                         : "hover:bg-gray-50"
-                    }`}
+                      }`}
                     onClick={() => {
                       setSelectedArea(area.area);
                       setCurrentEmployeePage(1);
@@ -1811,7 +2252,7 @@ useEffect(() => {
                 ))}
               </div>
             )}
-  
+
             {/* Current Filter Summary - Always visible when filters are hidden */}
             {!showFilters && (
               <div className="mb-6 p-3 bg-blue-50 border border-blue-200 rounded-lg">
@@ -1838,7 +2279,7 @@ useEffect(() => {
                 </div>
               </div>
             )}
-  
+
             {/* Detailed Employee List */}
             <Card>
               <CardHeader>
@@ -1874,7 +2315,7 @@ useEffect(() => {
                       </div>
                     </div>
                   </div>
-  
+
                   {/* Employee List */}
                   <div className="space-y-3">
                     {getPaginatedEmployees().length > 0 ? (
@@ -1919,7 +2360,7 @@ useEffect(() => {
                       </div>
                     )}
                   </div>
-  
+
                   {/* Pagination */}
                   {getTotalEmployeePages() > 1 && (
                     <div className="flex justify-between items-center pt-4 border-t">
@@ -1988,305 +2429,305 @@ useEffect(() => {
             </Card>
           </div>
           {/* Employee Detail Modal */}
-        <Dialog open={showEmployeeModal} onOpenChange={setShowEmployeeModal}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                  <User className="h-6 w-6 text-blue-600" />
-                </div>
-                Perfil de Empleado
-              </DialogTitle>
-            </DialogHeader>
-  
-            {selectedEmployee && (
-              <div className="space-y-6">
-                {/* Employee Profile */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg">
-                        Información Personal
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="flex items-center gap-2">
-                        <User className="h-4 w-4 text-gray-500" />
-                        <span className="font-medium">Nombre:</span>
-                        <span>{selectedEmployee.name}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Building2 className="h-4 w-4 text-gray-500" />
-                        <span className="font-medium">Área:</span>
-                        <span>{selectedEmployee.area}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Users className="h-4 w-4 text-gray-500" />
-                        <span className="font-medium">Jefe:</span>
-                        <span>{selectedEmployee.supervisor}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4 text-gray-500" />
-                        <span className="font-medium">Cargo:</span>
-                        <span>{selectedEmployee.position}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline">ID: {selectedEmployee.id}</Badge>
-                      </div>
-                    </CardContent>
-                  </Card>
-  
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg">
-                        Métricas de Asistencia
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">
-                          Asistencia General
-                        </span>
+          <Dialog open={showEmployeeModal} onOpenChange={setShowEmployeeModal}>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                    <User className="h-6 w-6 text-blue-600" />
+                  </div>
+                  Perfil de Empleado
+                </DialogTitle>
+              </DialogHeader>
+
+              {selectedEmployee && (
+                <div className="space-y-6">
+                  {/* Employee Profile */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg">
+                          Información Personal
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
                         <div className="flex items-center gap-2">
-                          <Progress
-                            value={selectedEmployee.attendanceRate}
-                            className="w-20 h-2"
-                          />
-                          <span className="font-semibold">
-                            {selectedEmployee.attendanceRate}%
-                          </span>
+                          <User className="h-4 w-4 text-gray-500" />
+                          <span className="font-medium">Nombre:</span>
+                          <span>{selectedEmployee.name}</span>
                         </div>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">
-                          Llegadas Tardías
-                        </span>
-                        <Badge variant="destructive">
-                          {selectedEmployee.lateArrivals}
-                        </Badge>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Ausencias</span>
-                        <Badge variant="destructive">
-                          {selectedEmployee.absences}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Building2 className="h-4 w-4 text-gray-500" />
+                          <span className="font-medium">Área:</span>
+                          <span>{selectedEmployee.area}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Users className="h-4 w-4 text-gray-500" />
+                          <span className="font-medium">Jefe:</span>
+                          <span>{selectedEmployee.supervisor}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-4 w-4 text-gray-500" />
+                          <span className="font-medium">Cargo:</span>
+                          <span>{selectedEmployee.position}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline">ID: {selectedEmployee.id}</Badge>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg">
+                          Métricas de Asistencia
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">
+                            Asistencia General
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <Progress
+                              value={selectedEmployee.attendanceRate}
+                              className="w-20 h-2"
+                            />
+                            <span className="font-semibold">
+                              {selectedEmployee.attendanceRate}%
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">
+                            Llegadas Tardías
+                          </span>
+                          <Badge variant="destructive">
+                            {selectedEmployee.lateArrivals}
+                          </Badge>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">Ausencias</span>
+                          <Badge variant="destructive">
+                            {selectedEmployee.absences}
+                          </Badge>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Records Filters */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">
+                        Historial de Marcajes
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {/* Filter Controls */}
+                        <div className="flex flex-wrap gap-4 items-center">
+                          <Select
+                            value={recordsFilter}
+                            onValueChange={setRecordsFilter}
+                          >
+                            <SelectTrigger className="w-48">
+                              <SelectValue placeholder="Filtrar por estado" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">
+                                Todos ({getFilterCount("all")})
+                              </SelectItem>
+                              <SelectItem value="on_time">
+                                A Tiempo ({getFilterCount("on_time")})
+                              </SelectItem>
+                              <SelectItem value="late">
+                                Llegadas Tardías ({getFilterCount("late")})
+                              </SelectItem>
+                              <SelectItem value="early_departure">
+                                Salidas Tempranas (
+                                {getFilterCount("early_departure")})
+                              </SelectItem>
+                              <SelectItem value="absent">
+                                Inasistencias ({getFilterCount("absent")})
+                              </SelectItem>
+                              <SelectItem value="incomplete">
+                                Marcajes Incompletos ({getFilterCount("incomplete")}
+                                )
+                              </SelectItem>
+                              <SelectItem value="early_arrival">
+                                Llegadas Tempranas (
+                                {getFilterCount("early_arrival")})
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+
+                          <div className="flex gap-2 items-center">
+                            <CalendarDays className="h-4 w-4 text-gray-500" />
+                            <Input
+                              type="date"
+                              value={dateFrom}
+                              onChange={(e) => setDateFrom(e.target.value)}
+                              className="w-40"
+                              placeholder="Desde"
+                            />
+                            <span className="text-gray-500">hasta</span>
+                            <Input
+                              type="date"
+                              value={dateTo}
+                              onChange={(e) => setDateTo(e.target.value)}
+                              className="w-40"
+                              placeholder="Hasta"
+                            />
+                          </div>
+
+                          <Select
+                            value={recordsPerPage.toString()}
+                            onValueChange={(value) =>
+                              setRecordsPerPage(Number.parseInt(value))
+                            }
+                          >
+                            <SelectTrigger className="w-32">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="5">5 por página</SelectItem>
+                              <SelectItem value="10">10 por página</SelectItem>
+                              <SelectItem value="15">15 por página</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setRecordsFilter("all");
+                              setDateFrom("");
+                              setDateTo("");
+                              setCurrentPage(1);
+                            }}
+                            className="flex items-center gap-2"
+                          >
+                            <XCircle className="h-4 w-4" />
+                            Limpiar Filtros
+                          </Button>
+                        </div>
+
+                        {/* Records Table */}
+                        <div className="border rounded-lg">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Fecha</TableHead>
+                                <TableHead>Entrada</TableHead>
+                                <TableHead>Salida</TableHead>
+                                <TableHead>Estado</TableHead>
+                                <TableHead>Notas</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {getPaginatedRecords().map((record) => (
+                                <TableRow key={record.id}>
+                                  <TableCell className="font-medium">
+                                    {record.date}
+                                  </TableCell>
+                                  <TableCell>{record.entryTime || "-"}</TableCell>
+                                  <TableCell>{record.exitTime || "-"}</TableCell>
+                                  <TableCell>
+                                    <div className="flex items-center gap-2">
+                                      {getRecordStatusIcon(record.status)}
+                                      <span
+                                        className={getRecordStatusColor(
+                                          record.status
+                                        )}
+                                      >
+                                        {getRecordStatusText(record.status)}
+                                      </span>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-sm text-gray-500">
+                                    {record.notes || "-"}
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                              {getPaginatedRecords().length === 0 && (
+                                <TableRow>
+                                  <TableCell
+                                    colSpan={5}
+                                    className="text-center py-8 text-gray-500"
+                                  >
+                                    No se encontraron registros con los filtros
+                                    aplicados
+                                  </TableCell>
+                                </TableRow>
+                              )}
+                            </TableBody>
+                          </Table>
+                        </div>
+
+                        {/* Pagination */}
+                        {getTotalPages() > 1 && (
+                          <div className="flex justify-between items-center">
+                            <div className="text-sm text-gray-500">
+                              Mostrando {(currentPage - 1) * recordsPerPage + 1} a{" "}
+                              {Math.min(
+                                currentPage * recordsPerPage,
+                                getFilteredRecords().length
+                              )}{" "}
+                              de {getFilteredRecords().length} registros
+                            </div>
+                            <Pagination>
+                              <PaginationContent>
+                                <PaginationItem>
+                                  <PaginationPrevious
+                                    onClick={() =>
+                                      setCurrentPage(Math.max(1, currentPage - 1))
+                                    }
+                                    className={
+                                      currentPage === 1
+                                        ? "pointer-events-none opacity-50"
+                                        : "cursor-pointer"
+                                    }
+                                  />
+                                </PaginationItem>
+                                {Array.from(
+                                  { length: getTotalPages() },
+                                  (_, i) => i + 1
+                                ).map((page) => (
+                                  <PaginationItem key={page}>
+                                    <PaginationLink
+                                      onClick={() => setCurrentPage(page)}
+                                      isActive={currentPage === page}
+                                      className="cursor-pointer"
+                                    >
+                                      {page}
+                                    </PaginationLink>
+                                  </PaginationItem>
+                                ))}
+                                <PaginationItem>
+                                  <PaginationNext
+                                    onClick={() =>
+                                      setCurrentPage(
+                                        Math.min(getTotalPages(), currentPage + 1)
+                                      )
+                                    }
+                                    className={
+                                      currentPage === getTotalPages()
+                                        ? "pointer-events-none opacity-50"
+                                        : "cursor-pointer"
+                                    }
+                                  />
+                                </PaginationItem>
+                              </PaginationContent>
+                            </Pagination>
+                          </div>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
                 </div>
-  
-                {/* Records Filters */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">
-                      Historial de Marcajes
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {/* Filter Controls */}
-                      <div className="flex flex-wrap gap-4 items-center">
-                        <Select
-                          value={recordsFilter}
-                          onValueChange={setRecordsFilter}
-                        >
-                          <SelectTrigger className="w-48">
-                            <SelectValue placeholder="Filtrar por estado" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">
-                              Todos ({getFilterCount("all")})
-                            </SelectItem>
-                            <SelectItem value="on_time">
-                              A Tiempo ({getFilterCount("on_time")})
-                            </SelectItem>
-                            <SelectItem value="late">
-                              Llegadas Tardías ({getFilterCount("late")})
-                            </SelectItem>
-                            <SelectItem value="early_departure">
-                              Salidas Tempranas (
-                              {getFilterCount("early_departure")})
-                            </SelectItem>
-                            <SelectItem value="absent">
-                              Inasistencias ({getFilterCount("absent")})
-                            </SelectItem>
-                            <SelectItem value="incomplete">
-                              Marcajes Incompletos ({getFilterCount("incomplete")}
-                              )
-                            </SelectItem>
-                            <SelectItem value="early_arrival">
-                              Llegadas Tempranas (
-                              {getFilterCount("early_arrival")})
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-  
-                        <div className="flex gap-2 items-center">
-                          <CalendarDays className="h-4 w-4 text-gray-500" />
-                          <Input
-                            type="date"
-                            value={dateFrom}
-                            onChange={(e) => setDateFrom(e.target.value)}
-                            className="w-40"
-                            placeholder="Desde"
-                          />
-                          <span className="text-gray-500">hasta</span>
-                          <Input
-                            type="date"
-                            value={dateTo}
-                            onChange={(e) => setDateTo(e.target.value)}
-                            className="w-40"
-                            placeholder="Hasta"
-                          />
-                        </div>
-  
-                        <Select
-                          value={recordsPerPage.toString()}
-                          onValueChange={(value) =>
-                            setRecordsPerPage(Number.parseInt(value))
-                          }
-                        >
-                          <SelectTrigger className="w-32">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="5">5 por página</SelectItem>
-                            <SelectItem value="10">10 por página</SelectItem>
-                            <SelectItem value="15">15 por página</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setRecordsFilter("all");
-                            setDateFrom("");
-                            setDateTo("");
-                            setCurrentPage(1);
-                          }}
-                          className="flex items-center gap-2"
-                        >
-                          <XCircle className="h-4 w-4" />
-                          Limpiar Filtros
-                        </Button>
-                      </div>
-  
-                      {/* Records Table */}
-                      <div className="border rounded-lg">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Fecha</TableHead>
-                              <TableHead>Entrada</TableHead>
-                              <TableHead>Salida</TableHead>
-                              <TableHead>Estado</TableHead>
-                              <TableHead>Notas</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {getPaginatedRecords().map((record) => (
-                              <TableRow key={record.id}>
-                                <TableCell className="font-medium">
-                                  {record.date}
-                                </TableCell>
-                                <TableCell>{record.entryTime || "-"}</TableCell>
-                                <TableCell>{record.exitTime || "-"}</TableCell>
-                                <TableCell>
-                                  <div className="flex items-center gap-2">
-                                    {getRecordStatusIcon(record.status)}
-                                    <span
-                                      className={getRecordStatusColor(
-                                        record.status
-                                      )}
-                                    >
-                                      {getRecordStatusText(record.status)}
-                                    </span>
-                                  </div>
-                                </TableCell>
-                                <TableCell className="text-sm text-gray-500">
-                                  {record.notes || "-"}
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                            {getPaginatedRecords().length === 0 && (
-                              <TableRow>
-                                <TableCell
-                                  colSpan={5}
-                                  className="text-center py-8 text-gray-500"
-                                >
-                                  No se encontraron registros con los filtros
-                                  aplicados
-                                </TableCell>
-                              </TableRow>
-                            )}
-                          </TableBody>
-                        </Table>
-                      </div>
-  
-                      {/* Pagination */}
-                      {getTotalPages() > 1 && (
-                        <div className="flex justify-between items-center">
-                          <div className="text-sm text-gray-500">
-                            Mostrando {(currentPage - 1) * recordsPerPage + 1} a{" "}
-                            {Math.min(
-                              currentPage * recordsPerPage,
-                              getFilteredRecords().length
-                            )}{" "}
-                            de {getFilteredRecords().length} registros
-                          </div>
-                          <Pagination>
-                            <PaginationContent>
-                              <PaginationItem>
-                                <PaginationPrevious
-                                  onClick={() =>
-                                    setCurrentPage(Math.max(1, currentPage - 1))
-                                  }
-                                  className={
-                                    currentPage === 1
-                                      ? "pointer-events-none opacity-50"
-                                      : "cursor-pointer"
-                                  }
-                                />
-                              </PaginationItem>
-                              {Array.from(
-                                { length: getTotalPages() },
-                                (_, i) => i + 1
-                              ).map((page) => (
-                                <PaginationItem key={page}>
-                                  <PaginationLink
-                                    onClick={() => setCurrentPage(page)}
-                                    isActive={currentPage === page}
-                                    className="cursor-pointer"
-                                  >
-                                    {page}
-                                  </PaginationLink>
-                                </PaginationItem>
-                              ))}
-                              <PaginationItem>
-                                <PaginationNext
-                                  onClick={() =>
-                                    setCurrentPage(
-                                      Math.min(getTotalPages(), currentPage + 1)
-                                    )
-                                  }
-                                  className={
-                                    currentPage === getTotalPages()
-                                      ? "pointer-events-none opacity-50"
-                                      : "cursor-pointer"
-                                  }
-                                />
-                              </PaginationItem>
-                            </PaginationContent>
-                          </Pagination>
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
+              )}
+            </DialogContent>
+          </Dialog>
         </div>
       );
     }
@@ -2430,7 +2871,9 @@ useEffect(() => {
             <div className="space-y-6 mb-8 transition-all duration-300 ease-in-out">
               {/* Top Level Metrics */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
+                {
+                  /*
+                    <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-sm font-medium text-blue-800 flex items-center gap-2">
                       <Plane className="h-4 w-4" />
@@ -2459,6 +2902,9 @@ useEffect(() => {
                     </div>
                   </CardContent>
                 </Card>
+                  */
+                }
+                
 
                 <Card className="bg-gradient-to-r from-green-50 to-green-100 border-green-200">
                   <CardHeader className="pb-3">
@@ -2480,8 +2926,8 @@ useEffect(() => {
                     <p className="text-sm text-green-700">Por colaborador</p>
                   </CardContent>
                 </Card>
-
-                <Card className="bg-gradient-to-r from-orange-50 to-orange-100 border-orange-200">
+                {/*
+                 <Card className="bg-gradient-to-r from-orange-50 to-orange-100 border-orange-200">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-sm font-medium text-orange-800 flex items-center gap-2">
                       <AlertCircle className="h-4 w-4" />
@@ -2507,8 +2953,11 @@ useEffect(() => {
                     </div>
                   </CardContent>
                 </Card>
-
-                <Card className="bg-gradient-to-r from-purple-50 to-purple-100 border-purple-200">
+                */}
+               
+                  {
+                    /*
+                    <Card className="bg-gradient-to-r from-purple-50 to-purple-100 border-purple-200">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-sm font-medium text-purple-800 flex items-center gap-2">
                       <CalendarDays className="h-4 w-4" />
@@ -2539,6 +2988,9 @@ useEffect(() => {
                     </div>
                   </CardContent>
                 </Card>
+                    */
+                  }
+                
               </div>
 
               {/* Area Comparison Cards */}
@@ -2551,11 +3003,10 @@ useEffect(() => {
                   {vacationData.map((area) => (
                     <Card
                       key={area.area}
-                      className={`hover:shadow-lg transition-all duration-200 cursor-pointer transform hover:scale-105 ${
-                        selectedArea === area.area
+                      className={`hover:shadow-lg transition-all duration-200 cursor-pointer transform hover:scale-105 ${selectedArea === area.area
                           ? "ring-2 ring-blue-500 bg-blue-50 shadow-md"
                           : "hover:bg-gray-50"
-                      }`}
+                        }`}
                       onClick={() => {
                         setSelectedArea(area.area);
                         setCurrentEmployeePage(1);
@@ -2570,6 +3021,7 @@ useEffect(() => {
                         </div>
                       </CardHeader>
                       <CardContent className="space-y-3">
+                        {/*
                         <div className="space-y-2">
                           <div className="flex justify-between text-sm">
                             <span className="text-gray-600">Uso</span>
@@ -2582,6 +3034,8 @@ useEffect(() => {
                             className="h-2"
                           />
                         </div>
+                        */}
+                        
 
                         <div className="grid grid-cols-2 gap-2 text-xs">
                           <div className="text-center p-2 bg-blue-50 rounded">
@@ -2634,7 +3088,7 @@ useEffect(() => {
                   <CardContent>
                     <div className="space-y-3">
                       {vacationData
-                        .sort((a, b) => b.usagePercentage - a.usagePercentage)
+                        .sort((a, b) => 0)
                         .slice(0, 3)
                         .map((area, index) => (
                           <div
@@ -2656,7 +3110,8 @@ useEffect(() => {
                             </div>
                             <div className="text-right">
                               <p className="font-bold text-green-800">
-                                {area.usagePercentage}%
+                                {//area.usagePercentage
+                                 }%
                               </p>
                               <p className="text-xs text-green-600">
                                 uso total
@@ -2678,7 +3133,7 @@ useEffect(() => {
                   <CardContent>
                     <div className="space-y-3">
                       {vacationData
-                        .sort((a, b) => a.usagePercentage - b.usagePercentage)
+                        .sort((a, b) => 0)
                         .slice(0, 3)
                         .map((area, index) => (
                           <div
@@ -2700,7 +3155,8 @@ useEffect(() => {
                             </div>
                             <div className="text-right">
                               <p className="font-bold text-red-800">
-                                {area.usagePercentage}%
+                                {//area.usagePercentage
+                                }%
                               </p>
                               <p className="text-xs text-red-600">uso total</p>
                             </div>
@@ -2818,7 +3274,9 @@ useEffect(() => {
                           </div>
                           <div className="text-center">
                             <p className="font-semibold text-lg text-green-600">
-                              {employee.plannedPercentage}%
+                              {
+                              //employee.plannedPercentage
+                              }%
                             </p>
                             <p className="text-xs text-gray-500">
                               planificadas
@@ -2826,7 +3284,8 @@ useEffect(() => {
                           </div>
                           <div className="text-center">
                             <p className="font-semibold text-lg text-purple-600">
-                              {employee.productivity}%
+                              {//employee.productivity
+                              }%
                             </p>
                             <p className="text-xs text-gray-500">
                               productividad
@@ -2835,15 +3294,16 @@ useEffect(() => {
                           <div className="w-20">
                             <Progress
                               value={
-                                (employee.daysUsed / employee.daysAvailable) *
+                                (//employee.daysUsed / employee.daysAvailable
+                                1) *
                                 100
                               }
                               className="h-2"
                             />
                             <p className="text-xs text-gray-500 text-center mt-1">
                               {Math.round(
-                                (employee.daysUsed / employee.daysAvailable) *
-                                  100
+                                (employee.daysUsed / 1) *
+                                100
                               )}
                               % uso
                             </p>
@@ -2861,103 +3321,54 @@ useEffect(() => {
                         selectedArea === "Todas" || area.area === selectedArea
                     )
                     .reduce((acc, area) => acc + area.employees.length, 0) /
-                    employeesPerPage
+                  employeesPerPage
                 ) > 1 && (
-                  <div className="flex justify-between items-center pt-4 border-t">
-                    <div className="text-sm text-gray-500">
-                      Mostrando{" "}
-                      {(currentEmployeePage - 1) * employeesPerPage + 1} a{" "}
-                      {Math.min(
-                        currentEmployeePage * employeesPerPage,
-                        vacationData
+                    <div className="flex justify-between items-center pt-4 border-t">
+                      <div className="text-sm text-gray-500">
+                        Mostrando{" "}
+                        {(currentEmployeePage - 1) * employeesPerPage + 1} a{" "}
+                        {Math.min(
+                          currentEmployeePage * employeesPerPage,
+                          vacationData
+                            .filter(
+                              (area) =>
+                                selectedArea === "Todas" ||
+                                area.area === selectedArea
+                            )
+                            .reduce((acc, area) => acc + area.employees.length, 0)
+                        )}{" "}
+                        de{" "}
+                        {vacationData
                           .filter(
                             (area) =>
                               selectedArea === "Todas" ||
                               area.area === selectedArea
                           )
-                          .reduce((acc, area) => acc + area.employees.length, 0)
-                      )}{" "}
-                      de{" "}
-                      {vacationData
-                        .filter(
-                          (area) =>
-                            selectedArea === "Todas" ||
-                            area.area === selectedArea
-                        )
-                        .reduce(
-                          (acc, area) => acc + area.employees.length,
-                          0
-                        )}{" "}
-                      empleados
-                    </div>
-                    <Pagination>
-                      <PaginationContent>
-                        <PaginationItem>
-                          <PaginationPrevious
-                            onClick={() =>
-                              setCurrentEmployeePage(
-                                Math.max(1, currentEmployeePage - 1)
-                              )
-                            }
-                            className={
-                              currentEmployeePage === 1
-                                ? "pointer-events-none opacity-50"
-                                : "cursor-pointer"
-                            }
-                          />
-                        </PaginationItem>
-                        {Array.from(
-                          {
-                            length: Math.ceil(
-                              vacationData
-                                .filter(
-                                  (area) =>
-                                    selectedArea === "Todas" ||
-                                    area.area === selectedArea
+                          .reduce(
+                            (acc, area) => acc + area.employees.length,
+                            0
+                          )}{" "}
+                        empleados
+                      </div>
+                      <Pagination>
+                        <PaginationContent>
+                          <PaginationItem>
+                            <PaginationPrevious
+                              onClick={() =>
+                                setCurrentEmployeePage(
+                                  Math.max(1, currentEmployeePage - 1)
                                 )
-                                .reduce(
-                                  (acc, area) => acc + area.employees.length,
-                                  0
-                                ) / employeesPerPage
-                            ),
-                          },
-                          (_, i) => i + 1
-                        ).map((page) => (
-                          <PaginationItem key={page}>
-                            <PaginationLink
-                              onClick={() => setCurrentEmployeePage(page)}
-                              isActive={currentEmployeePage === page}
-                              className="cursor-pointer"
-                            >
-                              {page}
-                            </PaginationLink>
+                              }
+                              className={
+                                currentEmployeePage === 1
+                                  ? "pointer-events-none opacity-50"
+                                  : "cursor-pointer"
+                              }
+                            />
                           </PaginationItem>
-                        ))}
-                        <PaginationItem>
-                          <PaginationNext
-                            onClick={() =>
-                              setCurrentEmployeePage(
-                                Math.min(
-                                  Math.ceil(
-                                    vacationData
-                                      .filter(
-                                        (area) =>
-                                          selectedArea === "Todas" ||
-                                          area.area === selectedArea
-                                      )
-                                      .reduce(
-                                        (acc, area) =>
-                                          acc + area.employees.length,
-                                        0
-                                      ) / employeesPerPage
-                                  ),
-                                  currentEmployeePage + 1
-                                )
-                              )
-                            }
-                            className={
-                              currentEmployeePage ===
-                              Math.ceil(
+                          {Array.from(
+                            {
+                              length: Math.ceil(
                                 vacationData
                                   .filter(
                                     (area) =>
@@ -2968,458 +3379,521 @@ useEffect(() => {
                                     (acc, area) => acc + area.employees.length,
                                     0
                                   ) / employeesPerPage
-                              )
-                                ? "pointer-events-none opacity-50"
-                                : "cursor-pointer"
-                            }
-                          />
-                        </PaginationItem>
-                      </PaginationContent>
-                    </Pagination>
-                  </div>
-                )}
+                              ),
+                            },
+                            (_, i) => i + 1
+                          ).map((page) => (
+                            <PaginationItem key={page}>
+                              <PaginationLink
+                                onClick={() => setCurrentEmployeePage(page)}
+                                isActive={currentEmployeePage === page}
+                                className="cursor-pointer"
+                              >
+                                {page}
+                              </PaginationLink>
+                            </PaginationItem>
+                          ))}
+                          <PaginationItem>
+                            <PaginationNext
+                              onClick={() =>
+                                setCurrentEmployeePage(
+                                  Math.min(
+                                    Math.ceil(
+                                      vacationData
+                                        .filter(
+                                          (area) =>
+                                            selectedArea === "Todas" ||
+                                            area.area === selectedArea
+                                        )
+                                        .reduce(
+                                          (acc, area) =>
+                                            acc + area.employees.length,
+                                          0
+                                        ) / employeesPerPage
+                                    ),
+                                    currentEmployeePage + 1
+                                  )
+                                )
+                              }
+                              className={
+                                currentEmployeePage ===
+                                  Math.ceil(
+                                    vacationData
+                                      .filter(
+                                        (area) =>
+                                          selectedArea === "Todas" ||
+                                          area.area === selectedArea
+                                      )
+                                      .reduce(
+                                        (acc, area) => acc + area.employees.length,
+                                        0
+                                      ) / employeesPerPage
+                                  )
+                                  ? "pointer-events-none opacity-50"
+                                  : "cursor-pointer"
+                              }
+                            />
+                          </PaginationItem>
+                        </PaginationContent>
+                      </Pagination>
+                    </div>
+                  )}
               </div>
             </CardContent>
           </Card>
         </div>
         {/* Vacation Employee Detail Modal */}
-      <Dialog
-        open={showVacationEmployeeModal}
-        onOpenChange={setShowVacationEmployeeModal}
-      >
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                <Plane className="h-6 w-6 text-blue-600" />
-              </div>
-              Perfil de Vacaciones - {selectedVacationEmployee?.name}
-            </DialogTitle>
-          </DialogHeader>
+        <Dialog
+          open={showVacationEmployeeModal}
+          onOpenChange={setShowVacationEmployeeModal}
+        >
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                  <Plane className="h-6 w-6 text-blue-600" />
+                </div>
+                Perfil de Vacaciones - {selectedVacationEmployee?.name}
+              </DialogTitle>
+            </DialogHeader>
 
-          {selectedVacationEmployee && (
-            <div className="space-y-6">
-              {/* Vacation Summary Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-medium text-blue-800 flex items-center gap-2">
-                      <CalendarDays className="h-4 w-4" />
-                      Días Disponibles
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-blue-900">
-                      {selectedVacationEmployee.daysAvailable}
-                    </div>
-                    <p className="text-sm text-blue-700">Total asignados</p>
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-gradient-to-r from-green-50 to-green-100 border-green-200">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-medium text-green-800 flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4" />
-                      Días Tomados
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-green-900">
-                      {selectedVacationEmployee.daysUsed}
-                    </div>
-                    <p className="text-sm text-green-700">Ya utilizados</p>
-                    <div className="mt-2">
-                      <Progress
-                        value={
-                          (selectedVacationEmployee.daysUsed /
-                            selectedVacationEmployee.daysAvailable) *
-                          100
-                        }
-                        className="h-2"
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-gradient-to-r from-yellow-50 to-yellow-100 border-yellow-200">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-medium text-yellow-800 flex items-center gap-2">
-                      <Clock className="h-4 w-4" />
-                      Pendientes por Aprobar
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-yellow-900">
-                      {selectedVacationEmployee.daysPending}
-                    </div>
-                    <p className="text-sm text-yellow-700">En proceso</p>
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-gradient-to-r from-orange-50 to-orange-100 border-orange-200">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-medium text-orange-800 flex items-center gap-2">
-                      <AlertCircle className="h-4 w-4" />
-                      Días Acumulados
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-orange-900">
-                      {selectedVacationEmployee.daysAccumulated}
-                    </div>
-                    <p className="text-sm text-orange-700">Sin usar</p>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Expiration Warning */}
-              {selectedVacationEmployee.daysExpiring > 0 && (
-                <Card className="bg-gradient-to-r from-red-50 to-red-100 border-red-200">
-                  <CardContent className="pt-6">
-                    <div className="flex items-center gap-3">
-                      <AlertCircle className="h-8 w-8 text-red-600" />
-                      <div>
-                        <h3 className="font-semibold text-red-900">
-                          ⚠️ Días por Vencer
-                        </h3>
-                        <p className="text-red-700">
-                          Tienes{" "}
-                          <strong>
-                            {selectedVacationEmployee.daysExpiring} días
-                          </strong>{" "}
-                          que vencerán el{" "}
-                          <strong>
-                            {selectedVacationEmployee.expirationDate}
-                          </strong>
-                        </p>
-                        <p className="text-sm text-red-600 mt-1">
-                          Te recomendamos planificar tus vacaciones para no
-                          perder estos días.
-                        </p>
+            {selectedVacationEmployee && (
+              <div className="space-y-6">
+                {/* Vacation Summary Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-medium text-blue-800 flex items-center gap-2">
+                        <CalendarDays className="h-4 w-4" />
+                        Días Disponibles
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-blue-900">
+                        {selectedVacationEmployee.daysAccumulated}
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+                      <p className="text-sm text-blue-700">Total asignados</p>
+                    </CardContent>
+                  </Card>
 
-              {/* Comparison with Area Average */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <BarChart3 className="h-5 w-5" />
-                    Comparativa Personal vs. Promedio del Área
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="text-center p-4 bg-blue-50 rounded-lg">
-                      <div className="text-2xl font-bold text-blue-800">
+                  <Card className="bg-gradient-to-r from-green-50 to-green-100 border-green-200">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-medium text-green-800 flex items-center gap-2">
+                        <CheckCircle className="h-4 w-4" />
+                        Días Tomados
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-green-900">
                         {selectedVacationEmployee.daysUsed}
                       </div>
-                      <div className="text-sm text-blue-600">
-                        Tus días tomados
+                      <p className="text-sm text-green-700">Ya utilizados</p>
+                      <div className="mt-2">
+                        <Progress
+                          value={
+                            (selectedVacationEmployee.daysUsed /1
+                              //selectedVacationEmployee.daysAvailable
+                              ) *
+                            100
+                          }
+                          className="h-2"
+                        />
                       </div>
-                    </div>
-                    <div className="text-center p-4 bg-gray-50 rounded-lg">
-                      <div className="text-2xl font-bold text-gray-800">
-                        {selectedVacationEmployee.areaAverage}
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        Promedio en {selectedVacationEmployee.area}
-                      </div>
-                    </div>
-                    <div className="text-center p-4 bg-purple-50 rounded-lg">
-                      <div className="text-2xl font-bold text-purple-800">
-                        {selectedVacationEmployee.daysUsed >
-                        selectedVacationEmployee.areaAverage
-                          ? "+"
-                          : ""}
-                        {(
-                          selectedVacationEmployee.daysUsed -
-                          selectedVacationEmployee.areaAverage
-                        ).toFixed(1)}
-                      </div>
-                      <div className="text-sm text-purple-600">Diferencia</div>
-                    </div>
-                  </div>
-                  <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-                    <p className="text-sm text-blue-800">
-                      {selectedVacationEmployee.daysUsed >
-                      selectedVacationEmployee.areaAverage
-                        ? "🎉 Estás tomando más vacaciones que el promedio de tu área. ¡Excelente balance vida-trabajo!"
-                        : selectedVacationEmployee.daysUsed <
-                          selectedVacationEmployee.areaAverage
-                        ? "💡 Estás por debajo del promedio de tu área. Considera planificar más tiempo de descanso."
-                        : "✅ Estás en línea con el promedio de tu área."}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+                    </CardContent>
+                  </Card>
 
-              {/* Monthly Usage Chart */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <BarChart3 className="h-5 w-5" />
-                    Evolución del Uso de Vacaciones (2024)
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {selectedVacationEmployee.monthlyUsage.map((month) => (
-                      <div
-                        key={month.month}
-                        className="flex items-center gap-4"
-                      >
-                        <div className="w-12 text-sm font-medium text-gray-600">
-                          {month.month}
+                  <Card className="bg-gradient-to-r from-yellow-50 to-yellow-100 border-yellow-200">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-medium text-yellow-800 flex items-center gap-2">
+                        <Clock className="h-4 w-4" />
+                        Pendientes por Aprobar
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-yellow-900">
+                        {1 //selectedVacationEmployee.daysPending
+                        }
+                      </div>
+                      <p className="text-sm text-yellow-700">En proceso</p>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-gradient-to-r from-orange-50 to-orange-100 border-orange-200">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-medium text-orange-800 flex items-center gap-2">
+                        <AlertCircle className="h-4 w-4" />
+                        Días Acumulados
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-orange-900">
+                        {selectedVacationEmployee.daysAccumulated}
+                      </div>
+                      <p className="text-sm text-orange-700">Sin usar</p>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Expiration Warning */}
+                {/*
+                  selectedVacationEmployee.daysExpiring > 0 && (
+                  <Card className="bg-gradient-to-r from-red-50 to-red-100 border-red-200">
+                    <CardContent className="pt-6">
+                      <div className="flex items-center gap-3">
+                        <AlertCircle className="h-8 w-8 text-red-600" />
+                        <div>
+                          <h3 className="font-semibold text-red-900">
+                            ⚠️ Días por Vencer
+                          </h3>
+                          <p className="text-red-700">
+                            Tienes{" "}
+                            <strong>
+                              {selectedVacationEmployee.daysExpiring} días
+                            </strong>{" "}
+                            que vencerán el{" "}
+                            <strong>
+                              {selectedVacationEmployee.expirationDate}
+                            </strong>
+                          </p>
+                          <p className="text-sm text-red-600 mt-1">
+                            Te recomendamos planificar tus vacaciones para no
+                            perder estos días.
+                          </p>
                         </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <div className="flex-1 bg-gray-200 rounded-full h-6 relative">
-                              <div
-                                className="bg-blue-500 h-6 rounded-full flex items-center justify-center text-white text-xs font-medium"
-                                style={{
-                                  width: `${Math.max(
-                                    (month.days / 5) * 100,
-                                    month.days > 0 ? 20 : 0
-                                  )}%`,
-                                }}
-                              >
-                                {month.days > 0 && month.days}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+                */
+                }
+
+                {/* Comparison with Area Average */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <BarChart3 className="h-5 w-5" />
+                      Comparativa Personal vs. Promedio del Área
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="text-center p-4 bg-blue-50 rounded-lg">
+                        <div className="text-2xl font-bold text-blue-800">
+                          {selectedVacationEmployee.daysUsed}
+                        </div>
+                        <div className="text-sm text-blue-600">
+                          Tus días tomados
+                        </div>
+                      </div>
+                      <div className="text-center p-4 bg-gray-50 rounded-lg">
+                        <div className="text-2xl font-bold text-gray-800">
+                          {selectedVacationEmployee.areaAverage}
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          Promedio en {selectedVacationEmployee.area}
+                        </div>
+                      </div>
+                      <div className="text-center p-4 bg-purple-50 rounded-lg">
+                        <div className="text-2xl font-bold text-purple-800">
+                          {selectedVacationEmployee.daysUsed >
+                            selectedVacationEmployee.areaAverage
+                            ? "+"
+                            : ""}
+                          {(
+                            selectedVacationEmployee.daysUsed -
+                            selectedVacationEmployee.areaAverage
+                          ).toFixed(1)}
+                        </div>
+                        <div className="text-sm text-purple-600">Diferencia</div>
+                      </div>
+                    </div>
+                    <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                      <p className="text-sm text-blue-800">
+                        {selectedVacationEmployee.daysUsed >
+                          selectedVacationEmployee.areaAverage
+                          ? "🎉 Estás tomando más vacaciones que el promedio de tu área. ¡Excelente balance vida-trabajo!"
+                          : selectedVacationEmployee.daysUsed <
+                            selectedVacationEmployee.areaAverage
+                            ? "💡 Estás por debajo del promedio de tu área. Considera planificar más tiempo de descanso."
+                            : "✅ Estás en línea con el promedio de tu área."}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Monthly Usage Chart */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <BarChart3 className="h-5 w-5" />
+                      Evolución del Uso de Vacaciones (2024)
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {
+                      /* 
+                        selectedVacationEmployee.monthlyUsage.map((month) => (
+                        <div
+                          key={month.month}
+                          className="flex items-center gap-4"
+                        >
+                          <div className="w-12 text-sm font-medium text-gray-600">
+                            {month.month}
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <div className="flex-1 bg-gray-200 rounded-full h-6 relative">
+                                <div
+                                  className="bg-blue-500 h-6 rounded-full flex items-center justify-center text-white text-xs font-medium"
+                                  style={{
+                                    width: `${Math.max(
+                                      (month.days / 5) * 100,
+                                      month.days > 0 ? 20 : 0
+                                    )}%`,
+                                  }}
+                                >
+                                  {month.days > 0 && month.days}
+                                </div>
                               </div>
-                            </div>
-                            <div className="w-16 text-sm text-gray-600">
-                              {month.days} día{month.days !== 1 ? "s" : ""}
+                              <div className="w-16 text-sm text-gray-600">
+                                {month.days} día{month.days !== 1 ? "s" : ""}
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                    <p className="text-sm text-gray-600">
-                      <strong>Meses con más vacaciones:</strong>{" "}
-                      {selectedVacationEmployee.monthlyUsage
-                        .filter((m) => m.days > 0)
-                        .sort((a, b) => b.days - a.days)
-                        .slice(0, 3)
-                        .map((m) => `${m.month} (${m.days})`)
-                        .join(", ")}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Vacation History */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <FileText className="h-5 w-5" />
-                    Historial de Solicitudes de Vacaciones
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {/* Filter Controls */}
-                    <div className="flex flex-wrap gap-4 items-center">
-                      <Select
-                        value={vacationRecordsFilter}
-                        onValueChange={setVacationRecordsFilter}
-                      >
-                        <SelectTrigger className="w-48">
-                          <SelectValue placeholder="Filtrar por estado" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">
-                            Todas ({getVacationFilterCount("all")})
-                          </SelectItem>
-                          <SelectItem value="approved">
-                            Aprobadas ({getVacationFilterCount("approved")})
-                          </SelectItem>
-                          <SelectItem value="pending">
-                            Pendientes ({getVacationFilterCount("pending")})
-                          </SelectItem>
-                          <SelectItem value="rejected">
-                            Rechazadas ({getVacationFilterCount("rejected")})
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-
-                      <Select
-                        value={vacationRecordsPerPage.toString()}
-                        onValueChange={(value) =>
-                          setVacationRecordsPerPage(Number.parseInt(value))
-                        }
-                      >
-                        <SelectTrigger className="w-32">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="5">5 por página</SelectItem>
-                          <SelectItem value="10">10 por página</SelectItem>
-                          <SelectItem value="15">15 por página</SelectItem>
-                        </SelectContent>
-                      </Select>
-
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setVacationRecordsFilter("all");
-                          setCurrentVacationPage(1);
-                        }}
-                        className="flex items-center gap-2"
-                      >
-                        <XCircle className="h-4 w-4" />
-                        Limpiar Filtros
-                      </Button>
+                      ))
+                      */
+                      }
                     </div>
+                    <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                      <p className="text-sm text-gray-600">
+                        <strong>Meses con más vacaciones:</strong>{" "}
+                        {
+                          /*
+                          selectedVacationEmployee.monthlyUsage
+                          .filter((m) => m.days > 0)
+                          .sort((a, b) => b.days - a.days)
+                          .slice(0, 3)
+                          .map((m) => `${m.month} (${m.days})`)
+                          .join(", ")
+                          */
+                        
+                          }
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
 
-                    {/* Records Table */}
-                    <div className="border rounded-lg">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Fecha Solicitud</TableHead>
-                            <TableHead>Período</TableHead>
-                            <TableHead>Días</TableHead>
-                            <TableHead>Estado</TableHead>
-                            <TableHead>Motivo</TableHead>
-                            <TableHead>Aprobado Por</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {getPaginatedVacationRecords().map((request) => (
-                            <TableRow key={request.id}>
-                              <TableCell className="font-medium">
-                                {request.requestDate}
-                              </TableCell>
-                              <TableCell>
-                                {request.startDate === request.endDate
-                                  ? request.startDate
-                                  : `${request.startDate} - ${request.endDate}`}
-                              </TableCell>
-                              <TableCell className="text-center">
-                                {request.daysRequested}
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-2">
-                                  {getVacationStatusIcon(request.status)}
-                                  <span
-                                    className={getVacationStatusColor(
-                                      request.status
-                                    )}
-                                  >
-                                    {getVacationStatusText(request.status)}
-                                  </span>
-                                </div>
-                              </TableCell>
-                              <TableCell className="text-sm">
-                                {request.reason}
-                              </TableCell>
-                              <TableCell className="text-sm">
-                                {request.approvedBy || "-"}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                          {getPaginatedVacationRecords().length === 0 && (
+                {/* Vacation History */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <FileText className="h-5 w-5" />
+                      Historial de Solicitudes de Vacaciones
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {/* Filter Controls */}
+                      <div className="flex flex-wrap gap-4 items-center">
+                        <Select
+                          value={vacationRecordsFilter}
+                          onValueChange={setVacationRecordsFilter}
+                        >
+                          <SelectTrigger className="w-48">
+                            <SelectValue placeholder="Filtrar por estado" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">
+                              Todas ({getVacationFilterCount("all")})
+                            </SelectItem>
+                            <SelectItem value="approved">
+                              Aprobadas ({getVacationFilterCount("approved")})
+                            </SelectItem>
+                            <SelectItem value="pending">
+                              Pendientes ({getVacationFilterCount("pending")})
+                            </SelectItem>
+                            <SelectItem value="rejected">
+                              Rechazadas ({getVacationFilterCount("rejected")})
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+
+                        <Select
+                          value={vacationRecordsPerPage.toString()}
+                          onValueChange={(value) =>
+                            setVacationRecordsPerPage(Number.parseInt(value))
+                          }
+                        >
+                          <SelectTrigger className="w-32">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="5">5 por página</SelectItem>
+                            <SelectItem value="10">10 por página</SelectItem>
+                            <SelectItem value="15">15 por página</SelectItem>
+                          </SelectContent>
+                        </Select>
+
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setVacationRecordsFilter("all");
+                            setCurrentVacationPage(1);
+                          }}
+                          className="flex items-center gap-2"
+                        >
+                          <XCircle className="h-4 w-4" />
+                          Limpiar Filtros
+                        </Button>
+                      </div>
+
+                      {/* Records Table */}
+                      <div className="border rounded-lg">
+                        <Table>
+                          <TableHeader>
                             <TableRow>
-                              <TableCell
-                                colSpan={6}
-                                className="text-center py-8 text-gray-500"
-                              >
-                                No se encontraron solicitudes con los filtros
-                                aplicados
-                              </TableCell>
+                              <TableHead>Fecha Solicitud</TableHead>
+                              <TableHead>Período</TableHead>
+                              <TableHead>Días</TableHead>
+                              <TableHead>Estado</TableHead>
+                              <TableHead>Motivo</TableHead>
+                              <TableHead>Aprobado Por</TableHead>
                             </TableRow>
-                          )}
-                        </TableBody>
-                      </Table>
-                    </div>
-
-                    {/* Pagination */}
-                    {getTotalVacationPages() > 1 && (
-                      <div className="flex justify-between items-center">
-                        <div className="text-sm text-gray-500">
-                          Mostrando{" "}
-                          {(currentVacationPage - 1) * vacationRecordsPerPage +
-                            1}{" "}
-                          a{" "}
-                          {Math.min(
-                            currentVacationPage * vacationRecordsPerPage,
-                            getFilteredVacationRecords().length
-                          )}{" "}
-                          de {getFilteredVacationRecords().length} solicitudes
-                        </div>
-                        <Pagination>
-                          <PaginationContent>
-                            <PaginationItem>
-                              <PaginationPrevious
-                                onClick={() =>
-                                  setCurrentVacationPage(
-                                    Math.max(1, currentVacationPage - 1)
-                                  )
-                                }
-                                className={
-                                  currentVacationPage === 1
-                                    ? "pointer-events-none opacity-50"
-                                    : "cursor-pointer"
-                                }
-                              />
-                            </PaginationItem>
-                            {Array.from(
-                              { length: getTotalVacationPages() },
-                              (_, i) => i + 1
-                            ).map((page) => (
-                              <PaginationItem key={page}>
-                                <PaginationLink
-                                  onClick={() => setCurrentVacationPage(page)}
-                                  isActive={currentVacationPage === page}
-                                  className="cursor-pointer"
-                                >
-                                  {page}
-                                </PaginationLink>
-                              </PaginationItem>
+                          </TableHeader>
+                          <TableBody>
+                            {getPaginatedVacationRecords().map((request) => (
+                              <TableRow key={request.id}>
+                                <TableCell className="font-medium">
+                                  {request.requestDate}
+                                </TableCell>
+                                <TableCell>
+                                  {request.startDate === request.endDate
+                                    ? request.startDate
+                                    : `${request.startDate} - ${request.endDate}`}
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  {request.daysRequested}
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-2">
+                                    {getVacationStatusIcon(request.status)}
+                                    <span
+                                      className={getVacationStatusColor(
+                                        request.status
+                                      )}
+                                    >
+                                      {getVacationStatusText(request.status)}
+                                    </span>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-sm">
+                                  {request.reason}
+                                </TableCell>
+                                <TableCell className="text-sm">
+                                  {request.approvedBy || "-"}
+                                </TableCell>
+                              </TableRow>
                             ))}
-                            <PaginationItem>
-                              <PaginationNext
-                                onClick={() =>
-                                  setCurrentVacationPage(
-                                    Math.min(
-                                      getTotalVacationPages(),
-                                      currentVacationPage + 1
-                                    )
-                                  )
-                                }
-                                className={
-                                  currentVacationPage ===
-                                  getTotalVacationPages()
-                                    ? "pointer-events-none opacity-50"
-                                    : "cursor-pointer"
-                                }
-                              />
-                            </PaginationItem>
-                          </PaginationContent>
-                        </Pagination>
+                            {getPaginatedVacationRecords().length === 0 && (
+                              <TableRow>
+                                <TableCell
+                                  colSpan={6}
+                                  className="text-center py-8 text-gray-500"
+                                >
+                                  No se encontraron solicitudes con los filtros
+                                  aplicados
+                                </TableCell>
+                              </TableRow>
+                            )}
+                          </TableBody>
+                        </Table>
                       </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+
+                      {/* Pagination */}
+                      {getTotalVacationPages() > 1 && (
+                        <div className="flex justify-between items-center">
+                          <div className="text-sm text-gray-500">
+                            Mostrando{" "}
+                            {(currentVacationPage - 1) * vacationRecordsPerPage +
+                              1}{" "}
+                            a{" "}
+                            {Math.min(
+                              currentVacationPage * vacationRecordsPerPage,
+                              getFilteredVacationRecords().length
+                            )}{" "}
+                            de {getFilteredVacationRecords().length} solicitudes
+                          </div>
+                          <Pagination>
+                            <PaginationContent>
+                              <PaginationItem>
+                                <PaginationPrevious
+                                  onClick={() =>
+                                    setCurrentVacationPage(
+                                      Math.max(1, currentVacationPage - 1)
+                                    )
+                                  }
+                                  className={
+                                    currentVacationPage === 1
+                                      ? "pointer-events-none opacity-50"
+                                      : "cursor-pointer"
+                                  }
+                                />
+                              </PaginationItem>
+                              {Array.from(
+                                { length: getTotalVacationPages() },
+                                (_, i) => i + 1
+                              ).map((page) => (
+                                <PaginationItem key={page}>
+                                  <PaginationLink
+                                    onClick={() => setCurrentVacationPage(page)}
+                                    isActive={currentVacationPage === page}
+                                    className="cursor-pointer"
+                                  >
+                                    {page}
+                                  </PaginationLink>
+                                </PaginationItem>
+                              ))}
+                              <PaginationItem>
+                                <PaginationNext
+                                  onClick={() =>
+                                    setCurrentVacationPage(
+                                      Math.min(
+                                        getTotalVacationPages(),
+                                        currentVacationPage + 1
+                                      )
+                                    )
+                                  }
+                                  className={
+                                    currentVacationPage ===
+                                      getTotalVacationPages()
+                                      ? "pointer-events-none opacity-50"
+                                      : "cursor-pointer"
+                                  }
+                                />
+                              </PaginationItem>
+                            </PaginationContent>
+                          </Pagination>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }
 
- 
+
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      <PermissionsDashboard setShowPermissionDetail={setShowPermissionDetail} showPermissionDetail={showPermissionDetail}></PermissionsDashboard>  
+      <PermissionsDashboard setShowPermissionDetail={setShowPermissionDetail} showPermissionDetail={showPermissionDetail}></PermissionsDashboard>
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
@@ -3477,7 +3951,7 @@ useEffect(() => {
           </div>
         </div>
 
-       
+
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
@@ -3493,9 +3967,9 @@ useEffect(() => {
               <UserCheck className="h-4 w-4 text-blue-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">1,247</div>
+              <div className="text-2xl font-bold">{mainStatistics.assistance.assistances.toLocaleString('en-US')}</div>
               <div className="flex items-center text-sm">
-                <span className="text-gray-600 mr-2">94.2%</span>
+                <span className="text-gray-600 mr-2">{mainStatistics.assistance.percentage}%</span>
                 <Badge
                   variant="default"
                   className="text-xs bg-green-100 text-green-800"
@@ -3533,12 +4007,12 @@ useEffect(() => {
             </CardContent>
           </Card>
 
-          
+
 
           {/* Solicitudes de Permisos Card */}
-          <Card 
-           onClick={() => setShowAttendanceDetail(true)}
-          className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105 border-2 hover:border-blue-300">
+          <Card
+            onClick={() => setShowAttendanceDetail(true)}
+            className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105 border-2 hover:border-blue-300">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-gray-600">
                 Solicitudes de Permisos
@@ -3891,7 +4365,7 @@ useEffect(() => {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold text-blue-900">
-                      {selectedVacationEmployee.daysAvailable}
+                      {selectedVacationEmployee.daysAccumulated}
                     </div>
                     <p className="text-sm text-blue-700">Total asignados</p>
                   </CardContent>
@@ -3913,7 +4387,7 @@ useEffect(() => {
                       <Progress
                         value={
                           (selectedVacationEmployee.daysUsed /
-                            selectedVacationEmployee.daysAvailable) *
+                            selectedVacationEmployee.daysAccumulated) *
                           100
                         }
                         className="h-2"
@@ -3931,7 +4405,10 @@ useEffect(() => {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold text-yellow-900">
-                      {selectedVacationEmployee.daysPending}
+                      {
+                        1
+                      //selectedVacationEmployee.daysPending
+                      }
                     </div>
                     <p className="text-sm text-yellow-700">En proceso</p>
                   </CardContent>
@@ -3954,7 +4431,9 @@ useEffect(() => {
               </div>
 
               {/* Expiration Warning */}
-              {selectedVacationEmployee.daysExpiring > 0 && (
+              {
+              /*
+               selectedVacationEmployee.daysExpiring > 0 && (
                 <Card className="bg-gradient-to-r from-red-50 to-red-100 border-red-200">
                   <CardContent className="pt-6">
                     <div className="flex items-center gap-3">
@@ -3981,7 +4460,9 @@ useEffect(() => {
                     </div>
                   </CardContent>
                 </Card>
-              )}
+              )
+              */
+             }
 
               {/* Comparison with Area Average */}
               <Card>
@@ -4012,7 +4493,7 @@ useEffect(() => {
                     <div className="text-center p-4 bg-purple-50 rounded-lg">
                       <div className="text-2xl font-bold text-purple-800">
                         {selectedVacationEmployee.daysUsed >
-                        selectedVacationEmployee.areaAverage
+                          selectedVacationEmployee.areaAverage
                           ? "+"
                           : ""}
                         {(
@@ -4026,12 +4507,12 @@ useEffect(() => {
                   <div className="mt-4 p-3 bg-blue-50 rounded-lg">
                     <p className="text-sm text-blue-800">
                       {selectedVacationEmployee.daysUsed >
-                      selectedVacationEmployee.areaAverage
+                        selectedVacationEmployee.areaAverage
                         ? "🎉 Estás tomando más vacaciones que el promedio de tu área. ¡Excelente balance vida-trabajo!"
                         : selectedVacationEmployee.daysUsed <
                           selectedVacationEmployee.areaAverage
-                        ? "💡 Estás por debajo del promedio de tu área. Considera planificar más tiempo de descanso."
-                        : "✅ Estás en línea con el promedio de tu área."}
+                          ? "💡 Estás por debajo del promedio de tu área. Considera planificar más tiempo de descanso."
+                          : "✅ Estás en línea con el promedio de tu área."}
                     </p>
                   </div>
                 </CardContent>
@@ -4047,7 +4528,9 @@ useEffect(() => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {selectedVacationEmployee.monthlyUsage.map((month) => (
+                    {
+                    /*
+                    selectedVacationEmployee.monthlyUsage.map((month) => (
                       <div
                         key={month.month}
                         className="flex items-center gap-4"
@@ -4076,17 +4559,24 @@ useEffect(() => {
                           </div>
                         </div>
                       </div>
-                    ))}
+                    ))*/
+                    
+                    }
                   </div>
                   <div className="mt-4 p-3 bg-gray-50 rounded-lg">
                     <p className="text-sm text-gray-600">
                       <strong>Meses con más vacaciones:</strong>{" "}
-                      {selectedVacationEmployee.monthlyUsage
+                      {
+                      /*
+                       selectedVacationEmployee.monthlyUsage
                         .filter((m) => m.days > 0)
                         .sort((a, b) => b.days - a.days)
                         .slice(0, 3)
                         .map((m) => `${m.month} (${m.days})`)
-                        .join(", ")}
+                        .join(", ")
+                      */
+                     
+                        }
                     </p>
                   </div>
                 </CardContent>
@@ -4275,7 +4765,7 @@ useEffect(() => {
                                 }
                                 className={
                                   currentVacationPage ===
-                                  getTotalVacationPages()
+                                    getTotalVacationPages()
                                     ? "pointer-events-none opacity-50"
                                     : "cursor-pointer"
                                 }
