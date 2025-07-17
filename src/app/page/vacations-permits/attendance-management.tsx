@@ -122,11 +122,16 @@ export default function AttendanceManagement() {
           <TabsList className="grid w-full grid-cols-2 bg-white">
             <TabsTrigger value="permisos" className="data-[state=active]:bg-blue-500 data-[state=active]:text-white">
               <span>Permisos</span>
+              {/*
               <NotificationPill count={permitNotifications} />
+              
+              */}
             </TabsTrigger>
             <TabsTrigger value="vacaciones" className="data-[state=active]:bg-blue-400 data-[state=active]:text-white">
               <span>Vacaciones</span>
-              <NotificationPill count={vacationNotifications} />
+              {/*
+                <NotificationPill count={vacationNotifications} />
+              */}
             </TabsTrigger>
           </TabsList>
 

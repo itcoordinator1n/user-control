@@ -64,7 +64,8 @@ import {
 import React from "react";
 import PermissionsDashboard from "./permissions-dashboard";
 import { useSession } from "next-auth/react";
-
+import ExcelJS from "exceljs";
+import { string } from "zod";
 
 interface vacationDataInterface {
     area: string,
@@ -1571,6 +1572,122 @@ export default function AttendanceDashboard() {
   const [showAreaCards, setShowAreaCards] = useState(true);
   const [monthlyData, setmonthlyData] = useState<any>();
   const { data: session } = useSession();
+
+
+  const handleVacationExcel = async () =>  {
+    // 1) Nuevo Workbook
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = "Mi App";
+    const filteredData = vacationData
+                            .filter(
+                              (area) =>
+                                selectedArea === "Todas" ||
+                                area.area === selectedArea
+                            )
+
+    // 2) Hoja Resumen General
+    const summarySheet = workbook.addWorksheet("Resumen General");
+
+    // Columnas para la Table
+    summarySheet.columns = [
+      { header: "Área", key: "area", width: 20 },
+      { header: "Empleados Totales", key: "totalEmployees", width: 18 },
+      { header: "Días Usados", key: "daysUsed", width: 14 },
+      { header: "Días Promedio / Emp.", key: "avgPerEmp", width: 18 },
+      { header: "Días Acumulados", key: "accumulatedDays", width: 16 },
+      { header: "Tendencia (%)", key: "trend", width: 14 },
+      { header: "Tasa de Utilización", key: "utilRate", width: 16 },
+    ];
+
+    // Agregar filas
+    filteredData.forEach(d => {
+      summarySheet.addRow({
+        area: d.area,
+        totalEmployees: d.totalEmployees,
+        daysUsed: d.daysUsed,
+        avgPerEmp: d.averageDaysPerEmployee,
+        accumulatedDays: d.accumulatedDays,
+        trend: d.trend,
+        utilRate: { formula: `${d.daysUsed}/(${d.totalEmployees}*${d.accumulatedDays})` },
+      });
+    });
+
+    // Crear la Table nativa
+    summarySheet.addTable({
+      name: "ResumenTable",
+      ref: "A1",
+      headerRow: true,
+      totalsRow: true,
+      style: {
+        theme: "TableStyleMedium2",
+        showRowStripes: true,
+      },
+      columns: [
+        { name: "Área", filterButton: true },
+        { name: "Empleados Totales", totalsRowFunction: "sum" },
+        { name: "Días Usados", totalsRowFunction: "sum" },
+        { name: "Días Promedio / Emp.", totalsRowFunction: "average" },
+        { name: "Días Acumulados", totalsRowFunction: "sum" },
+        { name: "Tendencia (%)", totalsRowLabel: "—" },
+        { name: "Tasa de Utilización", totalsRowFunction: "average" },
+      ],
+      rows: summarySheet.getRows(2, filteredData.length)!.map(r =>
+        r.values!.slice(1) as (string | number | ExcelJS.CellValue)[]
+      ),
+    });
+
+    // 3) Hoja Detalle Empleados
+    const detailSheet = workbook.addWorksheet("Detalle Empleados");
+
+    detailSheet.columns = [
+      { header: "Área", key: "area", width: 20 },
+      { header: "Nombre", key: "name", width: 25 },
+      { header: "Días Acumulados", key: "daysAccumulated", width: 16 },
+      { header: "Días Usados", key: "daysUsed", width: 14 },
+    ];
+
+    // Llenar filas
+    filteredData.forEach(d => {
+      d.employees.forEach(emp => {
+        detailSheet.addRow({
+          area: d.area,
+          name: emp.name,
+          daysAccumulated: emp.daysAccumulated,
+          daysUsed: emp.daysUsed,
+        });
+      });
+    });
+
+    // Crear Table nativa para detalle
+    detailSheet.addTable({
+      name: "DetalleTable",
+      ref: "A1",
+      headerRow: true,
+      totalsRow: false,
+      style: {
+        theme: "TableStyleLight9",
+        showRowStripes: true,
+      },
+      columns: [
+        { name: "Área", filterButton: true },
+        { name: "Nombre", filterButton: true },
+        { name: "Días Acumulados", filterButton: true, totalsRowFunction: "sum" },
+        { name: "Días Usados", filterButton: true, totalsRowFunction: "sum" },
+      ],
+      rows: detailSheet.getRows(2, detailSheet.rowCount - 1)!.map(r =>
+        r.values!.slice(1) as (string | number)[]
+      ),
+    });
+
+    // 4) Generar buffer y descargar
+    const buf = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buf], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    saveAs(blob, `vacation_reports_table.xlsx`);
+  }
+
+
   // Reset employee page when filters change
   useEffect(() => {
     setCurrentEmployeePage(1);
@@ -1692,25 +1809,73 @@ export default function AttendanceDashboard() {
   }, []);
 
 
-  const exportToExcel = (fileName = "asistencias.xlsx") => {
-    // Crea la hoja
-    const worksheet = XLSX.utils.json_to_sheet(monthlyData);
+  const exportToExcel = async (fileName = "asistencias.xlsx") => {
+     const workbook = new ExcelJS.Workbook();
+    workbook.creator = "Mi App";
 
-    // Crea el libro
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Asistencias");
+    // 1) Hoja de Resumen
+    const summary = workbook.addWorksheet("Resumen Asistencia");
+    const totalRegs = monthlyData.length;
+    const uniqueEmps = new Set(monthlyData.map(r => r.int_id_empleado)).size;
+    const countByArea: Record<string, number> = {};
+    monthlyData.forEach(r => {
+      countByArea[r.area] = (countByArea[r.area] || 0) + 1;
+    });
+    const areaRows = Object.entries(countByArea).map(([area, cnt]) => [area, cnt]);
+    const sortedByDate = [...monthlyData].sort((a, b) =>
+      new Date(a.fecha).getTime() - new Date(b.fecha).getTime()
+    );
+    const firstReg = sortedByDate[0]?.fecha || "";
+    const lastReg  = sortedByDate[sortedByDate.length - 1]?.fecha || "";
+    const countByEmp: Record<string, number> = {};
+    monthlyData.forEach(r => {
+      countByEmp[r.nombre_empleado] = (countByEmp[r.nombre_empleado] || 0) + 1;
+    });
+    const topEmps = Object.entries(countByEmp)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([name, cnt]) => [name, cnt]);
 
-    // Genera el archivo
-    const excelBuffer = XLSX.write(workbook, {
-      bookType: "xlsx",
-      type: "array",
+    summary.addRows([
+      ["Total de registros", totalRegs],
+      ["Empleados únicos", uniqueEmps],
+      ["Primer registro (fecha)", firstReg],
+      ["Último registro (fecha)", lastReg],
+      [],
+      ["Registros por Área", "Cantidad"],
+      ...areaRows,
+      [],
+      ["Top 5 Empleados", "Registros"],
+      ...topEmps,
+    ]);
+    summary.columns = [{ width:  30 }, { width: 15 }];
+
+    // 2) Hoja de Detalle
+    const detail = workbook.addWorksheet("Detalle Registros");
+    detail.columns = [
+      { header: "Fecha completa",    key: "fecha",            width: 25 },
+      { header: "ID Empleado",        key: "int_id_empleado",  width: 12 },
+      { header: "Nombre Empleado",    key: "nombre_empleado",  width: 25 },
+      { header: "Área",               key: "area",             width: 20 },
+      { header: "Hora Entrada",       key: "entrada",          width: 12 },
+    ];
+    monthlyData.forEach(r => detail.addRow(r));
+    detail.addTable({
+      name: "DetalleAsistencia",
+      ref: "A1",
+      headerRow: true,
+      totalsRow: false,
+      style: { theme: "TableStyleMedium4", showRowStripes: true },
+      columns: detail.columns.map(col => ({ name: col.header!, filterButton: true })),
+      rows: detail.getRows(2, monthlyData.length)!.map(row => row.values!.slice(1) as (string|number)[]),
     });
 
-    // Guarda el archivo
-    const blob = new Blob([excelBuffer], {
+    // 3) Exportar
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {
       type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     });
-    saveAs(blob, fileName);
+    saveAs(blob, `attendance_report.xlsx`);
   };
 
   const getStatusColor = (status: string) => {
@@ -2788,7 +2953,7 @@ export default function AttendanceDashboard() {
                   <ChevronDown className="h-4 w-4" />
                 )}
               </Button>
-              <Button className="flex items-center gap-2">
+              <Button className="flex items-center gap-2" onClick={()=>handleVacationExcel()}>
                 <Download className="h-4 w-4" />
                 Exportar Análisis
               </Button>
@@ -2905,7 +3070,7 @@ export default function AttendanceDashboard() {
                   */
                 }
                 
-
+                {/*
                 <Card className="bg-gradient-to-r from-green-50 to-green-100 border-green-200">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-sm font-medium text-green-800 flex items-center gap-2">
@@ -2926,6 +3091,9 @@ export default function AttendanceDashboard() {
                     <p className="text-sm text-green-700">Por colaborador</p>
                   </CardContent>
                 </Card>
+                
+                */}
+                
                 {/*
                  <Card className="bg-gradient-to-r from-orange-50 to-orange-100 border-orange-200">
                   <CardHeader className="pb-3">
@@ -3078,6 +3246,7 @@ export default function AttendanceDashboard() {
 
               {/* Top Areas Analysis */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/*
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-lg flex items-center gap-2">
@@ -3122,8 +3291,12 @@ export default function AttendanceDashboard() {
                     </div>
                   </CardContent>
                 </Card>
-
-                <Card>
+                
+                */}
+                
+                {
+                  /*
+                  <Card>
                   <CardHeader>
                     <CardTitle className="text-lg flex items-center gap-2">
                       <TrendingDown className="h-5 w-5 text-red-600" />
@@ -3165,6 +3338,9 @@ export default function AttendanceDashboard() {
                     </div>
                   </CardContent>
                 </Card>
+                  */
+                }
+                
               </div>
             </div>
           )}
@@ -3272,7 +3448,9 @@ export default function AttendanceDashboard() {
                             </p>
                             <p className="text-xs text-gray-500">acumulados</p>
                           </div>
-                          <div className="text-center">
+                          {
+                            /*
+                            <div className="text-center">
                             <p className="font-semibold text-lg text-green-600">
                               {
                               //employee.plannedPercentage
@@ -3282,6 +3460,10 @@ export default function AttendanceDashboard() {
                               planificadas
                             </p>
                           </div>
+                            */
+                          }
+                          
+                          {/*
                           <div className="text-center">
                             <p className="font-semibold text-lg text-purple-600">
                               {//employee.productivity
@@ -3291,6 +3473,7 @@ export default function AttendanceDashboard() {
                               productividad
                             </p>
                           </div>
+                          */}
                           <div className="w-20">
                             <Progress
                               value={
@@ -3302,7 +3485,7 @@ export default function AttendanceDashboard() {
                             />
                             <p className="text-xs text-gray-500 text-center mt-1">
                               {Math.round(
-                                (employee.daysUsed / 1) *
+                                (employee.daysUsed / (employee.daysUsed + employee.daysAccumulated)) *
                                 100
                               )}
                               % uso
@@ -3626,7 +3809,7 @@ export default function AttendanceDashboard() {
                   <CardHeader>
                     <CardTitle className="text-lg flex items-center gap-2">
                       <BarChart3 className="h-5 w-5" />
-                      Evolución del Uso de Vacaciones (2024)
+                      Evolución del Uso de Vacaciones (2025)
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -4010,6 +4193,7 @@ export default function AttendanceDashboard() {
 
 
           {/* Solicitudes de Permisos Card */}
+          {/*
           <Card
             onClick={() => setShowAttendanceDetail(true)}
             className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105 border-2 hover:border-blue-300">
@@ -4033,6 +4217,8 @@ export default function AttendanceDashboard() {
               </div>
             </CardContent>
           </Card>
+          
+          */}
         </div>
       </div>
 
@@ -4523,7 +4709,7 @@ export default function AttendanceDashboard() {
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
                     <BarChart3 className="h-5 w-5" />
-                    Evolución del Uso de Vacaciones (2024)
+                    Evolución del Uso de Vacaciones (2025)
                   </CardTitle>
                 </CardHeader>
                 <CardContent>

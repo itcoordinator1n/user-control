@@ -143,7 +143,7 @@ export default function AttendanceTable() {
   useEffect(() => {
     const obtenerHistorial = async () => {
       try {
-        const response = await fetch("https://infarmaserver-production.up.railway.app/api/attendance/attendance-history", {
+        const response = await fetch("https://infarmaserver-production.up.railway.app/api/attendance/attendance-history-myself", {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -257,10 +257,11 @@ const formatTime = (date: string, timeString: string | null) => {
   // };
 
   // Pagination logic
+  console.log("Rico historial",historial)
   const totalPages = Math.ceil(historial.length / itemsPerPage);
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = historial.slice(indexOfFirstItem, indexOfLastItem);
+  const currentItems = historial?.slice(indexOfFirstItem, indexOfLastItem);
 
   // Generate page numbers for pagination
   const pageNumbers = [];
