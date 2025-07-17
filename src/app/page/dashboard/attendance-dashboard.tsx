@@ -3679,6 +3679,8 @@ const exportToExcel = async (fileName = "asistencias.xlsx") => {
                     </CardContent>
                   </Card>
 
+                  
+                  {/*
                   <Card className="bg-gradient-to-r from-green-50 to-green-100 border-green-200">
                     <CardHeader className="pb-3">
                       <CardTitle className="text-sm font-medium text-green-800 flex items-center gap-2">
@@ -3704,7 +3706,8 @@ const exportToExcel = async (fileName = "asistencias.xlsx") => {
                       </div>
                     </CardContent>
                   </Card>
-
+                  */}
+                  {/*
                   <Card className="bg-gradient-to-r from-yellow-50 to-yellow-100 border-yellow-200">
                     <CardHeader className="pb-3">
                       <CardTitle className="text-sm font-medium text-yellow-800 flex items-center gap-2">
@@ -3720,6 +3723,7 @@ const exportToExcel = async (fileName = "asistencias.xlsx") => {
                       <p className="text-sm text-yellow-700">En proceso</p>
                     </CardContent>
                   </Card>
+                  */}
 
                   <Card className="bg-gradient-to-r from-orange-50 to-orange-100 border-orange-200">
                     <CardHeader className="pb-3">
@@ -3771,6 +3775,7 @@ const exportToExcel = async (fileName = "asistencias.xlsx") => {
                 }
 
                 {/* Comparison with Area Average */}
+                {/*
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-lg flex items-center gap-2">
@@ -3823,8 +3828,13 @@ const exportToExcel = async (fileName = "asistencias.xlsx") => {
                     </div>
                   </CardContent>
                 </Card>
+                
+                */}
 
                 {/* Monthly Usage Chart */}
+                {/*
+                
+                */}
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-lg flex items-center gap-2">
@@ -4725,6 +4735,8 @@ const exportToExcel = async (fileName = "asistencias.xlsx") => {
               </Card>
 
               {/* Monthly Usage Chart */}
+              {/*
+              
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
@@ -4734,8 +4746,8 @@ const exportToExcel = async (fileName = "asistencias.xlsx") => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {
-                    /*
+                    
+                    
                     selectedVacationEmployee.monthlyUsage.map((month) => (
                       <div
                         key={month.month}
@@ -4765,7 +4777,7 @@ const exportToExcel = async (fileName = "asistencias.xlsx") => {
                           </div>
                         </div>
                       </div>
-                    ))*/
+                    ))
                     
                     }
                   </div>
@@ -4780,14 +4792,15 @@ const exportToExcel = async (fileName = "asistencias.xlsx") => {
                         .slice(0, 3)
                         .map((m) => `${m.month} (${m.days})`)
                         .join(", ")
-                      */
+                      
                      
                         }
                     </p>
                   </div>
                 </CardContent>
               </Card>
-
+              */}
+              
               {/* Vacation History */}
               <Card>
                 <CardHeader>
