@@ -18,7 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import Layout from "./layout"
 export default function Home() {
   return (
-    <Layout />
+    <></>
     // <div className="flex min-h-screen flex-col">
     //   {/* Header */}
       
