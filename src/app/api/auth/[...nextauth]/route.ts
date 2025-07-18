@@ -60,12 +60,12 @@ const handler = NextAuth({
     },
     async redirect({ baseUrl }) {
       // En lugar de redirigir a /page/admin, se recarga la página actual
-      return `${baseUrl}/page/admin`;
+      return `${baseUrl}/page/profile`;
     }
   },
   pages: {
     signIn: '/page/profile',
-    signOut: '/',
+    signOut: '/page/landing',
     // error: '/auth/error',
   }
 });

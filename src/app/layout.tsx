@@ -15,86 +15,93 @@ import { Calendar, FileText, Home, LogOut, Users } from "lucide-react"
 import { usePathname } from "next/navigation";
 import { UserAvatarMenu } from "@/components/user-avatar-menu";
 import Image from "next/image";
-export default function RootLayout({
+import ClientLayout from "./client-layout";
+export default function RootLayout(
+  {
   children,
 }: Readonly<{
   children: React.ReactNode;
-}>) {
+}>
+) {
   
   const pathname = usePathname();
   return (
     <AuthProvider>
-      <html lang="en">
-        <body
-        >
-          <div className="flex min-h-screen flex-col">
 
-            <header className="sticky flex items-center justify-between px-10   top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-              <div className="flex h-16 items-center justify-between">
-                <Link href={"/"} className="flex items-center gap-2">
-                  <Image
-                    src="/logo2.JPG"
-                    alt="INFARMA"
-                    width={150}
-                    height={40}
-                    className="h-10 w-auto mix-blend-multiply"
-                  />
-                </Link>
-                {
-                  "/" === pathname &&
-                  <div className="flex items-center gap-2 container justify-between w-full">
-                    <nav className="hidden md:flex items-center gap-6">
-                      <Link href="#" className="text-sm font-medium transition-colors hover:text-primary">
-                        Productos
-                      </Link>
-                      <Link href="#" className="text-sm font-medium transition-colors hover:text-primary">
-                        Nosotros
-                      </Link>
-                      <Link href="#" className="text-sm font-medium transition-colors hover:text-primary">
-                        Contacto
-                      </Link>
-                      <Link href="#" className="text-sm font-medium transition-colors hover:text-primary">
-                        FAQ
-                      </Link>
-                      <Link href="#" className="text-sm font-medium transition-colors hover:text-primary">
-                        Nuestros Valores
-                      </Link>
-                    </nav>
-                      <Link href="/login" className="hidden md:flex">
-                        Iniciar sesión
-                      </Link>
-                  </div>
-                }
-              </div>
-              {
-                ("/" !== pathname ? "/login" !== pathname : false) &&
-                <div className="ml-auto flex  h-full justify-center items-center gap-4">
-                  <UserAvatarMenu name="Carlos Rodríguez" role="Supervisor de Recursos Humanos" />
-                </div>
-
-              }
-            </header>
-
-            <div className={"/" === pathname ? "" : "flex flex-1"}>
-              {
-                ("/" !== pathname ? "/login" !== pathname : false) &&
-                <aside className="hidden w-64 border-r bg-muted/40 md:block">
-                  <DesktopSidebar />
-                </aside>
-
-              }
-              {
-                "/" === pathname ?
-                  <main>{children}</main> :
-                  <main className="flex-1 p-4 md:p-6">{children}</main>
-
-              }
-            </div>
-
-          </div>
-        </body>
-      </html>
+      <ClientLayout >{children} </ClientLayout>
     </AuthProvider>
+    // <AuthProvider>
+    //   <html lang="en">
+    //     <body
+    //     >
+    //       <div className="flex min-h-screen flex-col">
+
+    //         <header className="sticky flex items-center justify-between px-10   top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    //           <div className="flex h-16 items-center justify-between">
+    //             <Link href={"/"} className="flex items-center gap-2">
+    //               <Image
+    //                 src="/logo2.JPG"
+    //                 alt="INFARMA"
+    //                 width={150}
+    //                 height={40}
+    //                 className="h-10 w-auto mix-blend-multiply"
+    //               />
+    //             </Link>
+    //             {
+    //               "/" === pathname &&
+    //               <div className="flex items-center gap-2 container justify-between w-full">
+    //                 <nav className="hidden md:flex items-center gap-6">
+    //                   <Link href="#" className="text-sm font-medium transition-colors hover:text-primary">
+    //                     Productos
+    //                   </Link>
+    //                   <Link href="#" className="text-sm font-medium transition-colors hover:text-primary">
+    //                     Nosotros
+    //                   </Link>
+    //                   <Link href="#" className="text-sm font-medium transition-colors hover:text-primary">
+    //                     Contacto
+    //                   </Link>
+    //                   <Link href="#" className="text-sm font-medium transition-colors hover:text-primary">
+    //                     FAQ
+    //                   </Link>
+    //                   <Link href="#" className="text-sm font-medium transition-colors hover:text-primary">
+    //                     Nuestros Valores
+    //                   </Link>
+    //                 </nav>
+    //                   <Link href="/login" className="hidden md:flex">
+    //                     Iniciar sesión
+    //                   </Link>
+    //               </div>
+    //             }
+    //           </div>
+    //           {
+    //             ("/" !== pathname ? "/login" !== pathname : false) &&
+    //             <div className="ml-auto flex  h-full justify-center items-center gap-4">
+    //               <UserAvatarMenu name="Carlos Rodríguez" role="Supervisor de Recursos Humanos" />
+    //             </div>
+
+    //           }
+    //         </header>
+
+    //         <div className={"/" === pathname ? "" : "flex flex-1"}>
+    //           {
+    //             ("/" !== pathname ? "/login" !== pathname : false) &&
+    //             <aside className="hidden w-64 border-r bg-muted/40 md:block">
+    //               <DesktopSidebar />
+    //             </aside>
+
+    //           }
+    //           {
+    //             "/" === pathname ?
+    //               <main>{children}</main> :
+    //               <main className="flex-1 p-4 md:p-6">{children}</main>
+
+    //           }
+    //         </div>
+
+    //       </div>
+    //     </body>
+    //   </html>
+    // </AuthProvider>
   );
 }
 // function MobileSidebar() {
