@@ -1774,7 +1774,7 @@ export default function AttendanceDashboard() {
             throw new Error(`Error ${res.status}: ${res.statusText}`);
           }
           const newData = await res.json();
-          console.log(newData)
+          console.log("Data de reloj completa",newData)
           setmonthlyData(newData)
         } catch (err) {
           console.error("Error al obtener la fecha de entrada:", err);
@@ -1813,8 +1813,44 @@ export default function AttendanceDashboard() {
 
   }, []);
 
+  const setHours = (hour:string)=>{
+
+
+    // Convertirlo a un objeto Date ficticio (el día no importa)
+    const [hours, minutes, seconds] = hour.split(":").map(Number);
+    const date = new Date();
+    date.setHours(hours, minutes, seconds, 0);
+
+    // Restar 6 horas
+    date.setHours(date.getHours() - 6);
+
+    // Obtener la nueva hora formateada
+    const newTime = date.toTimeString().split(" ")[0]; // Devuelve "06:41:26"
+    return newTime
+
+  }
+
+  const hoursDifference = (hour1:string, hour2:string) =>{
+    //Primera hora
+    const [hours, minutes, seconds] = hour1.split(":").map(Number);
+    const date = new Date();
+    date.setHours(hours, minutes, seconds, 0);
+    //Segunda hora
+    const [hours1, minutes1, seconds1] = hour1.split(":").map(Number);
+    const date2 = new Date();
+    date.setHours(hours, minutes, seconds, 0);
+
+  }
+
+
 
 const exportToExcel = async (fileName = "asistencias.xlsx") => {
+
+
+
+
+
+
  if (!Array.isArray(monthlyData) || monthlyData.length === 0) return;
 
   const workbook = new ExcelJS.Workbook();
@@ -1823,6 +1859,7 @@ const exportToExcel = async (fileName = "asistencias.xlsx") => {
   // 1️⃣ Hoja de Resumen
   const summary = workbook.addWorksheet("Resumen Asistencia");
   const totalRegs = monthlyData.length;
+  console.log("Data para mejorar el reporte",monthlyData)
   const uniqueEmps = new Set(monthlyData.map(r => r.int_id_empleado)).size;
   const countByArea: Record<string, number> = {};
   monthlyData.forEach(r => {
@@ -1863,6 +1900,7 @@ const exportToExcel = async (fileName = "asistencias.xlsx") => {
     { header: "Nombre Empleado", width: 25 },
     { header: "Área", width: 20 },
     { header: "Hora Entrada", width: 12 },
+    { header: "Hora Salida", width: 12 },
   ];
 
   detailSheet.addTable({
@@ -1877,13 +1915,15 @@ const exportToExcel = async (fileName = "asistencias.xlsx") => {
       { name: "Nombre Empleado", filterButton: true },
       { name: "Área", filterButton: true },
       { name: "Hora Entrada", filterButton: true },
+      { name: "Hora Salida", filterButton: true },
     ],
     rows: monthlyData.map(row => [
       row.fecha?.toString() ?? "",
       row.int_id_empleado,
       row.nombre_empleado,
       row.area,
-      row.entrada,
+      setHours(row.entrada),
+      setHours(row.salida),
     ]),
   });
 
@@ -2815,8 +2855,8 @@ const exportToExcel = async (fileName = "asistencias.xlsx") => {
                                   <TableCell className="font-medium">
                                     {record.date}
                                   </TableCell>
-                                  <TableCell>{record.entryTime || "-"}</TableCell>
-                                  <TableCell>{record.exitTime || "-"}</TableCell>
+                                  <TableCell>{setHours(record.entryTime?record.entryTime+":00":"") || "-"}</TableCell>
+                                  <TableCell>{setHours(record.exitTime?record.exitTime+":00":"") || "-"}</TableCell>
                                   <TableCell>
                                     <div className="flex items-center gap-2">
                                       {getRecordStatusIcon(record.status)}

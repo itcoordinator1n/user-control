@@ -98,6 +98,7 @@ export function Navbar({ isLoggedIn }: NavbarProps) {
                 <div className="flex items-center gap-2 px-2">
                   <span className="font-bold text-infarma-blue dark:text-white text-2xl">infarma</span>
                 </div>
+                {/*
                 <div className="flex flex-col gap-2">
                   <Link
                     href="#"
@@ -118,6 +119,8 @@ export function Navbar({ isLoggedIn }: NavbarProps) {
                     Contact
                   </Link>
                 </div>
+                
+                */}
                 <div className="mt-4 px-2">
                   <Link href={"/page/login"} className="w-full bg-infarma-button-blue hover:bg-infarma-button-blue/90">
                     Iniciar sesion 
@@ -141,6 +144,7 @@ export function Navbar({ isLoggedIn }: NavbarProps) {
         {/* Desktop Navigation for non-logged-in users */}
         {!isLoggedIn && (
           <NavigationMenu className="mx-6 hidden md:flex">
+            {/* 
             <NavigationMenuList>
               <NavigationMenuItem>
                 <NavigationMenuLink asChild>
@@ -173,6 +177,8 @@ export function Navbar({ isLoggedIn }: NavbarProps) {
                 </NavigationMenuLink>
               </NavigationMenuItem>
             </NavigationMenuList>
+            
+            */}
           </NavigationMenu>
         )}
 
