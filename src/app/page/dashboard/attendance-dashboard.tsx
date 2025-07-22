@@ -1550,6 +1550,7 @@ export default function AttendanceDashboard() {
   const [selectedPeriod, setSelectedPeriod] = useState("Este Mes");
   const [searchTerm, setSearchTerm] = useState("");
   const [showAttendanceDetail, setShowAttendanceDetail] = useState(false);
+  const [showPermissionsDetail, setShowPermissionsDetail] = useState(false);
   const [showVacationDetail, setShowVacationDetail] = useState(false);
   const [selectedEmployee, setSelectedEmployee] =
     useState<EmployeeProfile | null>(null);
@@ -2958,6 +2959,9 @@ const exportToExcel = async (fileName = "asistencias.xlsx") => {
     }
   };
 
+  if (showPermissionsDetail) {
+    return <PermissionsDashboard setShowPermissionDetail={setShowPermissionsDetail} showPermissionDetail = {showPermissionsDetail}></PermissionsDashboard>
+  }
 
   if (showVacationDetail) {
     return (
@@ -4146,7 +4150,10 @@ const exportToExcel = async (fileName = "asistencias.xlsx") => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
+      {/*
+      
       <PermissionsDashboard setShowPermissionDetail={setShowPermissionDetail} showPermissionDetail={showPermissionDetail}></PermissionsDashboard>
+      */}
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
@@ -4263,9 +4270,9 @@ const exportToExcel = async (fileName = "asistencias.xlsx") => {
 
 
           {/* Solicitudes de Permisos Card */}
-          {/*
+          
           <Card
-            onClick={() => setShowAttendanceDetail(true)}
+            onClick={() => setShowPermissionsDetail(true)}
             className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105 border-2 hover:border-blue-300">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-gray-600">
@@ -4288,7 +4295,7 @@ const exportToExcel = async (fileName = "asistencias.xlsx") => {
             </CardContent>
           </Card>
           
-          */}
+
         </div>
       </div>
 
