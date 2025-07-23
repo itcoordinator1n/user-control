@@ -741,11 +741,11 @@ const exportToExcel = async (
 
   const getStatusText = (status: any) => {
     switch (status) {
-      case "approved":
+      case "Aprobada":
         return "Aprobado"
-      case "pending":
+      case "Pendiente":
         return "Pendiente"
-      case "rejected":
+      case "Rechazada":
         return "Rechazado"
       default:
         return "Desconocido"
