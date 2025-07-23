@@ -68,19 +68,19 @@ import ExcelJS from "exceljs";
 import { string } from "zod";
 
 interface vacationDataInterface {
-    area: string,
-    totalEmployees: number,
-    daysUsed: number,
-    averageDaysPerEmployee: number,
-    accumulatedDays: number,
-    trend: number,
-    employees: [
-      {
-        name: string,
-        daysUsed: number,
-        daysAccumulated: number,
-      },
-    ]
+  area: string,
+  totalEmployees: number,
+  daysUsed: number,
+  averageDaysPerEmployee: number,
+  accumulatedDays: number,
+  trend: number,
+  employees: [
+    {
+      name: string,
+      daysUsed: number,
+      daysAccumulated: number,
+    },
+  ]
 }
 
 
@@ -511,12 +511,12 @@ interface EmployeeVacationProfile {
 
 interface AtendanceDataInterface {
   area: string,
-    total: number,
-    present: number,
-    percentage: number,
-    trend: number,
-    employees: [
-      { name: string, attendance: number, status: string }]
+  total: number,
+  present: number,
+  percentage: number,
+  trend: number,
+  employees: [
+    { name: string, attendance: number, status: string }]
 }
 
 // const employeeProfiles: { [key: string]: EmployeeProfile } = {
@@ -1535,7 +1535,7 @@ export default function AttendanceDashboard() {
 
 
   const [showPermissionDetail, setShowPermissionDetail] = useState(true)
-  const [employeeProfiles, setEmployeeProfiles] = useState<{[key: string]: EmployeeProfile}>({})
+  const [employeeProfiles, setEmployeeProfiles] = useState<{ [key: string]: EmployeeProfile }>({})
   const [vacationData, setVacationData] = useState<vacationDataInterface[]>([])
   const [employeeVacationProfiles, setEmployeeVacationProfiles] = useState<{ [key: string]: EmployeeVacationProfile }>({})
   const [attendanceData, setAttendanceData] = useState<AtendanceDataInterface[]>([])
@@ -1575,123 +1575,123 @@ export default function AttendanceDashboard() {
   const { data: session } = useSession();
 
 
-  const handleVacationExcel = async () =>  {
-     const workbook = new ExcelJS.Workbook();
-  workbook.creator = "Mi App";
+  const handleVacationExcel = async () => {
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = "Mi App";
 
-  // Filtrar datos por área seleccionada
-  const filteredData = vacationData.filter(
-    (area) => selectedArea === "Todas" || area.area === selectedArea
-  );
+    // Filtrar datos por área seleccionada
+    const filteredData = vacationData.filter(
+      (area) => selectedArea === "Todas" || area.area === selectedArea
+    );
 
-  // 1️⃣ Hoja Resumen General
-  const summarySheet = workbook.addWorksheet("Resumen General");
+    // 1️⃣ Hoja Resumen General
+    const summarySheet = workbook.addWorksheet("Resumen General");
 
-  summarySheet.columns = [
-    { header: "Área", key: "area", width: 20 },
-    { header: "Empleados Totales", key: "totalEmployees", width: 18 },
-    { header: "Días Usados", key: "daysUsed", width: 14 },
-    { header: "Días Promedio / Emp.", key: "avgPerEmp", width: 18 },
-    { header: "Días Acumulados", key: "accumulatedDays", width: 16 },
-    { header: "Tendencia (%)", key: "trend", width: 14 },
-    { header: "Tasa de Utilización", key: "utilRate", width: 16 },
-  ];
+    summarySheet.columns = [
+      { header: "Área", key: "area", width: 20 },
+      { header: "Empleados Totales", key: "totalEmployees", width: 18 },
+      { header: "Días Usados", key: "daysUsed", width: 14 },
+      { header: "Días Promedio / Emp.", key: "avgPerEmp", width: 18 },
+      { header: "Días Acumulados", key: "accumulatedDays", width: 16 },
+      { header: "Tendencia (%)", key: "trend", width: 14 },
+      { header: "Tasa de Utilización", key: "utilRate", width: 16 },
+    ];
 
-  // Agregar filas
-  filteredData.forEach((d) => {
-    summarySheet.addRow({
-      area: d.area,
-      totalEmployees: d.totalEmployees,
-      daysUsed: d.daysUsed,
-      avgPerEmp: d.averageDaysPerEmployee,
-      accumulatedDays: d.accumulatedDays,
-      trend: d.trend,
-      utilRate: { formula: `${d.daysUsed}/(${d.totalEmployees}*${d.accumulatedDays})` },
-    });
-  });
-
-  summarySheet.addTable({
-    name: "ResumenTable",
-    ref: "A1",
-    headerRow: true,
-    totalsRow: true,
-    style: {
-      theme: "TableStyleMedium2",
-      showRowStripes: true,
-    },
-    columns: [
-      { name: "Área", filterButton: true },
-      { name: "Empleados Totales", totalsRowFunction: "sum" },
-      { name: "Días Usados", totalsRowFunction: "sum" },
-      { name: "Días Promedio / Emp.", totalsRowFunction: "average" },
-      { name: "Días Acumulados", totalsRowFunction: "sum" },
-      { name: "Tendencia (%)", totalsRowLabel: "—" },
-      { name: "Tasa de Utilización", totalsRowFunction: "average" },
-    ],
-    rows: filteredData.map((d) => [
-      d.area,
-      d.totalEmployees,
-      d.daysUsed,
-      d.averageDaysPerEmployee,
-      d.accumulatedDays,
-      d.trend,
-      { formula: `${d.daysUsed}/(${d.totalEmployees}*${d.accumulatedDays})` },
-    ]),
-  });
-
-  // 2️⃣ Hoja Detalle Empleados
-  const detailSheet = workbook.addWorksheet("Detalle Empleados");
-
-  detailSheet.columns = [
-    { header: "Área", key: "area", width: 20 },
-    { header: "Nombre", key: "name", width: 25 },
-    { header: "Días Acumulados", key: "daysAccumulated", width: 16 },
-    { header: "Días Usados", key: "daysUsed", width: 14 },
-  ];
-
-  filteredData.forEach((d) => {
-    d.employees.forEach((emp) => {
-      detailSheet.addRow({
+    // Agregar filas
+    filteredData.forEach((d) => {
+      summarySheet.addRow({
         area: d.area,
-        name: emp.name,
-        daysAccumulated: emp.daysAccumulated,
-        daysUsed: emp.daysUsed,
+        totalEmployees: d.totalEmployees,
+        daysUsed: d.daysUsed,
+        avgPerEmp: d.averageDaysPerEmployee,
+        accumulatedDays: d.accumulatedDays,
+        trend: d.trend,
+        utilRate: { formula: `${d.daysUsed}/(${d.totalEmployees}*${d.accumulatedDays})` },
       });
     });
-  });
 
-  detailSheet.addTable({
-    name: "DetalleTable",
-    ref: "A1",
-    headerRow: true,
-    totalsRow: false,
-    style: {
-      theme: "TableStyleLight9",
-      showRowStripes: true,
-    },
-    columns: [
-      { name: "Área", filterButton: true },
-      { name: "Nombre", filterButton: true },
-      { name: "Días Acumulados", filterButton: true, totalsRowFunction: "sum" },
-      { name: "Días Usados", filterButton: true, totalsRowFunction: "sum" },
-    ],
-    rows: filteredData.flatMap((d) =>
-      d.employees.map((emp) => [
+    summarySheet.addTable({
+      name: "ResumenTable",
+      ref: "A1",
+      headerRow: true,
+      totalsRow: true,
+      style: {
+        theme: "TableStyleMedium2",
+        showRowStripes: true,
+      },
+      columns: [
+        { name: "Área", filterButton: true },
+        { name: "Empleados Totales", totalsRowFunction: "sum" },
+        { name: "Días Usados", totalsRowFunction: "sum" },
+        { name: "Días Promedio / Emp.", totalsRowFunction: "average" },
+        { name: "Días Acumulados", totalsRowFunction: "sum" },
+        { name: "Tendencia (%)", totalsRowLabel: "—" },
+        { name: "Tasa de Utilización", totalsRowFunction: "average" },
+      ],
+      rows: filteredData.map((d) => [
         d.area,
-        emp.name,
-        emp.daysAccumulated,
-        emp.daysUsed,
-      ])
-    ),
-  });
+        d.totalEmployees,
+        d.daysUsed,
+        d.averageDaysPerEmployee,
+        d.accumulatedDays,
+        d.trend,
+        { formula: `${d.daysUsed}/(${d.totalEmployees}*${d.accumulatedDays})` },
+      ]),
+    });
 
-  // 3️⃣ Descargar el archivo
-  const buf = await workbook.xlsx.writeBuffer();
-  const blob = new Blob([buf], {
-    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  });
-  saveAs(blob, `vacation_reports_table.xlsx`);
-  
+    // 2️⃣ Hoja Detalle Empleados
+    const detailSheet = workbook.addWorksheet("Detalle Empleados");
+
+    detailSheet.columns = [
+      { header: "Área", key: "area", width: 20 },
+      { header: "Nombre", key: "name", width: 25 },
+      { header: "Días Acumulados", key: "daysAccumulated", width: 16 },
+      { header: "Días Usados", key: "daysUsed", width: 14 },
+    ];
+
+    filteredData.forEach((d) => {
+      d.employees.forEach((emp) => {
+        detailSheet.addRow({
+          area: d.area,
+          name: emp.name,
+          daysAccumulated: emp.daysAccumulated,
+          daysUsed: emp.daysUsed,
+        });
+      });
+    });
+
+    detailSheet.addTable({
+      name: "DetalleTable",
+      ref: "A1",
+      headerRow: true,
+      totalsRow: false,
+      style: {
+        theme: "TableStyleLight9",
+        showRowStripes: true,
+      },
+      columns: [
+        { name: "Área", filterButton: true },
+        { name: "Nombre", filterButton: true },
+        { name: "Días Acumulados", filterButton: true, totalsRowFunction: "sum" },
+        { name: "Días Usados", filterButton: true, totalsRowFunction: "sum" },
+      ],
+      rows: filteredData.flatMap((d) =>
+        d.employees.map((emp) => [
+          d.area,
+          emp.name,
+          emp.daysAccumulated,
+          emp.daysUsed,
+        ])
+      ),
+    });
+
+    // 3️⃣ Descargar el archivo
+    const buf = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buf], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    saveAs(blob, `vacation_reports_table.xlsx`);
+
   }
 
   // Reset employee page when filters change
@@ -1743,7 +1743,7 @@ export default function AttendanceDashboard() {
           const data = await res.json();
           setVacationData(data.stats)
           setEmployeeVacationProfiles(data.profiles)
-          console.log("Data de vacaciones",data)
+          console.log("Data de vacaciones", data)
 
         } catch (err) {
           console.error("Error al obtener la fecha de entrada:", err);
@@ -1775,7 +1775,7 @@ export default function AttendanceDashboard() {
             throw new Error(`Error ${res.status}: ${res.statusText}`);
           }
           const newData = await res.json();
-          console.log("Data de reloj completa",newData)
+          console.log("Data de reloj completa", newData)
           setmonthlyData(newData)
         } catch (err) {
           console.error("Error al obtener la fecha de entrada:", err);
@@ -1814,7 +1814,7 @@ export default function AttendanceDashboard() {
 
   }, []);
 
-  const setHours = (hour:string)=>{
+  const setHours = (hour: string) => {
 
 
     // Convertirlo a un objeto Date ficticio (el día no importa)
@@ -1831,7 +1831,7 @@ export default function AttendanceDashboard() {
 
   }
 
-  const hoursDifference = (hour1:string, hour2:string) =>{
+  const hoursDifference = (hour1: string, hour2: string) => {
     //Primera hora
     const [hours, minutes, seconds] = hour1.split(":").map(Number);
     const date = new Date();
@@ -1845,100 +1845,95 @@ export default function AttendanceDashboard() {
 
 
 
-const exportToExcel = async (fileName = "asistencias.xlsx") => {
+  const exportToExcel = async (fileName = "asistencias.xlsx") => {
 
+    if (!Array.isArray(monthlyData) || monthlyData.length === 0) return;
 
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = "Mi App";
 
-
-
-
- if (!Array.isArray(monthlyData) || monthlyData.length === 0) return;
-
-  const workbook = new ExcelJS.Workbook();
-  workbook.creator = "Mi App";
-
-  // 1️⃣ Hoja de Resumen
-  const summary = workbook.addWorksheet("Resumen Asistencia");
-  const totalRegs = monthlyData.length;
-  console.log("Data para mejorar el reporte",monthlyData)
-  const uniqueEmps = new Set(monthlyData.map(r => r.int_id_empleado)).size;
-  const countByArea: Record<string, number> = {};
-  monthlyData.forEach(r => {
-    countByArea[r.area] = (countByArea[r.area] || 0) + 1;
-  });
-  const areaRows = Object.entries(countByArea).map(([area, cnt]) => [area, cnt]);
-  const sortedByDate = [...monthlyData].sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
-  const firstReg = sortedByDate[0]?.fecha?.toString() || "";
-  const lastReg = sortedByDate[sortedByDate.length - 1]?.fecha?.toString() || "";
-  const countByEmp: Record<string, number> = {};
-  monthlyData.forEach(r => {
-    countByEmp[r.nombre_empleado] = (countByEmp[r.nombre_empleado] || 0) + 1;
-  });
-  const topEmps = Object.entries(countByEmp)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5)
-    .map(([name, cnt]) => [name, cnt]);
-
-  summary.addRows([
-    ["Total de registros", totalRegs],
-    ["Empleados únicos", uniqueEmps],
-    ["Primer registro (fecha)", firstReg],
-    ["Último registro (fecha)", lastReg],
-    [],
-    ["Registros por Área", "Cantidad"],
-    ...areaRows,
-    [],
-    ["Top 5 Empleados", "Registros"],
-    ...topEmps,
-  ]);
-  summary.columns = [{ width: 30 }, { width: 15 }];
-
-  // 2️⃣ Hoja de Detalle
-  const detailSheet = workbook.addWorksheet("Detalle Registros");
-  detailSheet.columns = [
-    { header: "Fecha completa", width: 25 },
-    { header: "ID Empleado", width: 15 },
-    { header: "Nombre Empleado", width: 25 },
-    { header: "Área", width: 20 },
-    { header: "Hora Entrada", width: 12 },
-    { header: "Hora Salida", width: 12 },
-  ];
-
-  detailSheet.addTable({
-    name: "DetalleTable",
-    ref: "A1",
-    headerRow: true,
-    totalsRow: false,
-    style: { theme: "TableStyleMedium4", showRowStripes: true },
-    columns: [
-      { name: "Fecha completa", filterButton: true },
-      { name: "ID Empleado", filterButton: true },
-      { name: "Nombre Empleado", filterButton: true },
-      { name: "Área", filterButton: true },
-      { name: "Hora Entrada", filterButton: true },
-      { name: "Hora Salida", filterButton: true },
-    ],
-    rows: monthlyData.map(row => [
-      row.fecha?.toString() ?? "",
-      row.int_id_empleado,
-      row.nombre_empleado,
-      row.area,
-      setHours(row.entrada),
-      setHours(row.salida),
-    ]),
-  });
-
-  // 3️⃣ Exportar
-  try {
-    const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    // 1️⃣ Hoja de Resumen
+    const summary = workbook.addWorksheet("Resumen Asistencia");
+    const totalRegs = monthlyData.length;
+    console.log("Data para mejorar el reporte", monthlyData)
+    const uniqueEmps = new Set(monthlyData.map(r => r.int_id_empleado)).size;
+    const countByArea: Record<string, number> = {};
+    monthlyData.forEach(r => {
+      countByArea[r.area] = (countByArea[r.area] || 0) + 1;
     });
-    saveAs(blob, fileName);
-  } catch (err) {
-    console.error("Error al exportar:", err);
-  }
-};
+    const areaRows = Object.entries(countByArea).map(([area, cnt]) => [area, cnt]);
+    const sortedByDate = [...monthlyData].sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
+    const firstReg = sortedByDate[0]?.fecha?.toString() || "";
+    const lastReg = sortedByDate[sortedByDate.length - 1]?.fecha?.toString() || "";
+    const countByEmp: Record<string, number> = {};
+    monthlyData.forEach(r => {
+      countByEmp[r.nombre_empleado] = (countByEmp[r.nombre_empleado] || 0) + 1;
+    });
+    const topEmps = Object.entries(countByEmp)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([name, cnt]) => [name, cnt]);
+
+    summary.addRows([
+      ["Total de registros", totalRegs],
+      ["Empleados únicos", uniqueEmps],
+      ["Primer registro (fecha)", firstReg],
+      ["Último registro (fecha)", lastReg],
+      [],
+      ["Registros por Área", "Cantidad"],
+      ...areaRows,
+      [],
+      ["Top 5 Empleados", "Registros"],
+      ...topEmps,
+    ]);
+    summary.columns = [{ width: 30 }, { width: 15 }];
+
+    // 2️⃣ Hoja de Detalle
+    const detailSheet = workbook.addWorksheet("Detalle Registros");
+    detailSheet.columns = [
+      { header: "Fecha completa", width: 25 },
+      { header: "ID Empleado", width: 15 },
+      { header: "Nombre Empleado", width: 25 },
+      { header: "Área", width: 20 },
+      { header: "Hora Entrada", width: 12 },
+      { header: "Hora Salida", width: 12 },
+    ];
+
+    detailSheet.addTable({
+      name: "DetalleTable",
+      ref: "A1",
+      headerRow: true,
+      totalsRow: false,
+      style: { theme: "TableStyleMedium4", showRowStripes: true },
+      columns: [
+        { name: "Fecha completa", filterButton: true },
+        { name: "ID Empleado", filterButton: true },
+        { name: "Nombre Empleado", filterButton: true },
+        { name: "Área", filterButton: true },
+        { name: "Hora Entrada", filterButton: true },
+        { name: "Hora Salida", filterButton: true },
+      ],
+      rows: monthlyData.map(row => [
+        row.fecha?.toString() ?? "",
+        row.int_id_empleado,
+        row.nombre_empleado,
+        row.area,
+        setHours(row.entrada),
+        setHours(row.salida),
+      ]),
+    });
+
+    // 3️⃣ Exportar
+    try {
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      saveAs(blob, fileName);
+    } catch (err) {
+      console.error("Error al exportar:", err);
+    }
+  };
   const getStatusColor = (status: string) => {
     switch (status) {
       case "excellent":
@@ -1968,7 +1963,7 @@ const exportToExcel = async (fileName = "asistencias.xlsx") => {
         return "N/A";
     }
   };
-  
+
   const getRecordStatusColor = (status: string) => {
     switch (status) {
       case "on_time":
@@ -2326,8 +2321,8 @@ const exportToExcel = async (fileName = "asistencias.xlsx") => {
                 {/* Todas las Áreas Card */}
                 <Card
                   className={`hover:shadow-lg transition-all duration-200 cursor-pointer transform hover:scale-105 ${selectedArea === "Todas"
-                      ? "ring-2 ring-purple-500 bg-purple-50 shadow-md"
-                      : "hover:bg-gray-50"
+                    ? "ring-2 ring-purple-500 bg-purple-50 shadow-md"
+                    : "hover:bg-gray-50"
                     }`}
                   onClick={() => {
                     setSelectedArea("Todas");
@@ -2426,8 +2421,8 @@ const exportToExcel = async (fileName = "asistencias.xlsx") => {
                   <Card
                     key={area.area}
                     className={`hover:shadow-lg transition-all duration-200 cursor-pointer transform hover:scale-105 ${selectedArea === area.area
-                        ? "ring-2 ring-blue-500 bg-blue-50 shadow-md"
-                        : "hover:bg-gray-50"
+                      ? "ring-2 ring-blue-500 bg-blue-50 shadow-md"
+                      : "hover:bg-gray-50"
                       }`}
                     onClick={() => {
                       setSelectedArea(area.area);
@@ -2856,8 +2851,8 @@ const exportToExcel = async (fileName = "asistencias.xlsx") => {
                                   <TableCell className="font-medium">
                                     {record.date}
                                   </TableCell>
-                                  <TableCell>{setHours(record.entryTime?record.entryTime+":00":"") || "-"}</TableCell>
-                                  <TableCell>{setHours(record.exitTime?record.exitTime+":00":"") || "-"}</TableCell>
+                                  <TableCell>{setHours(record.entryTime ? record.entryTime + ":00" : "") || "-"}</TableCell>
+                                  <TableCell>{setHours(record.exitTime ? record.exitTime + ":00" : "") || "-"}</TableCell>
                                   <TableCell>
                                     <div className="flex items-center gap-2">
                                       {getRecordStatusIcon(record.status)}
@@ -2960,7 +2955,7 @@ const exportToExcel = async (fileName = "asistencias.xlsx") => {
   };
 
   if (showPermissionsDetail) {
-    return <PermissionsDashboard setShowPermissionDetail={setShowPermissionsDetail} showPermissionDetail = {showPermissionsDetail}></PermissionsDashboard>
+    return <PermissionsDashboard setShowPermissionDetail={setShowPermissionsDetail} showPermissionDetail={showPermissionsDetail}></PermissionsDashboard>
   }
 
   if (showVacationDetail) {
@@ -3017,7 +3012,7 @@ const exportToExcel = async (fileName = "asistencias.xlsx") => {
                   <ChevronDown className="h-4 w-4" />
                 )}
               </Button>
-              <Button className="flex items-center gap-2" onClick={()=>handleVacationExcel()}>
+              <Button className="flex items-center gap-2" onClick={() => handleVacationExcel()}>
                 <Download className="h-4 w-4" />
                 Exportar Análisis
               </Button>
@@ -3133,7 +3128,7 @@ const exportToExcel = async (fileName = "asistencias.xlsx") => {
                 </Card>
                   */
                 }
-                
+
                 {/*
                 <Card className="bg-gradient-to-r from-green-50 to-green-100 border-green-200">
                   <CardHeader className="pb-3">
@@ -3157,7 +3152,7 @@ const exportToExcel = async (fileName = "asistencias.xlsx") => {
                 </Card>
                 
                 */}
-                
+
                 {/*
                  <Card className="bg-gradient-to-r from-orange-50 to-orange-100 border-orange-200">
                   <CardHeader className="pb-3">
@@ -3186,43 +3181,43 @@ const exportToExcel = async (fileName = "asistencias.xlsx") => {
                   </CardContent>
                 </Card>
                 */}
-               
-                  {
-                    /*
-                    <Card className="bg-gradient-to-r from-purple-50 to-purple-100 border-purple-200">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-medium text-purple-800 flex items-center gap-2">
-                      <CalendarDays className="h-4 w-4" />
-                      Planificación
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-purple-900">
-                      {Math.round(
-                        vacationData.reduce(
-                          (acc, area) => acc + area.plannedVsLastMinute.planned,
-                          0
-                        ) / vacationData.length
-                      )}
-                      %
-                    </div>
-                    <p className="text-sm text-purple-700">Planificadas</p>
-                    <div className="text-xs text-purple-600 mt-1">
-                      vs{" "}
-                      {Math.round(
-                        vacationData.reduce(
-                          (acc, area) =>
-                            acc + area.plannedVsLastMinute.lastMinute,
-                          0
-                        ) / vacationData.length
-                      )}
-                      % último momento
-                    </div>
-                  </CardContent>
-                </Card>
-                    */
-                  }
-                
+
+                {
+                  /*
+                  <Card className="bg-gradient-to-r from-purple-50 to-purple-100 border-purple-200">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium text-purple-800 flex items-center gap-2">
+                    <CalendarDays className="h-4 w-4" />
+                    Planificación
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-purple-900">
+                    {Math.round(
+                      vacationData.reduce(
+                        (acc, area) => acc + area.plannedVsLastMinute.planned,
+                        0
+                      ) / vacationData.length
+                    )}
+                    %
+                  </div>
+                  <p className="text-sm text-purple-700">Planificadas</p>
+                  <div className="text-xs text-purple-600 mt-1">
+                    vs{" "}
+                    {Math.round(
+                      vacationData.reduce(
+                        (acc, area) =>
+                          acc + area.plannedVsLastMinute.lastMinute,
+                        0
+                      ) / vacationData.length
+                    )}
+                    % último momento
+                  </div>
+                </CardContent>
+              </Card>
+                  */
+                }
+
               </div>
 
               {/* Area Comparison Cards */}
@@ -3236,8 +3231,8 @@ const exportToExcel = async (fileName = "asistencias.xlsx") => {
                     <Card
                       key={area.area}
                       className={`hover:shadow-lg transition-all duration-200 cursor-pointer transform hover:scale-105 ${selectedArea === area.area
-                          ? "ring-2 ring-blue-500 bg-blue-50 shadow-md"
-                          : "hover:bg-gray-50"
+                        ? "ring-2 ring-blue-500 bg-blue-50 shadow-md"
+                        : "hover:bg-gray-50"
                         }`}
                       onClick={() => {
                         setSelectedArea(area.area);
@@ -3267,7 +3262,7 @@ const exportToExcel = async (fileName = "asistencias.xlsx") => {
                           />
                         </div>
                         */}
-                        
+
 
                         <div className="grid grid-cols-2 gap-2 text-xs">
                           <div className="text-center p-2 bg-blue-50 rounded">
@@ -3357,7 +3352,7 @@ const exportToExcel = async (fileName = "asistencias.xlsx") => {
                 </Card>
                 
                 */}
-                
+
                 {
                   /*
                   <Card>
@@ -3404,7 +3399,7 @@ const exportToExcel = async (fileName = "asistencias.xlsx") => {
                 </Card>
                   */
                 }
-                
+
               </div>
             </div>
           )}
@@ -3526,7 +3521,7 @@ const exportToExcel = async (fileName = "asistencias.xlsx") => {
                           </div>
                             */
                           }
-                          
+
                           {/*
                           <div className="text-center">
                             <p className="font-semibold text-lg text-purple-600">
@@ -3542,7 +3537,7 @@ const exportToExcel = async (fileName = "asistencias.xlsx") => {
                             <Progress
                               value={
                                 (//employee.daysUsed / employee.daysAvailable
-                                1) *
+                                  1) *
                                 100
                               }
                               className="h-2"
@@ -3723,7 +3718,7 @@ const exportToExcel = async (fileName = "asistencias.xlsx") => {
                     </CardContent>
                   </Card>
 
-                  
+
                   {/*
                   <Card className="bg-gradient-to-r from-green-50 to-green-100 border-green-200">
                     <CardHeader className="pb-3">
@@ -3889,38 +3884,38 @@ const exportToExcel = async (fileName = "asistencias.xlsx") => {
                   <CardContent>
                     <div className="space-y-3">
                       {
-                      /* 
-                        selectedVacationEmployee.monthlyUsage.map((month) => (
-                        <div
-                          key={month.month}
-                          className="flex items-center gap-4"
-                        >
-                          <div className="w-12 text-sm font-medium text-gray-600">
-                            {month.month}
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <div className="flex-1 bg-gray-200 rounded-full h-6 relative">
-                                <div
-                                  className="bg-blue-500 h-6 rounded-full flex items-center justify-center text-white text-xs font-medium"
-                                  style={{
-                                    width: `${Math.max(
-                                      (month.days / 5) * 100,
-                                      month.days > 0 ? 20 : 0
-                                    )}%`,
-                                  }}
-                                >
-                                  {month.days > 0 && month.days}
+                        /* 
+                          selectedVacationEmployee.monthlyUsage.map((month) => (
+                          <div
+                            key={month.month}
+                            className="flex items-center gap-4"
+                          >
+                            <div className="w-12 text-sm font-medium text-gray-600">
+                              {month.month}
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <div className="flex-1 bg-gray-200 rounded-full h-6 relative">
+                                  <div
+                                    className="bg-blue-500 h-6 rounded-full flex items-center justify-center text-white text-xs font-medium"
+                                    style={{
+                                      width: `${Math.max(
+                                        (month.days / 5) * 100,
+                                        month.days > 0 ? 20 : 0
+                                      )}%`,
+                                    }}
+                                  >
+                                    {month.days > 0 && month.days}
+                                  </div>
                                 </div>
-                              </div>
-                              <div className="w-16 text-sm text-gray-600">
-                                {month.days} día{month.days !== 1 ? "s" : ""}
+                                <div className="w-16 text-sm text-gray-600">
+                                  {month.days} día{month.days !== 1 ? "s" : ""}
+                                </div>
                               </div>
                             </div>
                           </div>
-                        </div>
-                      ))
-                      */
+                        ))
+                        */
                       }
                     </div>
                     <div className="mt-4 p-3 bg-gray-50 rounded-lg">
@@ -3935,8 +3930,8 @@ const exportToExcel = async (fileName = "asistencias.xlsx") => {
                           .map((m) => `${m.month} (${m.days})`)
                           .join(", ")
                           */
-                        
-                          }
+
+                        }
                       </p>
                     </div>
                   </CardContent>
@@ -4270,7 +4265,7 @@ const exportToExcel = async (fileName = "asistencias.xlsx") => {
 
 
           {/* Solicitudes de Permisos Card */}
-          
+
           <Card
             onClick={() => setShowPermissionsDetail(true)}
             className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105 border-2 hover:border-blue-300">
@@ -4294,7 +4289,7 @@ const exportToExcel = async (fileName = "asistencias.xlsx") => {
               </div>
             </CardContent>
           </Card>
-          
+
 
         </div>
       </div>
@@ -4670,7 +4665,7 @@ const exportToExcel = async (fileName = "asistencias.xlsx") => {
                     <div className="text-2xl font-bold text-yellow-900">
                       {
                         1
-                      //selectedVacationEmployee.daysPending
+                        //selectedVacationEmployee.daysPending
                       }
                     </div>
                     <p className="text-sm text-yellow-700">En proceso</p>
@@ -4695,37 +4690,37 @@ const exportToExcel = async (fileName = "asistencias.xlsx") => {
 
               {/* Expiration Warning */}
               {
-              /*
-               selectedVacationEmployee.daysExpiring > 0 && (
-                <Card className="bg-gradient-to-r from-red-50 to-red-100 border-red-200">
-                  <CardContent className="pt-6">
-                    <div className="flex items-center gap-3">
-                      <AlertCircle className="h-8 w-8 text-red-600" />
-                      <div>
-                        <h3 className="font-semibold text-red-900">
-                          ⚠️ Días por Vencer
-                        </h3>
-                        <p className="text-red-700">
-                          Tienes{" "}
-                          <strong>
-                            {selectedVacationEmployee.daysExpiring} días
-                          </strong>{" "}
-                          que vencerán el{" "}
-                          <strong>
-                            {selectedVacationEmployee.expirationDate}
-                          </strong>
-                        </p>
-                        <p className="text-sm text-red-600 mt-1">
-                          Te recomendamos planificar tus vacaciones para no
-                          perder estos días.
-                        </p>
+                /*
+                 selectedVacationEmployee.daysExpiring > 0 && (
+                  <Card className="bg-gradient-to-r from-red-50 to-red-100 border-red-200">
+                    <CardContent className="pt-6">
+                      <div className="flex items-center gap-3">
+                        <AlertCircle className="h-8 w-8 text-red-600" />
+                        <div>
+                          <h3 className="font-semibold text-red-900">
+                            ⚠️ Días por Vencer
+                          </h3>
+                          <p className="text-red-700">
+                            Tienes{" "}
+                            <strong>
+                              {selectedVacationEmployee.daysExpiring} días
+                            </strong>{" "}
+                            que vencerán el{" "}
+                            <strong>
+                              {selectedVacationEmployee.expirationDate}
+                            </strong>
+                          </p>
+                          <p className="text-sm text-red-600 mt-1">
+                            Te recomendamos planificar tus vacaciones para no
+                            perder estos días.
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )
-              */
-             }
+                    </CardContent>
+                  </Card>
+                )
+                */
+              }
 
               {/* Comparison with Area Average */}
               <Card>
@@ -4847,7 +4842,7 @@ const exportToExcel = async (fileName = "asistencias.xlsx") => {
                 </CardContent>
               </Card>
               */}
-              
+
               {/* Vacation History */}
               <Card>
                 <CardHeader>

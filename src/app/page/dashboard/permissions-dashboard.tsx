@@ -16,6 +16,8 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination"
+import ExcelJS from "exceljs";
+import { saveAs } from "file-saver";
 import {
   ArrowLeft,
   Filter,
@@ -558,11 +560,12 @@ export default function PermissionsDashboard({ showPermissionDetail, setShowPerm
   const [currentPermissionPage, setCurrentPermissionPage] = useState(1)
 
   const handleEmployeeClick = (employeeName: any) => {
-    const employee = permissionsData?.flatMap((area : any) => area.employees.map((emp :any) => ({ ...emp, area: area.area })))
-      .find((emp : any) => emp.name === employeeName)
-
+    const employee = permissionsData?.flatMap((area) => area.employees.map((emp :any) => ({ ...emp, area: area.area })))
+    .find((emp : any) => emp.name === employeeName)
+    console.log("EMPLEADO Horas",employee.totalHours)
+    console.log("EMPLEADO Horas",employee)
     if (employee) {
-      setSelectedEmployee(employee as any)
+      setSelectedEmployee(employee)
       setShowEmployeeModal(true)
       setCurrentPermissionPage(1)
     }
@@ -619,6 +622,122 @@ export default function PermissionsDashboard({ showPermissionDetail, setShowPerm
         return "text-gray-600"
     }
   }
+
+const exportToExcel = async (
+  fileName = "reporte_permisos.xlsx"
+) => {
+  if (!Array.isArray(permissionsData) || permissionsData.length === 0) return;
+
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = "Mi App";
+
+  // 1️⃣ Hoja de Resumen por Área
+  const summarySheet = workbook.addWorksheet("Resumen por Área");
+  summarySheet.columns = [
+    { header: "Área", width: 25 },
+    { header: "Supervisor", width: 25 },
+    { header: "Permisos Totales", width: 20 },
+    { header: "Horas Totales", width: 20 },
+    { header: "Empleados", width: 15 },
+    { header: "Promedio Horas/Permiso", width: 25 },
+    { header: "Promedio Permisos/Empleado", width: 30 },
+  ];
+
+  permissionsData.forEach(area => {
+    summarySheet.addRow([
+      area.area,
+      area.supervisor,
+      area.totalPermissions,
+      area.totalHours.toFixed(2),
+      area.totalEmployees,
+      area.averageHoursPerPermission.toFixed(2),
+      area.averagePermissionsPerEmployee.toFixed(2),
+    ]);
+  });
+
+  // 2️⃣ Hoja Detalle Empleados
+  const detailSheet = workbook.addWorksheet("Detalle por Empleado");
+  detailSheet.columns = [
+    { header: "Área", width: 20 },
+    { header: "Empleado", width: 25 },
+    { header: "Permisos Totales", width: 20 },
+    { header: "Horas Totales", width: 20 },
+    { header: "Horas Promedio", width: 20 },
+    { header: "Promedio Área", width: 20 },
+    { header: "Comparación c/Área (%)", width: 25 },
+    { header: "Pendientes", width: 15 },
+    { header: "Último Permiso", width: 20 },
+    { header: "Lun", width: 10 },
+    { header: "Mar", width: 10 },
+    { header: "Mié", width: 10 },
+    { header: "Jue", width: 10 },
+    { header: "Vie", width: 10 },
+  ];
+
+  permissionsData.forEach(area => {
+    area.employees.forEach(emp => {
+      detailSheet.addRow([
+        area.area,
+        emp.name,
+        emp.totalPermissions,
+        emp.totalHours.toFixed(2),
+        emp.averageHours.toFixed(2),
+        emp.areaAverage.toFixed(2),
+        emp.comparisonWithArea.toFixed(2),
+        emp.pendingPermissions,
+        emp.lastPermission,
+        emp.weeklyPattern.monday,
+        emp.weeklyPattern.tuesday,
+        emp.weeklyPattern.wednesday,
+        emp.weeklyPattern.thursday,
+        emp.weeklyPattern.friday,
+      ]);
+    });
+  });
+
+  // 3️⃣ Hoja de Permisos Aprobados
+  const approvedSheet = workbook.addWorksheet("Permisos Aprobados");
+  approvedSheet.columns = [
+    { header: "ID", width: 10 },
+    { header: "Empleado", width: 25 },
+    { header: "Área", width: 20 },
+    { header: "Fecha Solicitud", width: 20 },
+    { header: "Inicio", width: 20 },
+    { header: "Fin", width: 20 },
+    { header: "Horas", width: 12 },
+    { header: "Estado", width: 15 },
+    { header: "Aprobado por", width: 25 },
+    { header: "Motivo", width: 40 },
+  ];
+
+  permissionRequests?.forEach(req => {
+    approvedSheet.addRow([
+      req.id,
+      req.employeeName,
+      req.area,
+      req.requestDate,
+      req.startDate,
+      req.endDate,
+      req.hours.toFixed(2),
+      req.status,
+      req.approvedBy,
+      req.reason,
+    ]);
+  });
+
+  // 4️⃣ Exportar
+  try {
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {
+      type:
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    saveAs(blob, fileName);
+  } catch (err) {
+    console.error("Error al exportar:", err);
+  }
+};
+
 
   const getStatusText = (status: any) => {
     switch (status) {
@@ -704,7 +823,7 @@ export default function PermissionsDashboard({ showPermissionDetail, setShowPerm
                 {showAreaCards ? "Ocultar Métricas" : "Mostrar Métricas"}
                 {showAreaCards ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
               </Button>
-              <Button className="flex items-center gap-2">
+              <Button onClick={() => exportToExcel()} className="flex items-center gap-2">
                 <Download className="h-4 w-4" />
                 Exportar Análisis
               </Button>
@@ -838,9 +957,13 @@ export default function PermissionsDashboard({ showPermissionDetail, setShowPerm
                     <div className="text-2xl font-bold text-orange-900">{permissionsData.length}</div>
                     <p className="text-sm text-orange-700">Supervisores activos</p>
                     <div className="text-xs text-orange-600 mt-1">
-                      {Math.round(
+                      {/*
+                      
+                      Math.round(
                         permissionsData.reduce((acc, area) => acc + area.totalPermissions, 0) / permissionsData.length,
-                      )}{" "}
+                      )
+                      */
+                      }{" "}
                       promedio por supervisor
                     </div>
                   </CardContent>
