@@ -42,7 +42,7 @@ export function VacationPreview({ open, onOpenChange, data, onSubmitSuccess }: V
     useEffect(() => {
       // Asegúrate de que el token esté disponible
       if (session?.user?.accessToken) {
-        fetch("https://137.184.62.130:3000/api/profile/profile_info", {
+        fetch("https://infarma.duckdns.org/api/profile/profile_info", {
           method: "GET",
           headers: {
             Authorization: `Bearer ${session?.user.accessToken}`,
@@ -82,7 +82,7 @@ export function VacationPreview({ open, onOpenChange, data, onSubmitSuccess }: V
       comentario: data.comments,
     }
 
-    const res = await fetch("https://137.184.62.130:3000/api/permissions/request-vacations", {
+    const res = await fetch("https://infarma.duckdns.org/api/permissions/request-vacations", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

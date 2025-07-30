@@ -60,7 +60,7 @@ export default function RequestDetail({
         comentario: feedback,
       };
       const response = await fetch(
-        `https://137.184.62.130:3000/api/requests/request-detail/${request.idSolicitud}/handle-request`,
+        `https://infarma.duckdns.org/api/requests/request-detail/${request.idSolicitud}/handle-request`,
         {
           method: "PUT",
           headers: {

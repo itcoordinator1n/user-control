@@ -143,7 +143,7 @@ export function AuditLog() {
   useEffect(() => {
     const fetchAuditorias = async () => {
       try {
-        const res = await fetch('https://137.184.62.130:3000/api/audit/get-audit', {
+        const res = await fetch('https://infarma.duckdns.org/api/audit/get-audit', {
           method: 'GET',
           headers: {
             "Content-Type": "application/json",

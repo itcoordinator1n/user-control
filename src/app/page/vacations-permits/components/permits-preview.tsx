@@ -47,7 +47,7 @@ export function PermitPreview({ open, onOpenChange, data, onSubmitSuccess }: Per
 useEffect(() => {
       // Asegúrate de que el token esté disponible
       if (session?.user?.accessToken) {
-        fetch("https://137.184.62.130:3000/api/profile/profile_info", {
+        fetch("https://infarma.duckdns.org/api/profile/profile_info", {
           method: "GET",
           headers: {
             Authorization: `Bearer ${session?.user.accessToken}`,
@@ -110,7 +110,7 @@ useEffect(() => {
 
       // 4. Llamada al endpoint con token desde session
       const token = session.user.accessToken
-      const res = await fetch("https://137.184.62.130:3000/api/permissions/request-permission", {
+      const res = await fetch("https://infarma.duckdns.org/api/permissions/request-permission", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,

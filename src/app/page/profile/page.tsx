@@ -56,7 +56,7 @@ useEffect(() => {
     const fetchEntryDate = async () => {
       try {
         setLoading(true);
-        const res = await fetch("https://137.184.62.130:3000/api/attendance/attendance-get-entry", {
+        const res = await fetch("https://infarma.duckdns.org/api/attendance/attendance-get-entry", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -106,7 +106,7 @@ useEffect(() => {
   const handleMarkEntry = async () => {
     try {
       const res = await fetch(
-        "https://137.184.62.130:3000/api/attendance/attendance-entry",
+        "https://infarma.duckdns.org/api/attendance/attendance-entry",
         {
           method: "POST",
           headers: {
@@ -138,7 +138,7 @@ useEffect(() => {
   const handleMarkExit = async () => {
     try {
       const res = await fetch(
-        "https://137.184.62.130:3000/api/attendance/attendance-exit",
+        "https://infarma.duckdns.org/api/attendance/attendance-exit",
         {
           method: "PUT",
           headers: {
@@ -162,7 +162,7 @@ useEffect(() => {
   useEffect(() => {
     // Asegúrate de que el token esté disponible
     if (session?.user?.accessToken) {
-      fetch("https://137.184.62.130:3000/api/profile/profile_info", {
+      fetch("https://infarma.duckdns.org/api/profile/profile_info", {
         method: "GET",
         headers: {
           Authorization: `Bearer ${session?.user.accessToken}`,
