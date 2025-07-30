@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Calendar, Clock, User, FileText, Send } from "lucide-react"
 import { useSession } from "next-auth/react";
+import { useEffect, useState } from "react"
 
 interface PermitPreviewProps {
   open: boolean
@@ -21,6 +22,18 @@ interface PermitPreviewProps {
   onSubmitSuccess?: () => void
 }
 
+
+interface UserProfile {
+    id: number;
+    name: string;
+    position: string;
+    creationDate: string;
+    area: string;
+    country: string;
+    supervisorName: string;
+    supervisorArea:string;
+    supervisorPosition:string;
+  }
 export function PermitPreview({ open, onOpenChange, data, onSubmitSuccess }: PermitPreviewProps) {
   const { data: session, status } = useSession()
   console.log("Hora de inicio", data.startTime)
@@ -29,7 +42,30 @@ export function PermitPreview({ open, onOpenChange, data, onSubmitSuccess }: Per
     position: "Gerente de Recursos Humanos",
     department: "Administración",
   }
-
+    const [profile, setProfile] = useState<UserProfile | null>(null);
+      const [error, setError] = useState<string | null>(null);
+useEffect(() => {
+      // Asegúrate de que el token esté disponible
+      if (session?.user?.accessToken) {
+        fetch("http://137.184.62.130:3000/api/profile/profile_info", {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${session?.user.accessToken}`,
+          },
+        })
+          .then((res) => {
+            if (!res.ok) {
+              throw new Error("Error al obtener el perfil");
+            }
+            return res.json();
+          })
+          .then((data: UserProfile) => {
+            console.log("Informacion del perfil", data)
+            setProfile(data);
+          })
+          .catch((err: Error) => setError(err.message));
+      }
+    }, [session]);
   const getFileThumbnail = (file: File) => {
     if (file.type.startsWith("image/")) {
       const url = URL.createObjectURL(file)
@@ -74,7 +110,7 @@ export function PermitPreview({ open, onOpenChange, data, onSubmitSuccess }: Per
 
       // 4. Llamada al endpoint con token desde session
       const token = session.user.accessToken
-      const res = await fetch("https://infarmaserver-production.up.railway.app/api/permissions/request-permission", {
+      const res = await fetch("http://137.184.62.130:3000/api/permissions/request-permission", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -207,10 +243,10 @@ export function PermitPreview({ open, onOpenChange, data, onSubmitSuccess }: Per
                   <User className="h-6 w-6 text-blue-600" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900">{supervisor.name}</h3>
-                  <p className="text-sm text-gray-600">{supervisor.position}</p>
+                  <h3 className="font-semibold text-gray-900">{profile?.supervisorName}</h3>
+                  <p className="text-sm text-gray-600">{profile?.supervisorPosition}</p>
                   <Badge variant="secondary" className="mt-1">
-                    {supervisor.department}
+                    {profile?.supervisorArea}
                   </Badge>
                 </div>
               </div>

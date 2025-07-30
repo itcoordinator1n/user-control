@@ -60,7 +60,7 @@ export default function RequestDetail({
         comentario: feedback,
       };
       const response = await fetch(
-        `https://infarmaserver-production.up.railway.app/api/requests/request-detail/${request.idSolicitud}/handle-request`,
+        `http://137.184.62.130:3000/api/requests/request-detail/${request.idSolicitud}/handle-request`,
         {
           method: "PUT",
           headers: {

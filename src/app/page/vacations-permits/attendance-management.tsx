@@ -52,7 +52,7 @@ export default function AttendanceManagement() {
         }
 
         const token = session.user.accessToken
-        const res = await fetch("https://infarmaserver-production.up.railway.app/api/permissions/vacation-days", {
+        const res = await fetch("http://137.184.62.130:3000/api/permissions/vacation-days", {
           method: "GET",
           headers: {
             Authorization: `Bearer ${token}`,

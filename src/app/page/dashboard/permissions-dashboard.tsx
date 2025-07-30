@@ -525,7 +525,7 @@ export default function PermissionsDashboard({ showPermissionDetail, setShowPerm
   useEffect(() => {
     const fetchStatistics = async () => {
       try {
-        const res = await fetch('https://infarmaserver-production.up.railway.app/api/statistics/get-permissions-personal-statistics');
+        const res = await fetch('http://137.184.62.130:3000/api/statistics/get-permissions-personal-statistics');
         if (!res.ok) {
           throw new Error(`Error en la respuesta: ${res.status}`);
         }
