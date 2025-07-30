@@ -68,7 +68,7 @@ export function RequestsTable({ type, onRequestDeleted }: RequestsTableProps) {
     // No lanzamos la petición hasta tener token válido
     if (status !== "authenticated" || !token) return
 
-    fetch("http://137.184.62.130:3000/api/permissions/get-all-requests", {
+    fetch("https://137.184.62.130:3000/api/permissions/get-all-requests", {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(res => {

@@ -422,7 +422,7 @@ export default function SupervisorDashboard() {
   useEffect(() => {
     // Asegúrate de que el token esté disponible
     if (session?.user?.accessToken) {
-      fetch("http://137.184.62.130:3000/api/permissions/get-all-request-to-me", {
+      fetch("https://137.184.62.130:3000/api/permissions/get-all-request-to-me", {
         method: "GET",
         headers: {
           Authorization: `Bearer ${session?.user.accessToken}`,
@@ -481,7 +481,7 @@ export default function SupervisorDashboard() {
 
       try {
         const response = await fetch(
-          "http://137.184.62.130:3000/api/permissions/handle-request",
+          "https://137.184.62.130:3000/api/permissions/handle-request",
           {
             method: "PUT", // o POST según cómo configuraste tu endpoint
             headers: {

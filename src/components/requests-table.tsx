@@ -161,7 +161,7 @@ export default function RequestsTable() {
       try {
         // Asegúrate de que la URL corresponda a la ruta de tu endpoint en Express.
         const res = await fetch(
-          "http://137.184.62.130:3000/api/requests/get-all-requests",
+          "https://137.184.62.130:3000/api/requests/get-all-requests",
           {
             method: "GET",
             headers: {
