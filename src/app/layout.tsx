@@ -1,7 +1,7 @@
 'use client'
 // import type { Metadata } from "next";
 import "./globals.css";
-import { signOut } from "next-auth/react";
+import { signOut  } from "next-auth/react";
 
 import AuthProvider from "@/provider/AuthProvider";
 
@@ -16,6 +16,7 @@ import { usePathname } from "next/navigation";
 import { UserAvatarMenu } from "@/components/user-avatar-menu";
 import Image from "next/image";
 import ClientLayout from "./client-layout";
+import PasswordChangeModal from "@/components/password-change-modal";
 export default function RootLayout(
   {
   children,
@@ -24,10 +25,12 @@ export default function RootLayout(
 }>
 ) {
   
+
+  
   const pathname = usePathname();
   return (
     <AuthProvider>
-
+      
       <ClientLayout >{children} </ClientLayout>
     </AuthProvider>
     // <AuthProvider>

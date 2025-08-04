@@ -15,11 +15,17 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import PasswordChangeModal from "@/components/password-change-modal"
 
 export default function LandingPage() {
+  const onPasswordChanged = ()=>{
+    console.log("cambiada")
+  }
   return (
     <div className="flex min-h-screen   flex-col">
       {/* Header */}
+
+      
       
 
       <main className="flex-1">
