@@ -361,7 +361,9 @@ export default function AttendanceManagement() {
                     </div>
                   </div>
 
-                  <div>
+                  {/*
+                  
+                    <div>
                     <h4 className="text-sm font-medium text-gray-900 mb-2">Períodos de vacaciones:</h4>
                     <ul className="text-xs text-gray-600 space-y-1">
                       <li>• Mínimo 5 días consecutivos</li>
@@ -377,6 +379,7 @@ export default function AttendanceManagement() {
                       anticipación.
                     </p>
                   </div>
+                  */}
 
                   <div>
                     <h4 className="text-sm font-medium text-gray-900 mb-2">Proceso de aprobación:</h4>
