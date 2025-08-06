@@ -360,7 +360,12 @@ export default function AttendanceManagement() {
                       </div>
                     </div>
                   </div>
-
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-900 mb-2">Proceso de aprobacion</h4>
+                    <ul className="text-xs text-gray-600 space-y-1">
+                      <li>• Su solicitud sera revisada por su jefe inmediato. Recibira una notificacion cuando sea aprobada o rechazada.</li>
+                    </ul>
+                  </div>
                   {/*
                   
                     <div>
