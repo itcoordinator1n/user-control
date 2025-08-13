@@ -10,7 +10,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { useSession } from "next-auth/react"
 import PasswordChangeModal from "@/components/password-change-modal";
-
+import {jwtDecode} from "jwt-decode";
 export default function ClientLayout(
   {
     children,
@@ -40,6 +40,9 @@ export default function ClientLayout(
   useEffect(() => {
     const getFlag = async ()=>{
       console.log("token:",session)
+      console.log("Permisos",session?.user.permissions)
+      const decoded = jwtDecode(session?.user.accessToken as string);
+      console.log("Payload del token:", decoded);
       const res = await fetch("https://infarma.duckdns.org/api/auth/get-password-flag", {
         method: "GET",
         headers: {
@@ -48,6 +51,7 @@ export default function ClientLayout(
           // NO Content-Type: lo gestiona automáticamente FormData
         }
       })
+      
 
       if (!res.ok) {
         const err = await res.json()
