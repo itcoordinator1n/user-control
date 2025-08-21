@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Calendar, User, Send, Clock } from "lucide-react"
 import { useSession } from "next-auth/react"
 import { useEffect, useState } from "react"
+import SignaturePad, { useSignaturePad } from "@/components/signature-pad"
 
 interface VacationPreviewProps {
   open: boolean
@@ -31,6 +32,16 @@ interface UserProfile {
   }
 
 export function VacationPreview({ open, onOpenChange, data, onSubmitSuccess }: VacationPreviewProps) {
+    const { signatureData, hasSignature, handleSignatureChange } = useSignaturePad()
+
+  const handleSubm = () => {
+    if (hasSignature && signatureData) {
+      console.log("Firma capturada en base64:", signatureData)
+      // Aquí puedes enviar la firma a tu backend o guardarla en la BD
+    } else {
+      alert("Debe firmar antes de enviar.")
+    }
+  }
   const supervisor = {
     name: "María González Rodríguez",
     position: "Gerente de Recursos Humanos",
@@ -73,40 +84,68 @@ export function VacationPreview({ open, onOpenChange, data, onSubmitSuccess }: V
 
   const { total, workdays } = calculateDays()
 
-  const handleSubmit = async () => {
-    try {
-    const token = session?.user.accessToken // O de donde tomes el token
-    const payload = {
-      fechaInicio: data?.startDate?.toISOString().split('T')[0], // "2025-06-03"
-      fechaFin: data?.endDate?.toISOString().split('T')[0],       // "2025-06-12"
-      comentario: data.comments,
-    }
+const handleSubmit = async () => {
+        const dataURL = signatureData; // "data:image/png;base64,...."
+        if (!dataURL) return;
 
-    const res = await fetch("https://infarma.duckdns.org/api/permissions/request-vacations", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(payload),
-    })
+        // (opcional) seguir descargando localmente
+        // const link = document.createElement("a");
+        // link.download = `firma-${Date.now()}.png`;
+        // link.href = dataURL;
+        // link.click();
 
-    const result = await res.json()
+        try {
+          const token = session?.user.accessToken;
 
-    if (!res.ok) {
-      console.error("Error al enviar la solicitud:", result.error)
-      return
-    }
+          // const payload = {
+          //   fechaInicio: data?.startDate?.toISOString().split("T")[0],
+          //   fechaFin: data?.endDate?.toISOString().split("T")[0],
+          //   comentario: data?.comments ?? "",
+          // };
+          const payload = {
+            fechaInicio: data?.startDate?.toISOString().split('T')[0],
+            fechaFin: data?.endDate?.toISOString().split('T')[0],
+            comentario: data.comments,
+          }
+          // 1) convertir dataURL -> Blob (respeta el mime de la dataURL)
+          const blob = await (await fetch(dataURL)).blob();
 
-    console.log("Solicitud enviada:", result)
-    onOpenChange(false)
-    onSubmitSuccess?.()
-  } catch (err) {
-    console.error("Error inesperado:", err)
-  }
-    onOpenChange(false)
-    onSubmitSuccess?.()
-  }
+          // 2) armar FormData (NO pongas Content-Type manualmente)
+
+          const form = new FormData();
+          form.append("firma", blob, `firma-${Date.now()}.png`);
+          // puedes enviar los campos sueltos...
+          form.append("fechaInicio", payload.fechaInicio || "");
+          form.append("fechaFin", payload.fechaFin || "");
+          form.append("comentario", payload.comentario);
+          // ...o todo en un solo campo "payload":
+          // form.append("payload", JSON.stringify(payload));
+
+          const res = await fetch(
+            "https://infarma.duckdns.org/api/permissions/request-vacations",
+            {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${token}`, // NO Content-Type aquí
+              },
+              body: form,
+              credentials: "include",
+            }
+          );
+
+          const result = await res.json();
+          if (!res.ok) {
+            console.error("Error al enviar la solicitud:", result?.error || result);
+            return;
+          }
+
+          console.log("Solicitud enviada:", result);
+          onOpenChange(false);
+          onSubmitSuccess?.();
+        } catch (err) {
+          console.error("Error inesperado:", err);
+        }
+      };
 
   // Función para limpiar y mostrar el contenido HTML
   const renderFormattedContent = (htmlContent: string) => {
@@ -121,6 +160,7 @@ export function VacationPreview({ open, onOpenChange, data, onSubmitSuccess }: V
     )
   }
 
+  
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -219,6 +259,22 @@ export function VacationPreview({ open, onOpenChange, data, onSubmitSuccess }: V
               </div>
             </CardContent>
           </Card>
+
+          <SignaturePad
+        width={500}
+        height={200}
+        strokeWidth={3}
+        strokeColor="#1e3a8a"
+        backgroundColor="white"
+        onSignatureChange={handleSignatureChange}
+      />
+
+      <button
+        type="button"
+        onClick={handleSubmit}
+        className="bg-blue-600 text-white py-2 px-4 rounded-lg disabled:bg-gray-400"
+        disabled={!hasSignature}
+      ></button>
 
           {/* Recordatorios Importantes */}
           <Card className="border-amber-200 bg-amber-50">

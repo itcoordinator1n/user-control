@@ -153,6 +153,7 @@ type RequestsToMe = {
 // ];
 
 const generatePDF = (request: Request) => {
+  console.log("HOLA MUNDOOOO")
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.width;
   const margin = 20;
