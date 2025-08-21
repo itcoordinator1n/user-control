@@ -128,7 +128,7 @@ export function RequestDetailsModal({ open, onOpenChange, request, type, onDelet
 
 
 const generatePDF = async () => { 
-  console.log("ESTE ES EL PDF A DESCARGAR")
+  console.log("ESTE ES EL PDF A DESCARGAR" , request)
   setError(null);
   setLoading(true);
 
@@ -208,7 +208,7 @@ const generatePDF = async () => {
       notes: request.employeeComments || "",
       signatures: {
         applicantName: profile?.name || "",
-        applicantPngUrl: "https://infarma.duckdns.org/uploads/cc3fc14a-ab7f-4a5e-b9da-4e0286818507.png",
+        applicantPngUrl: `https://infarma.duckdns.org/uploads/${request.attachmentName}`,
         managerName: profile?.supervisorArea || "",
         // managerPngUrl: "https://tu-api/firma-jefe.png",
         showManagerLineLabel: "Firma del jefe inmediato y/o Gerente del proceso",
