@@ -256,9 +256,7 @@ export default function AttendanceManagement() {
                   <div>
                     <h4 className="text-sm font-medium text-gray-900 mb-2">Proceso de aprobación:</h4>
                     <p className="text-xs text-gray-600">
-                      Su solicitud será revisada por su jefe inmediato.
-
-                      Al registrar una solicitud el empleado reconoce y acepta que dicha solicitud sera evaluada y estara sujeta a aprovacion por parte de su jefe inmediato 
+                      Al registrar una solicitud en la aplicacion el empleado reconoce y acepta que dicha solicitud sera evaluada y estara sujeta a aprobacion por parte de su jefe inmediato.
                     </p>
                   </div>
                 </CardContent>
