@@ -412,8 +412,9 @@ const generatePDF = async () => {
     // ===== Detalle de la Solicitud =====
     sectionTitle("Detalle de la Solicitud")
     {
+      const days = parseInt(data.daysRequested ) + 1
       const frase1 = "A través de la presente solicito"
-      const diasTxt = `${data.daysRequested ?? ""}`
+      const diasTxt = `${days ?? ""}`
       const frase2 = "días de vacaciones."
       page.drawText(frase1, { x: MARGIN_X, y: cursorY, size: SIZE_TEXT, font: fontRegular, color: COLOR_TEXT })
       const off1 = MARGIN_X + fontRegular.widthOfTextAtSize(frase1, SIZE_TEXT) + 6
