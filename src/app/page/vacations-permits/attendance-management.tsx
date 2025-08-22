@@ -238,25 +238,27 @@ export default function AttendanceManagement() {
                   <div>
                     <h4 className="text-sm font-medium text-gray-900 mb-2">Tipos de permisos:</h4>
                     <ul className="text-xs text-gray-600 space-y-1">
-                      <li>• Médicos (requiere certificado)</li>
-                      <li>• Personales (máximo 3 al mes)</li>
-                      <li>• Académicos (requiere comprobante)</li>
-                      <li>• Familiares (casos de emergencia)</li>
+                      <li>• Médicos (Adjuntar cita medica o incapacidad cuando aplique)</li>
+                      <li>• Personales </li>
+                      <li>• Académicos </li>
+                      <li>• Familiares</li>
+                      <li>• Tiempo compensatorio</li>
                     </ul>
                   </div>
 
                   <div>
                     <h4 className="text-sm font-medium text-gray-900 mb-2">Documentación:</h4>
                     <p className="text-xs text-gray-600">
-                      Para permisos médicos o académicos es obligatorio adjuntar la documentación correspondiente.
+                      Para permisos médicos es obligatorio adjuntar la documentación correspondiente.
                     </p>
                   </div>
 
                   <div>
                     <h4 className="text-sm font-medium text-gray-900 mb-2">Proceso de aprobación:</h4>
                     <p className="text-xs text-gray-600">
-                      Su solicitud será revisada por su jefe inmediato. Recibirá una notificación cuando sea aprobada o
-                      rechazada.
+                      Su solicitud será revisada por su jefe inmediato.
+
+                      Al registrar una solicitud el empleado reconoce y acepta que dicha solicitud sera evaluada y estara sujeta a aprovacion por parte de su jefe inmediato 
                     </p>
                   </div>
                 </CardContent>
