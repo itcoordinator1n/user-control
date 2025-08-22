@@ -387,10 +387,9 @@ export default function AttendanceManagement() {
                   */}
 
                   <div>
-                    <h4 className="text-sm font-medium text-gray-900 mb-2">Proceso de aprobación:</h4>
+                    <h4 className="text-sm font-medium text-gray-900 mb-2">Importante:</h4>
                     <p className="text-xs text-gray-600">
-                      Su solicitud será revisada por su jefe inmediato. Recibirá una notificación cuando sea aprobada o
-                      rechazada.
+                      Al registrar y firmar esta solicitud de vacaciones en el sistema, el empleado declara estar consciente y de acuerdo en que los días solicitados serán descontados de su saldo de vacaciones disponibles, conforme a la política interna de la empresa y a la legislación laboral vigente. Una vez aprobada la solicitud por la jefatura, Recursos Humanos realizara el descuento de los días.
                     </p>
                   </div>
                 </CardContent>
