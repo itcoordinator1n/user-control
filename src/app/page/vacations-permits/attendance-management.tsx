@@ -250,6 +250,11 @@ export default function AttendanceManagement() {
                     <h4 className="text-sm font-medium text-gray-900 mb-2">Documentación:</h4>
                     <p className="text-xs text-gray-600">
                       Para permisos médicos es obligatorio adjuntar la documentación correspondiente.
+                      <ul>
+                          <li>• Incapacidad </li>
+                          <li>• Cita medica </li>
+                          <li>• Cualquier otro documento cuando aplique</li>
+                      </ul>
                     </p>
                   </div>
 
