@@ -277,7 +277,8 @@ const handleSubmit = async () => {
       ></button>
 
           {/* Recordatorios Importantes */}
-          <Card className="border-amber-200 bg-amber-50">
+          {/*
+            <Card className="border-amber-200 bg-amber-50">
             <CardContent className="pt-6">
               <div className="space-y-2">
                 <div className="flex items-center space-x-2">
@@ -293,6 +294,8 @@ const handleSubmit = async () => {
               </div>
             </CardContent>
           </Card>
+          
+          */}
 
           {/* Estado de la Solicitud */}
           <Card className="border-yellow-200 bg-yellow-50">
