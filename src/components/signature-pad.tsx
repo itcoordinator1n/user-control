@@ -173,15 +173,15 @@ export default function SignaturePad({
     [hasSignature],
   )
 
-  const downloadSignature = useCallback(() => {
-    const dataURL = getSignatureData()
-    if (!dataURL) return
+  // const downloadSignature = useCallback(() => {
+  //   const dataURL = getSignatureData()
+  //   if (!dataURL) return
 
-    const link = document.createElement("a")
-    link.download = `firma-${Date.now()}.png`
-    link.href = dataURL
-    link.click()
-  }, [getSignatureData])
+  //   const link = document.createElement("a")
+  //   link.download = `firma-${Date.now()}.png`
+  //   link.href = dataURL
+  //   link.click()
+  // }, [getSignatureData])
 
   return (
     <div className="flex flex-col gap-3 overflow-hidden">
@@ -219,17 +219,7 @@ export default function SignaturePad({
           <RotateCcw className="w-4 h-4" />
           Limpiar
         </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={downloadSignature}
-          disabled={!hasSignature}
-          className="flex items-center gap-1 bg-transparent"
-        >
-          <Download className="w-4 h-4" />
-          Descargar
-        </Button>
+
       </div>
     </div>
   )

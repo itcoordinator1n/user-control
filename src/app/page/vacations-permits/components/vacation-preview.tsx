@@ -259,6 +259,19 @@ const handleSubmit = async () => {
               </div>
             </CardContent>
           </Card>
+          {/* Estado de la Solicitud */}
+          <Card className="border-yellow-200 bg-yellow-50">
+            <CardContent className="pt-6">
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                <span className="text-sm font-medium text-yellow-800">Esta solicitud será enviada para aprobación</span>
+              </div>
+
+              <p className="text-xs text-yellow-700 mt-1">
+                Para completar el envio de tu solicitud, debes proporcionar tu firma.
+              </p>
+            </CardContent>
+          </Card>
 
           <SignaturePad
         width={500}
@@ -269,12 +282,7 @@ const handleSubmit = async () => {
         onSignatureChange={handleSignatureChange}
       />
 
-      <button
-        type="button"
-        onClick={handleSubmit}
-        className="bg-blue-600 text-white py-2 px-4 rounded-lg disabled:bg-gray-400"
-        disabled={!hasSignature}
-      ></button>
+      
 
           {/* Recordatorios Importantes */}
           {/*
@@ -297,25 +305,14 @@ const handleSubmit = async () => {
           
           */}
 
-          {/* Estado de la Solicitud */}
-          <Card className="border-yellow-200 bg-yellow-50">
-            <CardContent className="pt-6">
-              <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                <span className="text-sm font-medium text-yellow-800">Esta solicitud será enviada para aprobación</span>
-              </div>
-              <p className="text-xs text-yellow-700 mt-1">
-                Recibirás una notificación cuando sea revisada por tu supervisor.
-              </p>
-            </CardContent>
-          </Card>
+          
 
           {/* Botones de Acción */}
           <div className="flex gap-3 pt-4">
             <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1">
               Editar Solicitud
             </Button>
-            <Button onClick={handleSubmit} className="flex-1 bg-blue-600 hover:bg-blue-700">
+            <Button disabled={!hasSignature} onClick={handleSubmit} className="flex-1 bg-blue-600 hover:bg-blue-700">
               <Send className="mr-2 h-4 w-4" />
               Enviar Solicitud
             </Button>
