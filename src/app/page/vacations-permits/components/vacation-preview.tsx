@@ -16,6 +16,7 @@ interface VacationPreviewProps {
     startDate?: Date | null
     endDate?: Date | null
     comments: string
+    halfDay?: boolean
   }
   onSubmitSuccess?: () => void
 }
@@ -76,8 +77,9 @@ export function VacationPreview({ open, onOpenChange, data, onSubmitSuccess }: V
   const calculateDays = () => {
     if (!data.startDate || !data.endDate) return { total: 0, workdays: 0 }
 
-    const totalDays = Math.ceil((data.endDate.getTime() - data.startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
-    const workdays = Math.max(0, totalDays - Math.floor(totalDays / 7) * 2)
+    const totalDays = (Math.ceil((data.endDate.getTime() - data.startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1)* (data.halfDay && data.startDate?.getTime() == data.endDate?.getTime()?0.5:1);
+    const workdays = (Math.ceil((data.endDate.getTime() - data.startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1)* (data.halfDay && data.startDate?.getTime() == data.endDate?.getTime()?0.5:1);
+    //const workdays = (Math.max(0, totalDays - Math.floor(totalDays / 7) * 2))* (data.halfDay && data.startDate?.getTime() == data.endDate?.getTime()?0.5:1);
 
     return { total: totalDays, workdays }
   }
@@ -106,6 +108,7 @@ const handleSubmit = async () => {
             fechaInicio: data?.startDate?.toISOString().split('T')[0],
             fechaFin: data?.endDate?.toISOString().split('T')[0],
             comentario: data.comments,
+            halfDay: data.halfDay 
           }
           // 1) convertir dataURL -> Blob (respeta el mime de la dataURL)
           const blob = await (await fetch(dataURL)).blob();
@@ -118,6 +121,7 @@ const handleSubmit = async () => {
           form.append("fechaInicio", payload.fechaInicio || "");
           form.append("fechaFin", payload.fechaFin || "");
           form.append("comentario", payload.comentario);
+          form.append("halfDay", payload.halfDay ? "true" : "false");
           // ...o todo en un solo campo "payload":
           // form.append("payload", JSON.stringify(payload));
 

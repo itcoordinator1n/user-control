@@ -27,6 +27,7 @@ export default function AttendanceManagement() {
   const [vacationDays, setvacationDays] = useState(0)
   const [permitComments, setPermitComments] = useState("")
   const [vacationStartDate, setVacationStartDate] = useState<Date | null>(null)
+  const [halfDay, setHalfDay] = useState(false);
   const [vacationEndDate, setVacationEndDate] = useState<Date | null>(null)
   const [vacationComments, setVacationComments] = useState("")
   const [files, setFiles] = useState<File[]>([])
@@ -107,6 +108,7 @@ export default function AttendanceManagement() {
     setVacationStartDate(null)
     setVacationEndDate(null)
     setVacationComments("")
+    setHalfDay(false)
   }
 
   const handleRequestDeleted = () => {
@@ -288,7 +290,7 @@ export default function AttendanceManagement() {
                     <div className="flex justify-between items-center">
                       <div>
                         <h3 className="font-medium text-blue-900">Días de vacaciones disponibles</h3>
-                        <p className="text-sm text-blue-700">Período 2023-2024</p>
+                        <p className="text-sm text-blue-700">Período 2025-2026</p>
                       </div>
                       <div className="text-right">
                         <div className="text-3xl font-bold text-blue-900">{vacationDays}</div>
@@ -313,11 +315,14 @@ export default function AttendanceManagement() {
                         setVacationEndDate(end)
                       }}
                       availableDays={0}
+                      halfDay = {halfDay} 
+                      setHalfDay ={setHalfDay}
+                      
                     />
                   </div>
 
                   {/* Comentarios adicionales */}
-                  <div className="space-y-2">
+                  {/* <div className="space-y-2">
                     <Label htmlFor="vacation-comments" className="text-sm font-medium">
                       Comentarios adicionales
                     </Label>
@@ -327,7 +332,7 @@ export default function AttendanceManagement() {
                       placeholder="Agregue cualquier información adicional sobre su solicitud de vacaciones..."
                       minHeight="150px"
                     />
-                  </div>
+                  </div> */}
 
                   {/* Botones de acción */}
                   <div className="flex gap-3 pt-4">
@@ -430,6 +435,7 @@ export default function AttendanceManagement() {
           startDate: vacationStartDate,
           endDate: vacationEndDate,
           comments: vacationComments,
+          halfDay: halfDay
         }}
         onSubmitSuccess={handleVacationSubmitSuccess}
       />

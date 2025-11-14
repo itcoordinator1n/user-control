@@ -9,10 +9,12 @@ interface VacationCalendarProps {
   startDate?: Date
   endDate?: Date
   onDateRangeChange?: (startDate: Date | null, endDate: Date | null) => void
+  setHalfDay: (halfDay: boolean) => void
+  halfDay?: boolean
   availableDays?: number
 }
 
-export function VacationCalendar({ startDate, endDate, onDateRangeChange, availableDays = 0 }: VacationCalendarProps) {
+export function VacationCalendar({ startDate, endDate, onDateRangeChange, availableDays = 0,setHalfDay,halfDay }: VacationCalendarProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [selectingStart, setSelectingStart] = useState(true)
 
@@ -99,8 +101,8 @@ export function VacationCalendar({ startDate, endDate, onDateRangeChange, availa
 
   const days = getDaysInMonth(currentMonth)
   const totalDays =
-    startDate && endDate ? Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1 : 0
-
+    startDate && endDate ? (Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1) * (halfDay && startDate?.getTime() == endDate?.getTime()?0.5:1) : 0
+  console.log(startDate, endDate, totalDays)
   return (
     <div className="space-y-4">
       <div className="text-center">
@@ -165,6 +167,23 @@ export function VacationCalendar({ startDate, endDate, onDateRangeChange, availa
           </span>
         </div>
       </div>
+      
+      {
+        startDate?.getTime() == endDate?.getTime() && startDate!=undefined?  (
+          <div className="p-4 bg-yellow-100 text-yellow-800 rounded flex gap-5">
+              <p className="">
+                Seleccionaste un solo día. activa esta opcion si quieres medio dia de vacaciones.
+              </p>
+               <input
+                type="checkbox"
+                checked={halfDay}
+                onChange={e => setHalfDay(e.target.checked)}
+                className="scale-200"
+              />
+            </div>
+        ) :null
+      }
+
 
       <Button variant="outline" size="sm" onClick={clearSelection} className="w-full">
         Limpiar
