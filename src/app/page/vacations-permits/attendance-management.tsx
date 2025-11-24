@@ -17,6 +17,7 @@ import { NotificationPill } from "./components/notification-pill"
 import { ToastNotification } from "./components/toast-notification"
 import { RichTextEditor } from "./components/rich-text-editor"
 import { useSession } from "next-auth/react"
+import { log } from "console"
 
 export default function AttendanceManagement() {
   const [permitDate, setPermitDate] = useState<Date>()
@@ -225,7 +226,7 @@ export default function AttendanceManagement() {
                   <CardDescription>Políticas y recomendaciones</CardDescription>
                 </CardHeader>
                 <CardContent className="p-6 space-y-4">
-                  <div className="bg-blue-50 p-4 rounded-lg">
+                  {/* <div className="bg-blue-50 p-4 rounded-lg">
                     <div className="flex items-start space-x-2">
                       <Info className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
                       <div>
@@ -235,7 +236,7 @@ export default function AttendanceManagement() {
                         </p>
                       </div>
                     </div>
-                  </div>
+                  </div> */}
 
                   <div>
                     <h4 className="text-sm font-medium text-gray-900 mb-2">Tipos de permisos:</h4>

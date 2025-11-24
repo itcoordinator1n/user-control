@@ -8,6 +8,7 @@ import { Calendar, User, Send, Clock } from "lucide-react"
 import { useSession } from "next-auth/react"
 import { useEffect, useState } from "react"
 import SignaturePad, { useSignaturePad } from "@/components/signature-pad"
+import { WaitModal } from "./wait-modal"
 
 interface VacationPreviewProps {
   open: boolean
@@ -34,6 +35,9 @@ interface UserProfile {
 
 export function VacationPreview({ open, onOpenChange, data, onSubmitSuccess }: VacationPreviewProps) {
     const { signatureData, hasSignature, handleSignatureChange } = useSignaturePad()
+      const [isModalOpen, setIsModalOpen] = useState(false)
+  const [modalStatus, setModalStatus] = useState<"loading" | "success" | "error">("success")
+  const [errorMessage, setErrorMessage] = useState("")
 
   const handleSubm = () => {
     if (hasSignature && signatureData) {
@@ -89,6 +93,9 @@ export function VacationPreview({ open, onOpenChange, data, onSubmitSuccess }: V
 const handleSubmit = async () => {
         const dataURL = signatureData; // "data:image/png;base64,...."
         if (!dataURL) return;
+        setModalStatus("loading")
+      setIsModalOpen(true)
+      setErrorMessage("")
 
         // (opcional) seguir descargando localmente
         // const link = document.createElement("a");
@@ -139,11 +146,13 @@ const handleSubmit = async () => {
 
           const result = await res.json();
           if (!res.ok) {
+            setModalStatus("error")
             console.error("Error al enviar la solicitud:", result?.error || result);
             return;
           }
 
           console.log("Solicitud enviada:", result);
+          setModalStatus("success")
           onOpenChange(false);
           onSubmitSuccess?.();
         } catch (err) {
@@ -316,11 +325,14 @@ const handleSubmit = async () => {
             <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1">
               Editar Solicitud
             </Button>
-            <Button disabled={!hasSignature} onClick={handleSubmit} className="flex-1 bg-blue-600 hover:bg-blue-700">
+            <Button disabled={!hasSignature && modalStatus === "loading"} onClick={handleSubmit} className="flex-1 bg-blue-600 hover:bg-blue-700">
               <Send className="mr-2 h-4 w-4" />
               Enviar Solicitud
             </Button>
           </div>
+
+
+          
         </div>
 
         <style jsx>{`
@@ -372,6 +384,27 @@ const handleSubmit = async () => {
           }
         `}</style>
       </DialogContent>
+      <WaitModal
+                  isOpen={isModalOpen}
+                  status={modalStatus}
+                  title={
+                    modalStatus === "loading"
+                      ? "Enviando solicitud"
+                      : modalStatus === "success"
+                        ? "¡Solicitud enviada!"
+                        : "Error al enviar"
+                  }
+                  message={
+                    modalStatus === "loading"
+                      ? "Estamos procesando tu información..."
+                      : modalStatus === "success"
+                        ? "Tu solicitud ha sido enviada exitosamente"
+                        : undefined
+                  }
+                  errorMessage={errorMessage}
+                  onClose={() => setIsModalOpen(false)}
+                  autoCloseMs={modalStatus === "success" ? 3000 : undefined}
+                />
     </Dialog>
   )
 }
