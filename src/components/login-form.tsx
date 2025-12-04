@@ -23,6 +23,8 @@ import {
 import { Input } from "@/components/ui/input"
 
 import { signIn, useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+
 
 
 
@@ -47,6 +49,7 @@ type TokenPayload = {
   isActive: boolean;
 };
 export default function LoginForm() {
+  const router = useRouter();
 
   const { data: session, status } = useSession();
   const [isLoading, setIsLoading] = useState(false)
@@ -88,7 +91,7 @@ export default function LoginForm() {
     
 
     const result = await signIn("credentials", {
-      redirect: true,
+      redirect: false,
       username: values.user,
       password: values.password,
     });
@@ -98,7 +101,7 @@ export default function LoginForm() {
     }
     // Si el inicio de sesión es exitoso, redirige a /dashboard
     if (result?.ok) {
-      //router.push("/dashboard");
+      router.push("/page/profile");
     } else {
       alert("Invalid credentials");
     }
