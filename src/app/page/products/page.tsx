@@ -40,7 +40,7 @@ export default function ProductManagement() {
        setCategories(data); // TypeScript no se quejará porque las claves coinciden
     });
         // Construcción de la URL
-        let url = `https://infarma.duckdns.org/api/priceComparison/get-all-products?page=${page}&limit=${limit}`;
+        const url = `https://infarma.duckdns.org/api/priceComparison/get-all-products?page=${page}&limit=${limit}`;
         
         // NOTA: Si en el futuro implementas búsqueda en backend, añade: &search=${searchTerm}
         
