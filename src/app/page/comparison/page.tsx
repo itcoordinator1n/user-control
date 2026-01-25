@@ -538,6 +538,7 @@ function NewProductRow({ comparisonId, onAdd }: any) {
       idCadena: selectedChain,
       nombreProducto: chainProductName,
       idComparacion: comparisonId,
+      flag:flags,
     };
 
     try {
