@@ -124,33 +124,54 @@ export default function PriceComparisonTable() {
     }
   };
 
-  const handleDownloadExcel = async () => {
+ const handleDownloadExcel = async () => {
     setDownloading(true);
     try {
-      const params = buildQueryParams();
-      params.delete("page");
-      params.delete("limit");
+      // 1. Construir parámetros manualmente para asegurar que solo van los necesarios
+      const params = new URLSearchParams();
 
+      // Parámetros obligatorios para este reporte
+      params.append("idCadena", filters.idCadena);
+      params.append("anio", filters.anio.toString());
+      params.append("mes", filters.mes.toString());
+
+      // Parámetros opcionales (solo si tienen valor)
+      if (filters.idCategoria) params.append("idCategoria", filters.idCategoria);
+      if (filters.keyword) params.append("keyword", filters.keyword);
+
+      // NOTA: Excluimos intencionalmente 'page', 'limit', 'datePage', 'dateLimit' 
+      // y 'dia' porque este endpoint descarga el mes completo sin paginar.
+
+      // 2. Realizar la petición al endpoint
+      // Asegúrate de que esta URL coincida con la definida en tu archivo de rutas (router.get)
       const response = await fetch(
-        `/api/priceComparison/export-excel?${params.toString()}`,
+        `https://infarma.duckdns.org/api/priceComparison/download-comparison-by-dates-excel?${params.toString()}`,
         {
           method: "GET",
-        },
+          // headers: { 'Authorization': `Bearer ${token}` } // Si usas auth
+        }
       );
 
       if (!response.ok) throw new Error("Error al generar el Excel");
 
+      // 3. Procesar el archivo binario (Blob)
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
+      
+      // 4. Forzar la descarga en el navegador
       const a = document.createElement("a");
       a.href = url;
-      a.download = `Comparativo_Precios_${filters.anio}_${filters.mes}.xlsx`;
+      // El nombre del archivo sugerido incluye cadena, mes y año para orden
+      a.download = `Historial_Cadena${filters.idCadena}_${filters.anio}_${filters.mes}.xlsx`;
       document.body.appendChild(a);
       a.click();
+      
+      // 5. Limpieza
       a.remove();
       window.URL.revokeObjectURL(url);
+
     } catch (error) {
-      console.error(error);
+      console.error("Error en descarga:", error);
       alert("Hubo un error al intentar descargar el Excel.");
     } finally {
       setDownloading(false);

@@ -43,16 +43,16 @@ export default function PriceComparisonView() {
 }
 
 // ... Dentro de tu componente:
+const [categories, setCategories] = useState<Category[]>([]);
 
 // Estado tipado como un array de Category
-const [categories, setCategories] = useState<Category[]>([]);
+const [categoryId, setCategoryId] = useState<string>("");
+const [selectedDate, setSelectedDate] = useState<string>(
+  new Date().toISOString().split("T")[0],
+);
   // 1. Estados de Filtros y Paginación
   const [page, setPage] = useState(1);
   const [limit] = useState(10); // Límite fijo o podría ser seleccionable
-  const [selectedDate, setSelectedDate] = useState<string>(
-    new Date().toISOString().split("T")[0],
-  );
-  const [categoryId, setCategoryId] = useState<string>("");
 
   // 2. Estados de Datos
   const [data, setData] = useState<ProductoRow[]>([]);
@@ -145,29 +145,75 @@ useEffect(() => {
   }, []);
 
   // 4. Función para Exportar a Excel
-  const handleDownloadExcel = () => {
-    if (data.length === 0) return;
+ const handleDownloadExcel = async () => {
+    try {
+      // 1. Desestructurar la fecha (YYYY-MM-DD) para los parámetros del query
+      // selectedDate viene como "2026-01-26"
+      const [anio, mes, dia] = selectedDate.split("-");
 
-    // Crear una hoja de trabajo a partir de los datos JSON
-    const worksheet = XLSX.utils.json_to_sheet(data);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Comparativa Precios");
+      // 2. Construir la URL con los Query Params
+      // Ajusta la URL base según tu configuración de rutas en el backend
+      let url = `https://infarma.duckdns.org/api/priceComparison/download-comparison-table-excel?dia=${dia}&mes=${mes}&anio=${anio}`;
 
-    // Generar nombre de archivo con fecha
-    const fileName = `Comparativa_Precios_${selectedDate}.xlsx`;
-    XLSX.writeFile(workbook, fileName);
+      // Si hay una categoría seleccionada, la agregamos
+      if (categoryId) {
+        url += `&idCategoria=${categoryId}`;
+      }
+
+      // 3. Realizar la petición al Backend
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          // Si tienes autenticación, agrega tu token aquí
+          // 'Authorization': `Bearer ${token}` 
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Error al descargar el archivo del servidor");
+      }
+
+      // 4. Convertir la respuesta a un Blob (Binary Large Object)
+      const blob = await response.blob();
+
+      // 5. Crear una URL temporal para el Blob
+      const downloadUrl = window.URL.createObjectURL(blob);
+
+      // 6. Crear un elemento <a> invisible para forzar la descarga
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      
+      // El nombre del archivo puede venir del header 'Content-Disposition' del backend
+      // o lo definimos aquí manualmente:
+      link.download = `Comparativa_Precios_${selectedDate}.xlsx`;
+      
+      document.body.appendChild(link);
+      link.click();
+
+      // 7. Limpieza
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+
+    } catch (error) {
+      console.error("Error en la descarga:", error);
+      alert("Hubo un error al intentar descargar el reporte completo.");
+    }
   };
 
-  // 5. Manejadores de Eventos
+  // 5. Manejadores de Eventos+-
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setPage(1); // Resetear a página 1 al filtrar
     fetchData();
   };
 
+  const handleNextPage = (value:number) => {
+    fetchData();
+    setPage( page + value);
+    console.log(page)
+  }
+
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSelectedDate(e.target.value);
-    setPage(1);
   };
 
   // --- RENDERIZADO ---
@@ -373,14 +419,14 @@ useEffect(() => {
 
               <div className="inline-flex mt-2 xs:mt-0">
                 <button
-                  onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+                  onClick={() => handleNextPage(-1) }
                   disabled={page === 1}
                   className="flex items-center justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-l-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <ChevronLeft size={16} className="mr-1" /> Anterior
                 </button>
                 <button
-                  onClick={() => setPage((prev) => prev + 1)}
+                  onClick={() => handleNextPage(1)}
                   // Si total_paginas es null (según tu JSON de ejemplo), quizás quieras deshabilitar si no hay datos
                   disabled={
                     meta.total_paginas

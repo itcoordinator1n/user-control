@@ -285,24 +285,24 @@ function ComparisonEditor({
   const [salesUnits, setSalesUnits] = useState<SalesUnit[]>([]);
   const [rows, setRows] = useState<any[]>([]);
 
-      useEffect(() => {
-    const fetchProductChains = async () => {
-      const response = await fetch(
-        `https://infarma.duckdns.org/api/priceComparison/get-products-by-comparison?id=${comparisonId}`,
-      );
+  // useEffect(() => {
+  //   const fetchProductChains = async () => {
+  //     const response = await fetch(
+  //       `https://infarma.duckdns.org/api/priceComparison/get-products-by-comparison?id=${comparisonId}`,
+  //     );
 
-      if (!response.ok) {
-        throw new Error(`Error HTTP: ${response.status}`);
-      }
-      const responseData = await response.json();
+  //     if (!response.ok) {
+  //       throw new Error(`Error HTTP: ${response.status}`);
+  //     }
+  //     const responseData = await response.json();
 
-      setRows(responseData);
-      console.log(responseData);
-    };
-    fetchProductChains();
-  }, []);
+  //     setRows(responseData);
+  //     console.log(responseData);
+  //   };
+  //   fetchProductChains();
+  // }, []);
 
-    useEffect(() => {
+  useEffect(() => {
     const fetchProductChains = async () => {
       const response = await fetch(
         `https://infarma.duckdns.org/api/priceComparison/get-products-by-comparison?id=${comparisonId}`,
@@ -336,6 +336,7 @@ function ComparisonEditor({
           body: JSON.stringify({
             idUnidadVenta: Number(unitId),
             nombreComparacion: comparisonName,
+            fkProducto: selectedProd?.int_id_producto,
           }),
         },
       );
@@ -348,6 +349,75 @@ function ComparisonEditor({
       console.error(error);
     }
   };
+
+  const [searchResults, setSearchResults] = useState<SimpleProduct[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch] = useDebounce(search, 500);
+  const [selectedProd, setSelectedProd] = useState<SimpleProduct>();
+  const [selectedChain, setSelectedChain] = useState("");
+  const [chainProductName, setChainProductName] = useState("");
+  const [flags, setFlags] = useState("");
+  const handleSelectProduct = (product: SimpleProduct) => {
+    setSelectedProd(product); // Guardas el objeto completo
+    setSearch(product.txt_nombre); // Rellenas el input con el nombre
+    setSearchResults([]); // Ocultas la lista
+  };
+
+  // useEffect(() => {
+  //   const sea = async () => {
+  //     const res = await fetch(
+  //       `https://infarma.duckdns.org/api/priceComparison/search-product-by-name?query=${debouncedSearch}`,
+  //     );
+  //     const data: SimpleProduct[] = await res.json();
+
+  //     return data;
+  //   };
+  //   sea()
+  // }, [debouncedSearch]);
+const [chains, setChains] = useState<Chain[]>([]);
+  useEffect(() => {
+    const searchApi = async () => {
+      if (!debouncedSearch) {
+        setSearchResults([]);
+        return;
+      }
+
+      setIsSearching(true);
+      try {
+        const res = await fetch(
+          `https://infarma.duckdns.org/api/priceComparison/search-product-by-name?query=${debouncedSearch}`,
+        );
+
+        if (res.ok) {
+          const data = await res.json();
+          setSearchResults(data);
+          console.log(data)
+        }
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setIsSearching(false);
+      }
+    };
+    fetchChains();
+
+    searchApi();
+  }, [debouncedSearch]);
+
+  const fetchChains = async () => {
+    const res2 = await fetch(
+      `https://infarma.duckdns.org/api/priceComparison/get-all-chains`,
+    );
+    if (res2.ok) {
+      const responseData = await res2.json();
+      console.log(responseData);
+      // Manejo flexible de respuesta
+
+      setChains(responseData);
+    }
+  };
+
 
   return (
     <div className="space-y-6 py-4">
@@ -362,6 +432,44 @@ function ComparisonEditor({
             disabled={!!comparisonId}
             placeholder="Ej: Canasta Básica"
           />
+        </div>
+        <div className="col-span-3 relative group">
+          {/* 'relative' es vital para que la lista flote respecto a este div */}
+
+          <label className="text-xs font-semibold text-gray-500 mb-1 block">
+            Producto Mock
+          </label>
+
+          <div className="relative">
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar producto..."
+              className={searchResults.length > 0 ? "rounded-b-none" : ""} // Estilo opcional
+            />
+
+            {/* Icono de carga opcional */}
+            {isSearching && (
+              <div className="absolute right-3 top-2.5">
+                <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+              </div>
+            )}
+          </div>
+
+          {/* LISTA DESPLEGABLE */}
+          {searchResults.length > 0 && (
+            <div className="absolute z-50 w-full bg-white border border-t-0 border-gray-200 rounded-b-md shadow-lg max-h-60 overflow-y-auto">
+              {searchResults.map((product) => (
+                <button
+                  key={product.int_id_producto} // Asegúrate que tu producto tenga ID
+                  onClick={() => handleSelectProduct(product)}
+                  className="w-full text-left px-4 py-2 text-sm hover:bg-blue-50 focus:bg-blue-50 focus:outline-none transition-colors"
+                >
+                  {product.txt_nombre}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
         <div className="w-64">
           <label className="text-sm font-medium text-gray-600">
@@ -485,35 +593,34 @@ function NewProductRow({ comparisonId, onAdd }: any) {
   const [chainProductName, setChainProductName] = useState("");
   const [flags, setFlags] = useState("");
 
-
-
   // Aquí iría tu fetch de búsqueda...
-  useEffect(() => {
-    const sea = async () => {
-      const res = await fetch(
-        `https://infarma.duckdns.org/api/priceComparison/search-products?query=${debouncedSearch}`,
-      );
-      const data: SimpleProduct[] = await res.json();
+  // useEffect(() => {
+  //   const sea = async () => {
+  //     const res = await fetch(
+  //       `https://infarma.duckdns.org/api/priceComparison/search-products?query=${debouncedSearch}`,
+  //     );
+  //     const data: SimpleProduct[] = await res.json();
 
-      return data;
-    };
-  }, [debouncedSearch]);
+  //     return data;
+  //   };
+  //   sea();
+  // }, [debouncedSearch]);
 
-    useEffect(() => {
-    const fetchProductChains = async () => {
-      const response = await fetch(
-        `https://infarma.duckdns.org/api/priceComparison/get-products-by-comparison?id=${comparisonId}`,
-      );
+  // useEffect(() => {
+  //   const fetchProductChains = async () => {
+  //     const response = await fetch(
+  //       `https://infarma.duckdns.org/api/priceComparison/get-products-by-comparison?id=${comparisonId}`,
+  //     );
 
-      if (!response.ok) {
-        throw new Error(`Error HTTP: ${response.status}`);
-      }
-      const responseData = await response.json();
+  //     if (!response.ok) {
+  //       throw new Error(`Error HTTP: ${response.status}`);
+  //     }
+  //     const responseData = await response.json();
 
-      console.log(responseData);
-    };
-    fetchProductChains();
-  }, []);
+  //     console.log(responseData);
+  //   };
+  //   fetchProductChains();
+  // }, []);
 
   const handleAdd = async () => {
     // ... Logica de agregar existente
@@ -538,7 +645,7 @@ function NewProductRow({ comparisonId, onAdd }: any) {
       idCadena: selectedChain,
       nombreProducto: chainProductName,
       idComparacion: comparisonId,
-      flag:flags,
+      flag: flags,
     };
 
     try {
@@ -590,46 +697,7 @@ function NewProductRow({ comparisonId, onAdd }: any) {
   };
   const [chains, setChains] = useState<Chain[]>([]);
 
-  useEffect(() => {
-    const searchApi = async () => {
-      if (!debouncedSearch) {
-        setSearchResults([]);
-        return;
-      }
 
-      setIsSearching(true);
-      try {
-        const res = await fetch(
-          `https://infarma.duckdns.org/api/priceComparison/search-product-by-name?query=${debouncedSearch}`,
-        );
-
-        if (res.ok) {
-          const data = await res.json();
-          setSearchResults(data);
-        }
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setIsSearching(false);
-      }
-    };
-    fetchChains();
-
-    searchApi();
-  }, [debouncedSearch]);
-
-  const fetchChains = async () => {
-    const res2 = await fetch(
-      `https://infarma.duckdns.org/api/priceComparison/get-all-chains`,
-    );
-    if (res2.ok) {
-      const responseData = await res2.json();
-      console.log(responseData);
-      // Manejo flexible de respuesta
-
-      setChains(responseData);
-    }
-  };
 
   const [searchResults, setSearchResults] = useState<SimpleProduct[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -643,8 +711,8 @@ function NewProductRow({ comparisonId, onAdd }: any) {
     <div className="grid grid-cols-12 gap-3 items-end">
       {/* ... Inputs existentes ... */}
       {/* Simplificado para brevedad, mantener tu código original aquí si es necesario */}
-      <div className="col-span-3 relative group">
-        {/* 'relative' es vital para que la lista flote respecto a este div */}
+      {/*
+        <div className="col-span-3 relative group">
 
         <label className="text-xs font-semibold text-gray-500 mb-1 block">
           Producto Mock
@@ -658,7 +726,6 @@ function NewProductRow({ comparisonId, onAdd }: any) {
             className={searchResults.length > 0 ? "rounded-b-none" : ""} // Estilo opcional
           />
 
-          {/* Icono de carga opcional */}
           {isSearching && (
             <div className="absolute right-3 top-2.5">
               <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
@@ -666,7 +733,6 @@ function NewProductRow({ comparisonId, onAdd }: any) {
           )}
         </div>
 
-        {/* LISTA DESPLEGABLE */}
         {searchResults.length > 0 && (
           <div className="absolute z-50 w-full bg-white border border-t-0 border-gray-200 rounded-b-md shadow-lg max-h-60 overflow-y-auto">
             {searchResults.map((product) => (
@@ -681,6 +747,9 @@ function NewProductRow({ comparisonId, onAdd }: any) {
           </div>
         )}
       </div>
+
+
+      */}
       <div className="col-span-3">
         <Select value={selectedChain} onValueChange={setSelectedChain}>
           <SelectTrigger className="w-full">
