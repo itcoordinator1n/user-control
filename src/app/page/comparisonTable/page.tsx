@@ -95,7 +95,7 @@ const [selectedDate, setSelectedDate] = useState<string>(
       if (!response.ok) {
         throw new Error("Error al obtener los datos del servidor");
       }
-
+      console.log(response)
       const result: ApiResponse = await response.json();
 
       setData(result.data);

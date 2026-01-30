@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Label } from "@/components/ui/label"
-import { Info } from "lucide-react"
+import { Info, AlertCircle } from "lucide-react" // Añadido AlertCircle para feedback
 import { DatePicker } from "./components/date-picker"
 import { TimePicker } from "./components/time-picker"
 import { VacationCalendar } from "./components/vacation-calendar"
@@ -13,11 +13,9 @@ import { FileUpload } from "./components/file-upload"
 import { PermitPreview } from "./components/permits-preview"
 import { VacationPreview } from "./components/vacation-preview"
 import { RequestsTable } from "./components/requests-table"
-import { NotificationPill } from "./components/notification-pill"
 import { ToastNotification } from "./components/toast-notification"
 import { RichTextEditor } from "./components/rich-text-editor"
 import { useSession } from "next-auth/react"
-import { log } from "console"
 
 export default function AttendanceManagement() {
   const [permitDate, setPermitDate] = useState<Date>()
@@ -45,52 +43,41 @@ export default function AttendanceManagement() {
     title: "",
     message: "",
   })
+
+  // --- Lógica de Validación de Horas ---
+  const isTimeRangeValid = () => {
+    if (!startTime || !endTime) return false;
+    // Asumiendo formato HH:mm (24h) de las strings
+    return startTime < endTime;
+  }
+
+  const canShowPermitPreview = permitDate && startTime && endTime && reason && isTimeRangeValid();
+  // -------------------------------------
+
   useEffect(() => {
     const getData = async () => {
       try {
-        console.log()
-        if (status !== "authenticated") {
-          throw new Error("No estás autenticado")
-        }
-
-        const token = session.user.accessToken
+        if (status !== "authenticated") return;
+        const token = session?.user?.accessToken
         const res = await fetch("https://infarma.duckdns.org/api/permissions/vacation-days", {
           method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            // NO Content-Type: lo gestiona automáticamente FormData
-          },
+          headers: { Authorization: `Bearer ${token}` },
         })
-
-        
         const data = await res.json()
         setvacationDays(data.diasVacaciones || 0)
-        console.log("Dias de vacaciones",data)
-
       } catch (error: any) {
-        console.error("handleSubmit error:", error.message || error)
+        console.error("Error al obtener días:", error.message || error)
       }
     }
     getData();
-  }, []);
-
-
-
-  // Simulamos notificaciones - en una app real esto vendría del backend
-  const [permitNotifications, setPermitNotifications] = useState(2)
-  const [vacationNotifications, setVacationNotifications] = useState(1)
+  }, [status, session]);
 
   const showToast = (type: "success" | "error" | "info" | "warning", title: string, message: string) => {
     setToast({ show: true, type, title, message })
   }
 
   const handlePermitSubmitSuccess = () => {
-    showToast(
-      "success",
-      "Solicitud Enviada",
-      "Tu solicitud de permiso ha sido enviada correctamente y está pendiente de aprobación.",
-    )
-    // Limpiar formulario
+    showToast("success", "Solicitud Enviada", "Tu solicitud de permiso ha sido enviada correctamente.")
     setPermitDate(undefined)
     setStartTime("")
     setEndTime("")
@@ -100,12 +87,7 @@ export default function AttendanceManagement() {
   }
 
   const handleVacationSubmitSuccess = () => {
-    showToast(
-      "success",
-      "Solicitud Enviada",
-      "Tu solicitud de vacaciones ha sido enviada correctamente y está pendiente de aprobación.",
-    )
-    // Limpiar formulario
+    showToast("success", "Solicitud Enviada", "Tu solicitud de vacaciones ha sido enviada correctamente.")
     setVacationStartDate(null)
     setVacationEndDate(null)
     setVacationComments("")
@@ -125,57 +107,46 @@ export default function AttendanceManagement() {
           <TabsList className="grid w-full grid-cols-2 bg-white">
             <TabsTrigger value="permisos" className="data-[state=active]:bg-blue-500 data-[state=active]:text-white">
               <span>Permisos</span>
-              {/*
-              <NotificationPill count={permitNotifications} />
-              
-              */}
             </TabsTrigger>
             <TabsTrigger value="vacaciones" className="data-[state=active]:bg-blue-400 data-[state=active]:text-white">
               <span>Vacaciones</span>
-              {/*
-                <NotificationPill count={vacationNotifications} />
-              */}
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="permisos" className="mt-6">
             <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
-              {/* Formulario de Solicitud */}
               <Card>
                 <CardHeader className="bg-blue-50 border-b">
                   <CardTitle className="text-blue-900">Solicitud de Permiso</CardTitle>
                   <CardDescription>Completa el formulario para solicitar un permiso laboral</CardDescription>
                 </CardHeader>
                 <CardContent className="p-6 space-y-6">
-                  {/* Fecha del permiso */}
                   <div className="space-y-2">
-                    <Label htmlFor="permit-date" className="text-sm font-medium">
-                      Fecha del permiso
-                    </Label>
-                    <DatePicker
-                      date={permitDate}
-                      onDateChange={setPermitDate}
-                      placeholder="Seleccionar fecha del permiso"
-                    />
+                    <Label htmlFor="permit-date" className="text-sm font-medium">Fecha del permiso</Label>
+                    <DatePicker date={permitDate} onDateChange={setPermitDate} placeholder="Seleccionar fecha" />
                   </div>
 
-                  {/* Horas */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label className="text-sm font-medium">Hora de inicio</Label>
-                      <TimePicker value={startTime} onChange={setStartTime} placeholder="Hora de inicio" />
+                      <TimePicker value={startTime} onChange={setStartTime} placeholder="HH:MM" />
                     </div>
                     <div className="space-y-2">
                       <Label className="text-sm font-medium">Hora de finalización</Label>
-                      <TimePicker value={endTime} onChange={setEndTime} placeholder="Hora de finalización" />
+                      <TimePicker value={endTime} onChange={setEndTime} placeholder="HH:MM" />
                     </div>
                   </div>
 
-                  {/* Motivo del permiso */}
+                  {/* Feedback visual si la hora es inválida */}
+                  {startTime && endTime && !isTimeRangeValid() && (
+                    <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 p-2 rounded-md">
+                      <AlertCircle className="h-4 w-4" />
+                      La hora de finalización debe ser posterior a la de inicio.
+                    </div>
+                  )}
+
                   <div className="space-y-2">
-                    <Label htmlFor="reason" className="text-sm font-medium">
-                      Motivo del permiso
-                    </Label>
+                    <Label htmlFor="reason" className="text-sm font-medium">Motivo del permiso</Label>
                     <input
                       id="reason"
                       placeholder="Título breve del motivo"
@@ -185,164 +156,22 @@ export default function AttendanceManagement() {
                     />
                   </div>
 
-                  {/* Comentarios detallados */}
                   <div className="space-y-2">
-                    <Label htmlFor="permit-comments" className="text-sm font-medium">
-                      Comentarios detallados
-                    </Label>
-                    <RichTextEditor
-                      value={permitComments}
-                      onChange={setPermitComments}
-                      placeholder="Describe detalladamente el motivo de tu solicitud de permiso..."
-                      minHeight="150px"
-                    />
+                    <Label htmlFor="permit-comments" className="text-sm font-medium">Comentarios detallados</Label>
+                    <RichTextEditor value={permitComments} onChange={setPermitComments} placeholder="Describe detalladamente el motivo..." minHeight="150px" />
                   </div>
 
-                  {/* Documentos justificativos */}
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">Documentos justificativos</Label>
                     <FileUpload onFilesChange={setFiles} />
                   </div>
 
-                  {/* Botones de acción */}
                   <div className="flex gap-3 pt-4">
-                    <Button variant="outline" className="flex-1">
-                      Cancelar
-                    </Button>
-                    <Button onClick={() => setShowPermitPreview(true)} className="flex-1 bg-blue-600 hover:bg-blue-700">
-                      Vista previa
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Panel de Información */}
-              <Card>
-                <CardHeader className="bg-blue-50 border-b">
-                  <CardTitle className="text-blue-900 flex items-center">
-                    <Info className="mr-2 h-5 w-5" />
-                    Información
-                  </CardTitle>
-                  <CardDescription>Políticas y recomendaciones</CardDescription>
-                </CardHeader>
-                <CardContent className="p-6 space-y-4">
-                  {/* <div className="bg-blue-50 p-4 rounded-lg">
-                    <div className="flex items-start space-x-2">
-                      <Info className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                      <div>
-                        <p className="text-sm font-medium text-blue-900">Recordatorio</p>
-                        <p className="text-xs text-blue-700 mt-1">
-                          Las solicitudes de permiso deben realizarse con al menos 24 horas de anticipación.
-                        </p>
-                      </div>
-                    </div>
-                  </div> */}
-
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-900 mb-2">Tipos de permisos:</h4>
-                    <ul className="text-xs text-gray-600 space-y-1">
-                      <li>• Médicos (Adjuntar cita medica o incapacidad cuando aplique)</li>
-                      <li>• Personales </li>
-                      <li>• Académicos </li>
-                      <li>• Familiares</li>
-                      <li>• Tiempo compensatorio</li>
-                    </ul>
-                  </div>
-
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-900 mb-2">Documentación:</h4>
-                    <p className="text-xs text-gray-600">
-                      Para permisos médicos es obligatorio adjuntar la documentación correspondiente.
-                      <ul>
-                          <li>• Incapacidad </li>
-                          <li>• Cita medica </li>
-                          <li>• Cualquier otro documento cuando aplique</li>
-                      </ul>
-                    </p>
-                  </div>
-
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-900 mb-2">Proceso de aprobación:</h4>
-                    <p className="text-xs text-gray-600">
-                      Al registrar una solicitud en la aplicacion el empleado reconoce y acepta que dicha solicitud sera evaluada y estara sujeta a aprobacion por parte de su jefe inmediato.
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Tabla de Solicitudes de Permisos */}
-            <div className="mt-6">
-              <RequestsTable type="permits" onRequestDeleted={handleRequestDeleted} />
-            </div>
-          </TabsContent>
-
-          <TabsContent value="vacaciones" className="mt-6">
-            <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
-              {/* Formulario de Solicitud de Vacaciones */}
-              <Card>
-                <CardHeader className="bg-blue-50 border-b">
-                  <CardTitle className="text-blue-900">Solicitud de Vacaciones</CardTitle>
-                  <CardDescription>Selecciona el rango de fechas para tus vacaciones</CardDescription>
-                </CardHeader>
-                <CardContent className="p-6 space-y-6">
-                  {/* Días disponibles */}
-                  <div className="bg-blue-50 p-4 rounded-lg">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <h3 className="font-medium text-blue-900">Días de vacaciones disponibles</h3>
-                        <p className="text-sm text-blue-700">Período 2025-2026</p>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-3xl font-bold text-blue-900">{vacationDays}</div>
-                        <div className="text-sm text-blue-700">días</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Selector de Vacaciones */}
-                  <div className="border rounded-lg p-4">
-                    <div className="flex justify-between items-center mb-4">
-                      <h4 className="font-medium">Selector de Vacaciones</h4>
-                      <span className="text-sm text-blue-600">{vacationDays} días disponibles</span>
-                    </div>
-                    <p className="text-sm text-gray-600 mb-4">Selecciona un rango de fechas para tus vacaciones</p>
-
-                    <VacationCalendar
-                      startDate={vacationStartDate || undefined}
-                      endDate={vacationEndDate || undefined}
-                      onDateRangeChange={(start, end) => {
-                        setVacationStartDate(start)
-                        setVacationEndDate(end)
-                      }}
-                      availableDays={0}
-                      halfDay = {halfDay} 
-                      setHalfDay ={setHalfDay}
-                      
-                    />
-                  </div>
-
-                  {/* Comentarios adicionales */}
-                  {/* <div className="space-y-2">
-                    <Label htmlFor="vacation-comments" className="text-sm font-medium">
-                      Comentarios adicionales
-                    </Label>
-                    <RichTextEditor
-                      value={vacationComments}
-                      onChange={setVacationComments}
-                      placeholder="Agregue cualquier información adicional sobre su solicitud de vacaciones..."
-                      minHeight="150px"
-                    />
-                  </div> */}
-
-                  {/* Botones de acción */}
-                  <div className="flex gap-3 pt-4">
-                    <Button variant="outline" className="flex-1">
-                      Cancelar
-                    </Button>
-                    <Button
-                      onClick={() => setShowVacationPreview(true)}
-                      className="flex-1 bg-blue-600 hover:bg-blue-700"
+                    <Button variant="outline" className="flex-1">Cancelar</Button>
+                    <Button 
+                      onClick={() => setShowPermitPreview(true)} 
+                      disabled={!canShowPermitPreview}
+                      className={`flex-1 ${canShowPermitPreview ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-300'}`}
                     >
                       Vista previa
                     </Button>
@@ -354,60 +183,91 @@ export default function AttendanceManagement() {
               <Card>
                 <CardHeader className="bg-blue-50 border-b">
                   <CardTitle className="text-blue-900 flex items-center">
-                    <Info className="mr-2 h-5 w-5" />
-                    Información
+                    <Info className="mr-2 h-5 w-5" /> Información
                   </CardTitle>
-                  <CardDescription>Políticas y recomendaciones</CardDescription>
                 </CardHeader>
                 <CardContent className="p-6 space-y-4">
-                  {/* <div className="bg-blue-50 p-4 rounded-lg">
-                    <div className="flex items-start space-x-2">
-                      <Info className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                      <div>
-                        <p className="text-sm font-medium text-blue-900">Recordatorio</p>
-                        <p className="text-xs text-blue-700 mt-1">
-                          Las solicitudes de vacaciones deben realizarse con al menos 2 semanas de anticipación.
-                        </p>
-                      </div>
-                    </div>
-                  </div> */}
                   <div>
-                    <h4 className="text-sm font-medium text-gray-900 mb-2">Proceso de aprobacion</h4>
+                    <h4 className="text-sm font-medium text-gray-900 mb-2">Tipos de permisos:</h4>
                     <ul className="text-xs text-gray-600 space-y-1">
-                      <li>• Su solicitud sera revisada por su jefe inmediato. Recibira una notificacion cuando sea aprobada o rechazada.</li>
+                      <li>• Médicos (Adjuntar cita o incapacidad)</li>
+                      <li>• Personales / Académicos / Familiares</li>
+                      <li>• Tiempo compensatorio</li>
                     </ul>
                   </div>
-                  {/*
-                  
-                    <div>
-                    <h4 className="text-sm font-medium text-gray-900 mb-2">Períodos de vacaciones:</h4>
-                    <ul className="text-xs text-gray-600 space-y-1">
-                      <li>• Mínimo 5 días consecutivos</li>
-                      <li>• Máximo 15 días consecutivos</li>
-                      <li>• No acumulables para el siguiente año</li>
-                    </ul>
-                  </div>
-
                   <div>
-                    <h4 className="text-sm font-medium text-gray-900 mb-2">Temporadas de alta demanda:</h4>
-                    <p className="text-xs text-gray-600">
-                      Durante los meses de julio, agosto y diciembre las solicitudes deben realizarse con mayor
-                      anticipación.
-                    </p>
-                  </div>
-                  */}
-
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-900 mb-2">Importante:</h4>
-                    <p className="text-xs text-gray-600">
-                      Al registrar y firmar esta solicitud de vacaciones en el sistema, el empleado declara estar consciente y de acuerdo en que los días solicitados serán descontados de su saldo de vacaciones disponibles, conforme a la política interna de la empresa y a la legislación laboral vigente. Una vez aprobada la solicitud por la jefatura, Recursos Humanos realizara el descuento de los días.
-                    </p>
+                    <h4 className="text-sm font-medium text-gray-900 mb-2">Proceso:</h4>
+                    <p className="text-xs text-gray-600">Sujeto a aprobación por parte de su jefe inmediato.</p>
                   </div>
                 </CardContent>
               </Card>
             </div>
+            <div className="mt-6">
+              <RequestsTable type="permits" onRequestDeleted={handleRequestDeleted} />
+            </div>
+          </TabsContent>
 
-            {/* Tabla de Solicitudes de Vacaciones */}
+          {/* Tab de Vacaciones - Mantenido similar pero con validación de botón */}
+          <TabsContent value="vacaciones" className="mt-6">
+            <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
+              <Card>
+                <CardHeader className="bg-blue-50 border-b">
+                  <CardTitle className="text-blue-900">Solicitud de Vacaciones</CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 space-y-6">
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <h3 className="font-medium text-blue-900">Días disponibles</h3>
+                        <p className="text-sm text-blue-700">Período 2025-2026</p>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-3xl font-bold text-blue-900">{vacationDays}</div>
+                        <div className="text-sm text-blue-700">días</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="border rounded-lg p-4">
+                    <VacationCalendar
+                      startDate={vacationStartDate || undefined}
+                      endDate={vacationEndDate || undefined}
+                      onDateRangeChange={(start, end) => {
+                        setVacationStartDate(start)
+                        setVacationEndDate(end)
+                      }}
+                      availableDays={vacationDays}
+                      halfDay={halfDay} 
+                      setHalfDay={setHalfDay}
+                    />
+                  </div>
+
+                  <div className="flex gap-3 pt-4">
+                    <Button variant="outline" className="flex-1">Cancelar</Button>
+                    <Button
+                      onClick={() => setShowVacationPreview(true)}
+                      disabled={!vacationStartDate}
+                      className={`flex-1 ${vacationStartDate ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-300'}`}
+                    >
+                      Vista previa
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="bg-blue-50 border-b">
+                  <CardTitle className="text-blue-900 flex items-center">
+                    <Info className="mr-2 h-5 w-5" /> Importante
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <p className="text-xs text-gray-600">
+                    Los días solicitados serán descontados de su saldo tras la aprobación de la jefatura y Recursos Humanos.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
             <div className="mt-6">
               <RequestsTable type="vacations" onRequestDeleted={handleRequestDeleted} />
             </div>

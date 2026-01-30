@@ -427,57 +427,50 @@ export default function PriceComparisonTable() {
             </thead>
             <tbody>
               {data?.data.map((row, index) => (
-                <tr
-                  key={index}
-                  className="bg-white border-b hover:bg-gray-50 transition-colors"
-                >
-                  <td className="px-6 py-3 font-medium text-gray-900 sticky left-0 bg-white border-r shadow-sm">
-                    {row.producto_general}
-                  </td>
-                  <td className="px-4 py-3 border-r">
-                    <span className="bg-gray-100 px-2 py-1 rounded text-xs">
-                      {row.categoria}
-                    </span>
-                  </td>
+  <tr
+    key={index}
+    className="bg-white border-b hover:bg-gray-50 transition-colors"
+  >
+    <td className="px-6 py-3 font-medium text-gray-900 sticky left-0 bg-white border-r shadow-sm">
+      {row.producto_general}
+    </td>
+    <td className="px-4 py-3 border-r">
+      <span className="bg-gray-100 px-2 py-1 rounded text-xs">
+        {row.categoria}
+      </span>
+    </td>
 
-                  {/* Renderizado de Precios con Validación de Fechas Futuras */}
-                  {data.columnas.map((fecha) => {
-                    const dateObj = new Date(fecha);
+    {/* Renderizado de Precios: FILTRANDO fechas futuras antes de mapear */}
+    {data.columnas
+      .filter((fecha) => {
+        // 1. Replicamos tu lógica de ajuste de fecha para el filtro
+        const dateObj = new Date(fecha);
+        dateObj.setHours(dateObj.getHours() - 6);
+        const adjustedDateStr = dateObj.toISOString().split("T")[0];
+        
+        // 2. Condición: Solo pasa si la fecha es menor o igual a hoy
+        return adjustedDateStr <= todayStr;
+      })
+      .map((fecha) => {
+        const precio = row[fecha];
 
-                    // 2. Restarle 6 horas
-                    dateObj.setHours(dateObj.getHours() - 6);
-
-                    // 3. Convertir la fecha ajustada a string (Formato YYYY-MM-DD) para poder compararla
-                    // Usamos toISOString() y cortamos en la 'T' para obtener solo la parte de la fecha
-                    const adjustedDateStr = dateObj.toISOString().split("T")[0];
-
-                    // 4. Hacer la comparación con tu variable todayStr
-                    const isFutureDate = adjustedDateStr > todayStr;
-
-                    // Lógica: Si la fecha de la columna es mayor a hoy, NO mostramos relleno
-                    const precio = row[fecha];
-
-                    return (
-                      <td
-                        key={`${index}-${fecha}`}
-                        className={`px-4 py-3 text-center border-r border-gray-100 ${isFutureDate ? "bg-gray-50" : ""}`}
-                      >
-                        {isFutureDate ? (
-                          <span className="text-gray-300" title="Fecha futura">
-                            -
-                          </span>
-                        ) : precio ? (
-                          <span className="font-mono font-medium text-gray-800">
-                            L. {Number(precio).toFixed(2)}
-                          </span>
-                        ) : (
-                          <span className="text-gray-300">-</span>
-                        )}
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
+        return (
+          <td
+            key={`${index}-${fecha}`}
+            className="px-4 py-3 text-center border-r border-gray-100"
+          >
+            {precio ? (
+              <span className="font-mono font-medium text-gray-800">
+                L. {Number(precio).toFixed(2)}
+              </span>
+            ) : (
+              <span className="text-gray-300">-</span>
+            )}
+          </td>
+        );
+      })}
+  </tr>
+))}
               {!loading && (!data || data.data.length === 0) && (
                 <tr>
                   <td colSpan={10} className="text-center py-10">
