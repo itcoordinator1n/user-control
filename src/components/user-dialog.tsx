@@ -61,7 +61,7 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
     const fetchRoles = async () => {
       try {
         const response = await fetch(
-          "https://infarma.duckdns.org/api/rolAdministration/get-roles"
+          `${process.env.NEXT_PUBLIC_API_URL}/api/rolAdministration/get-roles`
         );
         console.log("Respuesta",response)
         if (response.ok) {
@@ -81,7 +81,7 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
     const fetchAreas = async () => {
       try {
         const response = await fetch(
-          "https://infarma.duckdns.org/api/areaAdministration/get-areas", {
+          `${process.env.NEXT_PUBLIC_API_URL}/api/areaAdministration/get-areas`, {
             method: "GET",
             headers: {
               "Content-Type": "application/json",
@@ -185,7 +185,7 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
     if (isEditing) {
       try {
         const response = await fetch(
-          `https://infarma.duckdns.org/api/userAdministration/update-user/${
+          `${process.env.NEXT_PUBLIC_API_URL}/api/userAdministration/update-user/${
             (user as any).id
           }`,
           {
@@ -210,7 +210,7 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
     } else {
       try {
         const response = await fetch(
-          "https://infarma.duckdns.org/api/userAdministration/create-user",
+          `${process.env.NEXT_PUBLIC_API_URL}/api/userAdministration/create-user`,
           {
             method: "POST",
             headers: {

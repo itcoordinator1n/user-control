@@ -77,6 +77,11 @@ const sidebarNavigation: NavItem[] = [
     id: "mercadeo",
     subItems: [
       {
+        title: "Dashboard",
+        url: "/page/marketingDashboard",
+        id: "mercadeo-dashboard",
+      },
+      {
         title: "Comparacion Por fechas",
         url: "/page/comparisonByDates",
         id: "mercadeo-fechas",

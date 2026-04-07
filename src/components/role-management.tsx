@@ -229,7 +229,7 @@ export function RoleManagement() {
     // Define la página y el límite deseados
     const page = 1;
     const limit = 10;
-    const url = `https://infarma.duckdns.org/api/rolAdministration/get-roles?page=${page}&limit=${limit}`;
+    const url = `${process.env.NEXT_PUBLIC_API_URL}/api/rolAdministration/get-roles?page=${page}&limit=${limit}`;
 
     fetch(url)
       .then((res) => {
@@ -482,7 +482,7 @@ function RoleDialog({ open, onOpenChange, role }: RoleDialogProps) {
     e.preventDefault();
     try {
       const response = await fetch(
-        "https://infarma.duckdns.org/api/rolAdministration/create-role",
+        `${process.env.NEXT_PUBLIC_API_URL}/api/rolAdministration/create-role`,
         {
           method: "POST",
           headers: {
@@ -519,7 +519,7 @@ function RoleDialog({ open, onOpenChange, role }: RoleDialogProps) {
     CategoriaPermisos[]
   >([]);
   useEffect(() => {
-    fetch("https://infarma.duckdns.org/api/rolAdministration/get-permissions")
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/rolAdministration/get-permissions`)
       .then((response) => {
         if (!response.ok) {
           throw new Error("Error en la respuesta del servidor");
@@ -537,7 +537,7 @@ function RoleDialog({ open, onOpenChange, role }: RoleDialogProps) {
 
   useEffect(() => {
     // Reemplaza la URL con la ruta correcta de tu endpoint Express
-    fetch("https://infarma.duckdns.org/api/areaAdministration/get-areas", {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/areaAdministration/get-areas`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",

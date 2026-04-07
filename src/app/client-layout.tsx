@@ -40,14 +40,20 @@ export default function ClientLayout(
   useEffect(() => {
     const getFlag = async ()=>{
       console.log("token:",session)
-      console.log("Permisos",session?.user.permissions)
-      const decoded = jwtDecode(session?.user.accessToken as string);
+      console.log("Permisos",session?.user?.permissions)
+      
+      if (!session?.user?.accessToken) {
+        console.log("No access token available yet")
+        return;
+      }
+
+      const decoded = jwtDecode(session.user.accessToken as string);
       console.log("Payload del token:", decoded);
-      const res = await fetch("https://infarma.duckdns.org/api/auth/get-password-flag", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/get-password-flag`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${session?.user.accessToken}`,
+          Authorization: `Bearer ${session.user.accessToken}`,
           // NO Content-Type: lo gestiona automáticamente FormData
         }
       })

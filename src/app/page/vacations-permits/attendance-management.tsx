@@ -59,7 +59,7 @@ export default function AttendanceManagement() {
       try {
         if (status !== "authenticated") return;
         const token = session?.user?.accessToken
-        const res = await fetch("https://infarma.duckdns.org/api/permissions/vacation-days", {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/permissions/vacation-days`, {
           method: "GET",
           headers: { Authorization: `Bearer ${token}` },
         })

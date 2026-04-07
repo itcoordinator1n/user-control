@@ -34,13 +34,13 @@ export default function ProductManagement() {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        fetch("https://infarma.duckdns.org/api/priceComparison/get-all-categories")
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/priceComparison/get-all-categories`)
     .then(res => res.json())
     .then((data: Category[]) => {
        setCategories(data); // TypeScript no se quejará porque las claves coinciden
     });
         // Construcción de la URL
-        const url = `https://infarma.duckdns.org/api/priceComparison/get-all-products?page=${page}&limit=${limit}`;
+        const url = `${process.env.NEXT_PUBLIC_API_URL}/api/priceComparison/get-all-products?page=${page}&limit=${limit}`;
         
         // NOTA: Si en el futuro implementas búsqueda en backend, añade: &search=${searchTerm}
         
@@ -81,7 +81,7 @@ export default function ProductManagement() {
     try {
       // 1. Realizar la petición POST al endpoint creado
       // Ajusta la URL si tu puerto o prefijo '/api' son diferentes.
-      const response = await fetch("https://infarma.duckdns.org/api/priceComparison/create-product", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/priceComparison/create-product`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

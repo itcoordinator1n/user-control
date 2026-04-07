@@ -43,7 +43,7 @@ export function UserAvatarMenu({
   useEffect(() => {
     // Asegúrate de que el token esté disponible
     if (session?.user?.accessToken) {
-      fetch("https://infarma.duckdns.org/api/profile/profile_info", {
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/profile/profile_info`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${session?.user.accessToken}`,

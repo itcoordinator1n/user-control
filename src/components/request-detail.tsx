@@ -60,7 +60,7 @@ export default function RequestDetail({
         comentario: feedback,
       };
       const response = await fetch(
-        `https://infarma.duckdns.org/api/requests/request-detail/${request.idSolicitud}/handle-request`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/requests/request-detail/${request.idSolicitud}/handle-request`,
         {
           method: "PUT",
           headers: {

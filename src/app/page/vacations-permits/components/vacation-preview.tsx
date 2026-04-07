@@ -58,7 +58,7 @@ export function VacationPreview({ open, onOpenChange, data, onSubmitSuccess }: V
     useEffect(() => {
       // Asegúrate de que el token esté disponible
       if (session?.user?.accessToken) {
-        fetch("https://infarma.duckdns.org/api/profile/profile_info", {
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/profile/profile_info`, {
           method: "GET",
           headers: {
             Authorization: `Bearer ${session?.user.accessToken}`,
@@ -133,7 +133,7 @@ const handleSubmit = async () => {
           // form.append("payload", JSON.stringify(payload));
 
           const res = await fetch(
-            "https://infarma.duckdns.org/api/permissions/request-vacations",
+            `${process.env.NEXT_PUBLIC_API_URL}/api/permissions/request-vacations`,
             {
               method: "POST",
               headers: {

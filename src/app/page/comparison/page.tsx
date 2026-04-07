@@ -76,7 +76,7 @@ export default function ComparisonsPage() {
 
   const fetchChains = async () => {
     const res2 = await fetch(
-      `https://infarma.duckdns.org/api/priceComparison/get-all-chains`,
+      `${process.env.NEXT_PUBLIC_API_URL}/api/priceComparison/get-all-chains`,
     );
     if (res2.ok) {
       const responseData = await res2.json();
@@ -92,7 +92,7 @@ export default function ComparisonsPage() {
       setLoading(true);
       // El backend debe devolver: { data: Comparison[], total: number }
       const res = await fetch(
-        `https://infarma.duckdns.org/api/priceComparison/get-comparisons?page=${page}&limit=${limit}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/priceComparison/get-comparisons?page=${page}&limit=${limit}`,
       );
 
       if (res.ok) {
@@ -288,7 +288,7 @@ function ComparisonEditor({
   // useEffect(() => {
   //   const fetchProductChains = async () => {
   //     const response = await fetch(
-  //       `https://infarma.duckdns.org/api/priceComparison/get-products-by-comparison?id=${comparisonId}`,
+  //       `${process.env.NEXT_PUBLIC_API_URL}/api/priceComparison/get-products-by-comparison?id=${comparisonId}`,
   //     );
 
   //     if (!response.ok) {
@@ -305,7 +305,7 @@ function ComparisonEditor({
   useEffect(() => {
     const fetchProductChains = async () => {
       const response = await fetch(
-        `https://infarma.duckdns.org/api/priceComparison/get-products-by-comparison?id=${comparisonId}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/priceComparison/get-products-by-comparison?id=${comparisonId}`,
       );
 
       if (!response.ok) {
@@ -318,7 +318,7 @@ function ComparisonEditor({
   }, []);
 
   useEffect(() => {
-    fetch("https://infarma.duckdns.org/api/priceComparison/get-all-sales-units")
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/priceComparison/get-all-sales-units`)
       .then((res) => res.json())
       .then((data) => setSalesUnits(data))
       .catch((err) => console.error(err));
@@ -329,7 +329,7 @@ function ComparisonEditor({
 
     try {
       const res = await fetch(
-        "https://infarma.duckdns.org/api/priceComparison/create-comparison",
+        `${process.env.NEXT_PUBLIC_API_URL}/api/priceComparison/create-comparison`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -367,7 +367,7 @@ function ComparisonEditor({
   // useEffect(() => {
   //   const sea = async () => {
   //     const res = await fetch(
-  //       `https://infarma.duckdns.org/api/priceComparison/search-product-by-name?query=${debouncedSearch}`,
+  //       `${process.env.NEXT_PUBLIC_API_URL}/api/priceComparison/search-product-by-name?query=${debouncedSearch}`,
   //     );
   //     const data: SimpleProduct[] = await res.json();
 
@@ -386,7 +386,7 @@ const [chains, setChains] = useState<Chain[]>([]);
       setIsSearching(true);
       try {
         const res = await fetch(
-          `https://infarma.duckdns.org/api/priceComparison/search-product-by-name?query=${debouncedSearch}`,
+          `${process.env.NEXT_PUBLIC_API_URL}/api/priceComparison/search-product-by-name?query=${debouncedSearch}`,
         );
 
         if (res.ok) {
@@ -407,7 +407,7 @@ const [chains, setChains] = useState<Chain[]>([]);
 
   const fetchChains = async () => {
     const res2 = await fetch(
-      `https://infarma.duckdns.org/api/priceComparison/get-all-chains`,
+      `${process.env.NEXT_PUBLIC_API_URL}/api/priceComparison/get-all-chains`,
     );
     if (res2.ok) {
       const responseData = await res2.json();
@@ -597,7 +597,7 @@ function NewProductRow({ comparisonId, onAdd }: any) {
   // useEffect(() => {
   //   const sea = async () => {
   //     const res = await fetch(
-  //       `https://infarma.duckdns.org/api/priceComparison/search-products?query=${debouncedSearch}`,
+  //       `${process.env.NEXT_PUBLIC_API_URL}/api/priceComparison/search-products?query=${debouncedSearch}`,
   //     );
   //     const data: SimpleProduct[] = await res.json();
 
@@ -609,7 +609,7 @@ function NewProductRow({ comparisonId, onAdd }: any) {
   // useEffect(() => {
   //   const fetchProductChains = async () => {
   //     const response = await fetch(
-  //       `https://infarma.duckdns.org/api/priceComparison/get-products-by-comparison?id=${comparisonId}`,
+  //       `${process.env.NEXT_PUBLIC_API_URL}/api/priceComparison/get-products-by-comparison?id=${comparisonId}`,
   //     );
 
   //     if (!response.ok) {
@@ -651,7 +651,7 @@ function NewProductRow({ comparisonId, onAdd }: any) {
     try {
       // 3. Llamada al Endpoint
       const res = await fetch(
-        "https://infarma.duckdns.org/api/priceComparison/create-product-chain",
+        `${process.env.NEXT_PUBLIC_API_URL}/api/priceComparison/create-product-chain`,
         {
           method: "POST",
           headers: {

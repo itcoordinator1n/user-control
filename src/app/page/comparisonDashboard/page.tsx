@@ -80,7 +80,7 @@ const ComparisonDashboardPage = () => {
     const fetchComparisons = async () => {
       try {
         setLoadingList(true);
-        const res = await fetch(`https://infarma.duckdns.org/api/priceComparison/get-comparisons?page=1&limit=100`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/priceComparison/get-comparisons?page=1&limit=100`);
         if (res.ok) {
           const responseData = await res.json();
           if (responseData.data && typeof responseData.total_en_vista === "number") {
@@ -111,7 +111,7 @@ const ComparisonDashboardPage = () => {
     const fetchHistory = async () => {
       try {
         setLoadingHistory(true);
-        const res = await fetch(`https://infarma.duckdns.org/api/priceComparison/price-comparison-history?idComparacion=${selectedComparisonId}`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/priceComparison/price-comparison-history?idComparacion=${selectedComparisonId}`);
         if (res.ok) {
           const data = await res.json() as HistoryResponse;
           if (data.productos && data.productos.length > 0) {
@@ -135,7 +135,7 @@ const ComparisonDashboardPage = () => {
   const handleDownloadExcel = async () => {
     try {
       setDownloading(true);
-      const res = await fetch('https://infarma.duckdns.org/api/priceComparison/download-full-history-excel', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/priceComparison/download-full-history-excel`, {
         method: 'GET',
       });
 

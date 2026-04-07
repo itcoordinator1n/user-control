@@ -143,7 +143,7 @@ export default function AttendanceTable() {
   useEffect(() => {
     const obtenerHistorial = async () => {
       try {
-        const response = await fetch("https://infarma.duckdns.org/api/attendance/attendance-history-myself", {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/attendance/attendance-history-myself`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",

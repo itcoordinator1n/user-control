@@ -1,0 +1,28 @@
+cadena : id_cadena, txt_nombre, url, activa
+categoria : int_id_categoria, txt_nombre_categoria, txt_descripcion, txt_label_color, int_fk_area
+categoria_producto : id_categoria, txt_nombre, cat_general
+comparacion : id_comparacion, fk_unidad_venta, txt_nombre_comparacion, active_comparison, fk_product
+dim_cadena_ubicacion : id_sucursal, fk_cadena, nombre_cadena, nombre_sucursal, direccion, ciudad, departamento, referencia, latitud, longitud, google_place_id, horario_lunes_viernes, horario_sabado, horario_domingo, tiene_farmacia_24h, tiene_delivery, telefono, url_whatsapp, activa
+dim_producto_360 : id_producto_360, id_producto_bot, nombre_bot, matnr, maktx, werks, stlnr, categoria_comercial, linea_produccion, forma_farmaceutica, es_producto_terminado, publico_objetivo, lote_minimo_produccion, tiempo_produccion_dias, tiempo_calidad_dias, vida_util_dias, unidad_medida, dias_stock_objetivo, stock_seguridad_unidades, punto_reorden_unidades, costo_produccion_unitario, precio_venta_promedio, costo_stockout_diario, costo_sobrestock_mensual, activo
+fact_atribucion_venta : id, fk_sesion_bot, fk_mensaje_bot, dte_interaccion_bot, fk_usuario_bot, fk_producto_recomendado, canal_bot, bot_recomendo_farmacia, fk_farmacia_recomendada, fk_farmacia_venta, fk_movimiento_inventario, dte_venta, unidades_vendidas, ingreso_atribuido_lps, horas_entre_bot_y_venta, distancia_usuario_farmacia_km, nivel_confianza, score_atribucion, factores_score, validado_manualmente, es_verdadero_positivo
+fact_bom_componente : id, stlnr, stlkn, fk_producto_terminado, matnr_componente, descripcion_componente, tipo_componente, cantidad_por_lote, unidad_medida, stock_actual_componente, proveedor_principal, lead_time_proveedor_dias, precio_unitario_componente
+fact_impresion_producto : id_impresion, fk_mensaje, fk_sesion, fk_usuario, dte_timestamp, id_producto, nombre_producto, posicion_en_lista, fue_top_recommendation, accion_posterior, tiempo_hasta_accion_seg, farmacia_mas_barata, precio_minimo_visto, delta_precio_vs_sugerido
+fact_mencion_competidor : id, fk_mensaje, fk_sesion, fk_usuario, dte_timestamp, semana_iso, anio, marca_competidora, sintoma_en_contexto, contexto_mencion, nuestro_producto_mostrado, usuario_acepto_nuestro
+fact_necesidad_produccion : id, fk_producto_360, anio, mes, semana_iso, fecha_calculo, stock_inicial_periodo, stock_en_transito_entrante, stock_comprometido_salida, demanda_proyectada, demanda_ajustada_bot, stock_objetivo_fin, stock_seguridad, necesidad_bruta, lotes_a_producir, unidades_a_producir, fecha_inicio_produccion, fecha_necesidad, demanda_real_al_cierre, desviacion_porcentual, version_calculo, fuente
+fact_orden_produccion : id, fk_producto_360, matnr, werks, aufnr, auart, cantidad_planificada, cantidad_confirmada, cantidad_scrap, pct_cumplimiento, fecha_inicio_planificada, fecha_fin_planificada, duracion_planificada_dias, fecha_inicio_real, fecha_fin_real, duracion_real_dias, dias_desviacion, estado_orden, fecha_entrada_qc, fecha_liberacion_qc, dias_en_qc, fecha_disponible_almacen, fecha_disponible_cliente, numero_lote, fecha_vencimiento_lote, vida_util_restante_dias, costo_material_real_lps, costo_mano_obra_real_lps, costo_overhead_real_lps, costo_total_real_lps, costo_unitario_real_lps, linea_produccion, turno, fk_necesidad_produccion
+farmacia_inventario_actual : id, fk_farmacia, fk_producto_360, codigo_producto_farmacia, nombre_producto_farmacia, stock_actual, stock_minimo_alerta, precio_venta, ultima_actualizacion
+farmacia_movimiento_inventario : id, fk_farmacia, fk_producto_360, dte_movimiento, tipo_movimiento, cantidad, stock_resultante, precio_unitario, numero_factura, fk_factura
+precio_cadena : id_precio_cadena, fk_producto_cadena, dte_fecha, flt_precio, bln_incluye_descuento
+preciomayorista : idpreciomayorista, id_productos, preciodispensador, cantidad_caja
+producto : int_id_producto, txt_nombre, fk_categoria, propietario, txt_descripcion_cliente_final, txt_descripcion_vendedor, fk_principio_activo, bl_infarma, txt_palabra_clave, txt_genero, int_gravedad, txt_presentacion, txt_zona_afectada, txt_dosis, txt_indicaciones, fl_precio
+producto_auditoria : id_producto_auditoria, int_nuevo_peso, txt_nuevo_nombre, int_id_interno, fk_producto_cadena, txt_anterior_nombre
+producto_cadena : id_producto_cadena, fk_cadena, txt_nombre_producto, int_peso_comparacion, int_id_interno, fk_comparacion, txt_flags, txt_url
+producto_malestar : int_id_producto_malestar, fk_producto, fk_malestar, fk_peso
+producto_unidad : id_producto, txt_nombre, id_categoria, propietario, id_marca, tipo, descripcion
+unidad_venta : id_unidad_venta, txt_unidad_venta
+view_cadena_anio_mes : mes, anio, txt_nombre, venta
+view_cadena_anio_zona : anio, txt_nombre, zona, venta
+view_cadena_cantidad : anio, cadena, mes, cantidad, dispensador, zona, categoria, marcas, fecha, venta, precio
+view_categoria_producto : anio, cadena, zona, producto, categoria, venta
+vw_pbi_competidores : anio, semana_iso, fecha, marca_competidora, contexto_mencion, sintoma_en_contexto, nuestro_producto_mostrado, usuario_acepto_nuestro, menciones_semana, pct_conversion_vs_competidor
+vw_pbi_demanda_productos : anio_semana, anio, semana_iso, inicio_semana, producto, tipo_busqueda, veces_recomendado, usuarios_distintos, busquedas_exitosas, con_urgencia, interes_premium, pediatrico, precio_promedio_lps, total_impresiones

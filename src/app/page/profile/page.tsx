@@ -56,7 +56,7 @@ useEffect(() => {
     const fetchEntryDate = async () => {
       try {
         setLoading(true);
-        const res = await fetch("https://infarma.duckdns.org/api/attendance/attendance-get-entry", {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/attendance/attendance-get-entry`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -106,7 +106,7 @@ useEffect(() => {
   const handleMarkEntry = async () => {
     try {
       const res = await fetch(
-        "https://infarma.duckdns.org/api/attendance/attendance-entry",
+        `${process.env.NEXT_PUBLIC_API_URL}/api/attendance/attendance-entry`,
         {
           method: "POST",
           headers: {
@@ -138,7 +138,7 @@ useEffect(() => {
   const handleMarkExit = async () => {
     try {
       const res = await fetch(
-        "https://infarma.duckdns.org/api/attendance/attendance-exit",
+        `${process.env.NEXT_PUBLIC_API_URL}/api/attendance/attendance-exit`,
         {
           method: "PUT",
           headers: {
@@ -162,7 +162,7 @@ useEffect(() => {
   useEffect(() => {
     // Asegúrate de que el token esté disponible
     if (session?.user?.accessToken) {
-      fetch("https://infarma.duckdns.org/api/profile/profile_info", {
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/profile/profile_info`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${session?.user.accessToken}`,

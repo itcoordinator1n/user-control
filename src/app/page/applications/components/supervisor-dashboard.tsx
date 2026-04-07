@@ -423,7 +423,7 @@ export default function SupervisorDashboard() {
   useEffect(() => {
     // Asegúrate de que el token esté disponible
     if (session?.user?.accessToken) {
-      fetch("https://infarma.duckdns.org/api/permissions/get-all-request-to-me", {
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/permissions/get-all-request-to-me`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${session?.user.accessToken}`,
@@ -482,7 +482,7 @@ export default function SupervisorDashboard() {
 
       try {
         const response = await fetch(
-          "https://infarma.duckdns.org/api/permissions/handle-request",
+          `${process.env.NEXT_PUBLIC_API_URL}/api/permissions/handle-request`,
           {
             method: "PUT", // o POST según cómo configuraste tu endpoint
             headers: {

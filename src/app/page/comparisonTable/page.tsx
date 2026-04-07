@@ -89,7 +89,7 @@ const [selectedDate, setSelectedDate] = useState<string>(
 
       // IMPORTANTE: Ajusta la URL base según tu entorno
       const response = await fetch(
-        `https://infarma.duckdns.org/api/priceComparison/get-comparison-table?${params.toString()}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/priceComparison/get-comparison-table?${params.toString()}`,
       );
 
       if (!response.ok) {
@@ -109,30 +109,17 @@ const [selectedDate, setSelectedDate] = useState<string>(
   }, [page, limit, selectedDate, categoryId]);
 
   // Efecto para cargar datos cuando cambian los filtros
-useEffect(() => {
-  const fetchCategories = async () => {
-    try {
-      // Usamos ruta relativa si la API está en el mismo proyecto Next.js
-      const response = await fetch('/api/priceComparison/get-all-categories');
-      
-      if (!response.ok) throw new Error('Error al obtener categorías');
-      
-      const data: Category[] = await response.json();
-      setCategories(data);
-    } catch (error) {
-      console.error("Error:", error);
-    }
-  };
-
-  fetchCategories();
-}, []);
-
+  useEffect(() => {
+    // Al cargar la vista por primera vez, traemos la tabla (para hoy)
+    fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Se ejecuta solo una vez al montar
 
   useEffect(() => {
     const fetchCategories = async () => {
       try {
         const response = await fetch(
-          "https://infarma.duckdns.org/api/priceComparison/get-all-categories",
+          `${process.env.NEXT_PUBLIC_API_URL}/api/priceComparison/get-all-categories`,
         );
         const data = await response.json();
         setCategories(data);
@@ -153,7 +140,7 @@ useEffect(() => {
 
       // 2. Construir la URL con los Query Params
       // Ajusta la URL base según tu configuración de rutas en el backend
-      let url = `https://infarma.duckdns.org/api/priceComparison/download-comparison-table-excel?dia=${dia}&mes=${mes}&anio=${anio}`;
+      let url = `${process.env.NEXT_PUBLIC_API_URL}/api/priceComparison/download-comparison-table-excel?dia=${dia}&mes=${mes}&anio=${anio}`;
 
       // Si hay una categoría seleccionada, la agregamos
       if (categoryId) {

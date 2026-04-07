@@ -525,7 +525,7 @@ export default function PermissionsDashboard({ showPermissionDetail, setShowPerm
   useEffect(() => {
     const fetchStatistics = async () => {
       try {
-        const res = await fetch('https://infarma.duckdns.org/api/statistics/get-permissions-personal-statistics');
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/statistics/get-permissions-personal-statistics`);
         if (!res.ok) {
           throw new Error(`Error en la respuesta: ${res.status}`);
         }

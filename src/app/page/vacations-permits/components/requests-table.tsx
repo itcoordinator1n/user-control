@@ -68,7 +68,7 @@ export function RequestsTable({ type, onRequestDeleted }: RequestsTableProps) {
     // No lanzamos la petición hasta tener token válido
     if (status !== "authenticated" || !token) return
 
-    fetch("https://infarma.duckdns.org/api/permissions/get-all-requests", {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/permissions/get-all-requests`, {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(res => {

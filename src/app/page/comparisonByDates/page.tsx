@@ -47,7 +47,7 @@ export default function PriceComparisonTable() {
     const fetchCategorias = async () => {
       try {
         // Usamos ruta relativa si la API está en el mismo proyecto
-        const res = await fetch("https://infarma.duckdns.org/api/priceComparison/get-all-categories");
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/priceComparison/get-all-categories`);
         if (!res.ok) throw new Error("Error al cargar categorías");
         const data = await res.json();
         setListaCategorias(data);
@@ -108,7 +108,7 @@ export default function PriceComparisonTable() {
       const params = buildQueryParams();
       console.log(params.toString());
       const response = await fetch(
-        `https://infarma.duckdns.org/api/priceComparison/get-comparison-by-dates?${params.toString()}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/priceComparison/get-comparison-by-dates?${params.toString()}`,
       );
 
       if (!response.ok) throw new Error("Error al obtener datos");
@@ -145,7 +145,7 @@ export default function PriceComparisonTable() {
       // 2. Realizar la petición al endpoint
       // Asegúrate de que esta URL coincida con la definida en tu archivo de rutas (router.get)
       const response = await fetch(
-        `https://infarma.duckdns.org/api/priceComparison/download-comparison-by-dates-excel?${params.toString()}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/priceComparison/download-comparison-by-dates-excel?${params.toString()}`,
         {
           method: "GET",
           // headers: { 'Authorization': `Bearer ${token}` } // Si usas auth

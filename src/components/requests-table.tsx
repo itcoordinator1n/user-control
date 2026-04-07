@@ -161,7 +161,7 @@ export default function RequestsTable() {
       try {
         // Asegúrate de que la URL corresponda a la ruta de tu endpoint en Express.
         const res = await fetch(
-          "https://infarma.duckdns.org/api/requests/get-all-requests",
+          `${process.env.NEXT_PUBLIC_API_URL}/api/requests/get-all-requests`,
           {
             method: "GET",
             headers: {

@@ -114,7 +114,7 @@ export function UserTable({
     const fetchAreas = async () => {
       try {
         const response = await fetch(
-          "https://infarma.duckdns.org/api/userAdministration/get-all-users"
+          `${process.env.NEXT_PUBLIC_API_URL}/api/userAdministration/get-all-users`
         );
         console.log(response)
         if (response.ok) {
@@ -149,7 +149,7 @@ export function UserTable({
   const confirmDelete = async () => {
     try {
       const response = await fetch(
-        `https://infarma.duckdns.org/api/userAdministration/delete-user/${selectedUserId}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/userAdministration/delete-user/${selectedUserId}`,
         {
           method: "PUT",
           headers: {
@@ -173,7 +173,7 @@ export function UserTable({
   const confirmResetPassword = async () => {
     try {
       const response = await fetch(
-        "https://infarma.duckdns.org/api/userAdministration/reset-password",
+        `${process.env.NEXT_PUBLIC_API_URL}/api/userAdministration/reset-password`,
         {
           method: "PUT",
           headers: {

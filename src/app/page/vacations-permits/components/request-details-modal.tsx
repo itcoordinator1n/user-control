@@ -99,7 +99,7 @@ export function RequestDetailsModal({ open, onOpenChange, request, type, onDelet
   useEffect(() => {
     // Asegúrate de que el token esté disponible
     if (session?.user?.accessToken) {
-      fetch("https://infarma.duckdns.org/api/profile/profile_info", {
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/profile/profile_info`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${session?.user.accessToken}`,
@@ -208,7 +208,7 @@ const generatePDF = async () => {
       notes: request.employeeComments || "",
       signatures: {
         applicantName: profile?.name || "",
-        applicantPngUrl: `https://infarma.duckdns.org/uploads/${request.attachmentName}`,
+        applicantPngUrl: `${process.env.NEXT_PUBLIC_API_URL}/uploads/${request.attachmentName}`,
         managerName: profile?.supervisorArea || "",
         // managerPngUrl: "https://tu-api/firma-jefe.png",
         showManagerLineLabel: "Firma del jefe inmediato y/o Gerente del proceso",
