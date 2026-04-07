@@ -4,12 +4,12 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
-import { 
-  TableCellsIcon, 
-  Squares2X2Icon, 
-  ChevronLeftIcon, 
-  ChevronRightIcon, 
-  ArrowTrendingUpIcon, 
+import {
+  TableCellsIcon,
+  Squares2X2Icon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  ArrowTrendingUpIcon,
   ArrowTrendingDownIcon,
   ArrowDownTrayIcon // <--- Nuevo icono importado
 } from '@heroicons/react/24/outline';
@@ -53,7 +53,7 @@ interface HistoryResponse {
 interface ChartDataPoint {
   displayDate: string;
   fullDate: Date;
-  [key: string]: string | number | Date | boolean; 
+  [key: string]: string | number | Date | boolean;
 }
 
 // --- Componente Principal ---
@@ -64,13 +64,13 @@ const ComparisonDashboardPage = () => {
   const [selectedComparisonId, setSelectedComparisonId] = useState<number | string>('');
   const [historyData, setHistoryData] = useState<HistoryEntry[]>([]);
   const [productName, setProductName] = useState<string>('');
-  
+
   // --- Estados de UI ---
   const [loadingList, setLoadingList] = useState<boolean>(false);
   const [loadingHistory, setLoadingHistory] = useState<boolean>(false);
   const [downloading, setDownloading] = useState<boolean>(false); // <--- Nuevo estado para la descarga
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
-  
+
   // --- Paginación de Tabla ---
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -84,15 +84,15 @@ const ComparisonDashboardPage = () => {
         if (res.ok) {
           const responseData = await res.json();
           if (responseData.data && typeof responseData.total_en_vista === "number") {
-             const typedResponse = responseData as ComparisonsResponse;
-             setComparisons(typedResponse.data);
-             if (typedResponse.data.length > 0 && !selectedComparisonId) {
-               setSelectedComparisonId(typedResponse.data[0].id_comparacion);
-             }
+            const typedResponse = responseData as ComparisonsResponse;
+            setComparisons(typedResponse.data);
+            if (typedResponse.data.length > 0 && !selectedComparisonId) {
+              setSelectedComparisonId(typedResponse.data[0].id_comparacion);
+            }
           } else if (Array.isArray(responseData)) {
-             const typedResponse = responseData as ComparisonItem[];
-             setComparisons(typedResponse);
-             if (typedResponse.length > 0 && !selectedComparisonId) setSelectedComparisonId(typedResponse[0].id_comparacion);
+            const typedResponse = responseData as ComparisonItem[];
+            setComparisons(typedResponse);
+            if (typedResponse.length > 0 && !selectedComparisonId) setSelectedComparisonId(typedResponse[0].id_comparacion);
           }
         }
       } catch (error) {
@@ -135,25 +135,28 @@ const ComparisonDashboardPage = () => {
   const handleDownloadExcel = async () => {
     try {
       setDownloading(true);
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/priceComparison/download-full-history-excel`, {
-        method: 'GET',
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/priceComparison/create-scraping`, {
+        method: 'POST',
+        body: JSON.stringify({
+
+        }),
       });
 
       if (!res.ok) throw new Error('Error en la descarga del archivo');
 
       // Convertir la respuesta a un Blob (archivo binario)
       const blob = await res.blob();
-      
+
       // Crear una URL temporal para el blob
       const url = window.URL.createObjectURL(blob);
-      
+
       // Crear un elemento <a> invisible para forzar la descarga
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', 'Reporte_Comparativo_Precios.xlsx'); // Nombre del archivo
       document.body.appendChild(link);
       link.click();
-      
+
       // Limpieza
       link.parentNode?.removeChild(link);
       window.URL.revokeObjectURL(url);
@@ -178,9 +181,9 @@ const ComparisonDashboardPage = () => {
   const processedData = useMemo<ChartDataPoint[]>(() => {
     if (!historyData || historyData.length === 0) return [];
     return historyData.map((entry) => {
-      const fullDateStr = `${entry.fecha[0]}T${entry.fecha[1].replace('Z', '')}`; 
+      const fullDateStr = `${entry.fecha[0]}T${entry.fecha[1].replace('Z', '')}`;
       const dateObj = new Date(fullDateStr);
-      
+
       const dataPoint: ChartDataPoint = {
         fullDate: dateObj,
         displayDate: `${entry.fecha[0]} ${dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
@@ -204,17 +207,17 @@ const ComparisonDashboardPage = () => {
     const start = (currentPage - 1) * itemsPerPage;
     return sortedTableData.slice(start, start + itemsPerPage);
   }, [sortedTableData, currentPage]);
-  
+
   const totalPages = Math.ceil(sortedTableData.length / itemsPerPage);
 
   const latestPrices = useMemo(() => {
     if (sortedTableData.length === 0) return [];
     const latest = sortedTableData[0];
-    
+
     return pharmacyNames.map(name => {
       const price = latest[name] as number | undefined;
       const isEstimated = latest[`${name}_est`] as boolean;
-      
+
       let trend: 'up' | 'down' | 'equal' = 'equal';
       if (sortedTableData.length > 1 && price) {
         const prevPrice = sortedTableData[1][name] as number | undefined;
@@ -238,18 +241,18 @@ const ComparisonDashboardPage = () => {
   const colors = ["#2563eb", "#dc2626", "#16a34a", "#9333ea", "#ea580c"];
 
   // --- Render ---
-  
+
   return (
     <div className="p-6 bg-gray-50 min-h-screen font-sans text-gray-800">
       <div className="max-w-7xl mx-auto space-y-8">
-        
+
         {/* Header y Controles */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Monitor de Precios</h1>
             <p className="text-gray-500 text-sm">Comparativa histórica entre cadenas</p>
           </div>
-          
+
           <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto items-stretch sm:items-center">
             {/* Botón de Descarga Excel */}
             <button
@@ -295,15 +298,15 @@ const ComparisonDashboardPage = () => {
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
           <h2 className="text-lg font-semibold mb-6">Tendencia de Precios</h2>
           {loadingHistory ? (
-             <div className="h-64 flex items-center justify-center text-gray-400 animate-pulse">Cargando gráfico...</div>
+            <div className="h-64 flex items-center justify-center text-gray-400 animate-pulse">Cargando gráfico...</div>
           ) : processedData.length > 0 ? (
             <div className="h-[350px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={processedData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
-                  <XAxis dataKey="displayDate" tick={{fontSize: 11}} height={50} dy={10} />
+                  <XAxis dataKey="displayDate" tick={{ fontSize: 11 }} height={50} dy={10} />
                   <YAxis width={40} />
-                  <Tooltip 
+                  <Tooltip
                     contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                   />
                   <Legend />
@@ -328,11 +331,11 @@ const ComparisonDashboardPage = () => {
 
         {/* Sección Inferior: Tablero de Datos */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          
+
           {/* Toolbar de la Tabla */}
           <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
             <h3 className="font-semibold text-gray-700">Detalle de Precios</h3>
-            
+
             <div className="flex bg-gray-200 p-1 rounded-lg">
               <button
                 onClick={() => setViewMode('table')}
@@ -354,9 +357,9 @@ const ComparisonDashboardPage = () => {
           {/* Contenido: Modo Tabla o Modo Tarjetas */}
           <div className="p-6">
             {loadingHistory ? (
-               <div className="text-center py-10 text-gray-400">Cargando datos...</div>
+              <div className="text-center py-10 text-gray-400">Cargando datos...</div>
             ) : processedData.length === 0 ? (
-               <div className="text-center py-10 text-gray-400">No hay historial disponible</div>
+              <div className="text-center py-10 text-gray-400">No hay historial disponible</div>
             ) : (
               <>
                 {/* VISTA 1: TABLA HISTÓRICA */}
@@ -458,20 +461,20 @@ const ComparisonDashboardPage = () => {
                             {item.trend === 'equal' && <span className="text-xl font-bold px-1">=</span>}
                           </div>
                         </div>
-                        
+
                         <div className="flex items-center gap-2 mt-4 pt-4 border-t border-gray-100">
-                           {item.isEstimated ? (
-                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-                               Precio Estimado
-                             </span>
-                           ) : (
-                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                               Verificado
-                             </span>
-                           )}
-                           <span className="text-xs text-gray-400 ml-auto">
-                             Última act. hoy
-                           </span>
+                          {item.isEstimated ? (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                              Precio Estimado
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              Verificado
+                            </span>
+                          )}
+                          <span className="text-xs text-gray-400 ml-auto">
+                            Última act. hoy
+                          </span>
                         </div>
                       </div>
                     ))}
