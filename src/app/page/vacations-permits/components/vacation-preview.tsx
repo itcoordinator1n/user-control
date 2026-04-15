@@ -81,9 +81,21 @@ export function VacationPreview({ open, onOpenChange, data, onSubmitSuccess }: V
   const calculateDays = () => {
     if (!data.startDate || !data.endDate) return { total: 0, workdays: 0 }
 
-    const totalDays = (Math.ceil((data.endDate.getTime() - data.startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1)* (data.halfDay && data.startDate?.getTime() == data.endDate?.getTime()?0.5:1);
-    const workdays = (Math.ceil((data.endDate.getTime() - data.startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1)* (data.halfDay && data.startDate?.getTime() == data.endDate?.getTime()?0.5:1);
-    //const workdays = (Math.max(0, totalDays - Math.floor(totalDays / 7) * 2))* (data.halfDay && data.startDate?.getTime() == data.endDate?.getTime()?0.5:1);
+    const isSingleDay = data.startDate.getTime() === data.endDate.getTime()
+    const halfDayMultiplier = data.halfDay && isSingleDay ? 0.5 : 1
+
+    const totalDays =
+      (Math.ceil((data.endDate.getTime() - data.startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1) *
+      halfDayMultiplier
+
+    let workdayCount = 0
+    const current = new Date(data.startDate)
+    while (current <= data.endDate) {
+      const dow = current.getDay()
+      if (dow !== 0 && dow !== 6) workdayCount++
+      current.setDate(current.getDate() + 1)
+    }
+    const workdays = workdayCount * halfDayMultiplier
 
     return { total: totalDays, workdays }
   }
@@ -287,8 +299,6 @@ const handleSubmit = async () => {
           </Card>
 
           <SignaturePad
-        width={500}
-        height={200}
         strokeWidth={3}
         strokeColor="#1e3a8a"
         backgroundColor="white"
@@ -325,7 +335,7 @@ const handleSubmit = async () => {
             <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1">
               Editar Solicitud
             </Button>
-            <Button disabled={!hasSignature && modalStatus === "loading"} onClick={handleSubmit} className="flex-1 bg-blue-600 hover:bg-blue-700">
+            <Button disabled={!hasSignature || modalStatus === "loading"} onClick={handleSubmit} className="flex-1 bg-blue-600 hover:bg-blue-700">
               <Send className="mr-2 h-4 w-4" />
               Enviar Solicitud
             </Button>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Clock } from "lucide-react"
 
@@ -11,23 +11,34 @@ interface TimePickerProps {
 }
 
 export function TimePicker({ value, onChange, placeholder = "Seleccionar hora" }: TimePickerProps) {
-  const [hour, setHour] = useState(value?.split(":")[0] || "00")
-  const [minute, setMinute] = useState(value?.split(":")[1] || "00")
+  const [hour, setHour] = useState("00")
+  const [minute, setMinute] = useState("00")
+
+  // Sincronizar estado local cuando el prop value cambia
+  useEffect(() => {
+    if (value && value.includes(":")) {
+      const [h, m] = value.split(":")
+      setHour(h || "00")
+      setMinute(m || "00")
+    } else if (!value || value === "") {
+      setHour("00")
+      setMinute("00")
+    }
+  }, [value])
 
   const hours = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, "0"))
   const minutes = Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, "0"))
 
   const handleHourChange = (newHour: string) => {
-    console.log("Nueva hora",newHour)
     setHour(newHour)
-    if (minute && onChange) {
+    if (onChange) {
       onChange(`${newHour}:${minute}`)
     }
   }
 
   const handleMinuteChange = (newMinute: string) => {
     setMinute(newMinute)
-    if (hour && onChange) {
+    if (onChange) {
       onChange(`${hour}:${newMinute}`)
     }
   }

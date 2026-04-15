@@ -21,6 +21,15 @@ const rules: Rule[] = [
 
   // Jefe
   { pattern: /^\/page\/applications(?:\/.*)?$/, anyOf: ["BOSS:APPLICATIONS"] },
+
+  // Tickets — técnico
+  { pattern: /^\/page\/tech(?:\/.*)?$/, anyOf: ["TICKET:TECH", "TICKET:ADMIN"] },
+
+  // Tickets — administración IT
+  { pattern: /^\/page\/ticket-admin(?:\/.*)?$/, anyOf: ["TICKET:ADMIN"] },
+
+  // Tickets — gerencia
+  { pattern: /^\/page\/ticket-mgmt(?:\/.*)?$/, anyOf: ["TICKET:MGMT", "TICKET:ADMIN"] },
 ];
 
 export async function middleware(req: NextRequest) {
@@ -33,7 +42,11 @@ export async function middleware(req: NextRequest) {
     '/page/profile',
     '/page/applications',
     '/page/vacations-permits',
-    '/page/dashboard'
+    '/page/dashboard',
+    '/page/tickets',
+    '/page/tech',
+    '/page/ticket-admin',
+    '/page/ticket-mgmt',
   ];
 
   const isPublic = (path: string) => publicRoutes.includes(path);

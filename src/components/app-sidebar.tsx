@@ -10,7 +10,8 @@ import {
   Settings,
   User,
   Users,
-  HandCoins
+  HandCoins,
+  Ticket,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -104,6 +105,17 @@ const sidebarNavigation: NavItem[] = [
     ],
   },
   {
+    title: "Soporte IT",
+    icon: Ticket,
+    id: "soporte-it",
+    subItems: [
+      { title: "Mis tickets",       url: "/page/tickets",       id: "tickets-portal" },
+      { title: "Tablero técnico",   url: "/page/tech",          id: "tickets-tech" },
+      { title: "Administración IT", url: "/page/ticket-admin",  id: "tickets-admin" },
+      { title: "Gerencia",          url: "/page/ticket-mgmt",   id: "tickets-mgmt" },
+    ],
+  },
+  {
     title: "Metricas",
     icon: BarChart3,
     id: "metricas",
@@ -122,16 +134,20 @@ const sidebarNavigation: NavItem[] = [
 // ---------------- Mapa de permisos por ruta ----------------
 // ajusta aquí si agregas nuevas rutas
 const routePermission: Record<string, string> = {
-  "/page/profile": "EMPLOYEE:PROFILE",
+  "/page/profile":         "EMPLOYEE:PROFILE",
   "/page/vacations-permits": "EMPLOYEE:PERMITS",
-  "/page/dashboard": "RRHH:DASHBOARD",
-  "/page/admin": "ADMIN:VIEW",
-  "/page/applications": "BOSS:APPLICATIONS",
+  "/page/dashboard":       "RRHH:DASHBOARD",
+  "/page/admin":           "ADMIN:VIEW",
+  "/page/applications":    "BOSS:APPLICATIONS",
+  // /page/tickets no requiere permiso especial — cualquier autenticado
+  "/page/tech":            "TICKET:TECH",
+  "/page/ticket-admin":    "TICKET:ADMIN",
+  "/page/ticket-mgmt":     "TICKET:MGMT",
 };
 
 export function AppSidebar() {
   const { data: session, status } = useSession();
-  const userPerms = (session?.user as any)?.permissions ?? [];
+  const userPerms = useMemo(() => (session?.user as any)?.permissions ?? [], [session]);
 
   // helpers
   const hasPerm = (required?: string) =>

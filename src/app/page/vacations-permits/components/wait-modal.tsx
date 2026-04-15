@@ -37,18 +37,22 @@ export function WaitModal({
     }
   }, [status, autoCloseMs, onClose])
 
-  // Handle ESC key to close (except when loading)
+  // Handle ESC key — capture phase so we intercept before Radix Dialog does
   useEffect(() => {
     if (!isOpen) return
 
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && status !== "loading" && onClose) {
-        onClose()
+      if (e.key === "Escape") {
+        // Always stop propagation while modal is open so underlying dialogs don't close
+        e.stopPropagation()
+        if (status !== "loading" && onClose) {
+          onClose()
+        }
       }
     }
 
-    document.addEventListener("keydown", handleEscape)
-    return () => document.removeEventListener("keydown", handleEscape)
+    document.addEventListener("keydown", handleEscape, true) // capture phase
+    return () => document.removeEventListener("keydown", handleEscape, true)
   }, [isOpen, status, onClose])
 
   // Focus trap - focus close button when modal opens
@@ -102,7 +106,7 @@ export function WaitModal({
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-title"

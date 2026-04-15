@@ -4,6 +4,7 @@ import "./globals.css";
 import { signOut  } from "next-auth/react";
 
 import AuthProvider from "@/provider/AuthProvider";
+import { QueryProvider } from "@/provider/QueryProvider";
 
 import { Clock } from "lucide-react";
 import Link from "next/link";
@@ -30,8 +31,9 @@ export default function RootLayout(
   const pathname = usePathname();
   return (
     <AuthProvider>
-      
-      <ClientLayout >{children} </ClientLayout>
+      <QueryProvider>
+        <ClientLayout>{children}</ClientLayout>
+      </QueryProvider>
     </AuthProvider>
     // <AuthProvider>
     //   <html lang="en">

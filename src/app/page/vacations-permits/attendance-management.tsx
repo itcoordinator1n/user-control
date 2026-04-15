@@ -18,6 +18,7 @@ import { RichTextEditor } from "./components/rich-text-editor"
 import { useSession } from "next-auth/react"
 
 export default function AttendanceManagement() {
+  const [permitType, setPermitType] = useState<"permiso" | "incapacidad" | "duelo">("permiso")
   const [permitDate, setPermitDate] = useState<Date>()
   const { data: session, status } = useSession()
   const [startTime, setStartTime] = useState("")
@@ -30,6 +31,9 @@ export default function AttendanceManagement() {
   const [vacationEndDate, setVacationEndDate] = useState<Date | null>(null)
   const [vacationComments, setVacationComments] = useState("")
   const [files, setFiles] = useState<File[]>([])
+  const [esCompensatorio, setEsCompensatorio] = useState(false)
+  const [incapacidadStartDate, setIncapacidadStartDate] = useState<Date>()
+  const [incapacidadEndDate, setIncapacidadEndDate] = useState<Date>()
   const [showPermitPreview, setShowPermitPreview] = useState(false)
   const [showVacationPreview, setShowVacationPreview] = useState(false)
   const [toast, setToast] = useState<{
@@ -51,7 +55,23 @@ export default function AttendanceManagement() {
     return startTime < endTime;
   }
 
-  const canShowPermitPreview = permitDate && startTime && endTime && reason && isTimeRangeValid();
+  const canShowPermitPreview =
+    permitType === "permiso"
+      ? permitDate && startTime && endTime && reason && isTimeRangeValid()
+      : permitType === "incapacidad"
+      ? incapacidadStartDate && incapacidadEndDate && reason && files.length > 0
+      : incapacidadStartDate && incapacidadEndDate && reason  // duelo: adjunto opcional
+
+  const handlePermitTypeChange = (type: "permiso" | "incapacidad") => {
+    setPermitType(type)
+    setPermitDate(undefined)
+    setStartTime("")
+    setEndTime("")
+    setEsCompensatorio(false)
+    setIncapacidadStartDate(undefined)
+    setIncapacidadEndDate(undefined)
+    setFiles([])
+  }
   // -------------------------------------
 
   useEffect(() => {
@@ -84,6 +104,9 @@ export default function AttendanceManagement() {
     setReason("")
     setPermitComments("")
     setFiles([])
+    setEsCompensatorio(false)
+    setIncapacidadStartDate(undefined)
+    setIncapacidadEndDate(undefined)
   }
 
   const handleVacationSubmitSuccess = () => {
@@ -121,32 +144,158 @@ export default function AttendanceManagement() {
                   <CardDescription>Completa el formulario para solicitar un permiso laboral</CardDescription>
                 </CardHeader>
                 <CardContent className="p-6 space-y-6">
+                  {/* Selector de tipo */}
                   <div className="space-y-2">
-                    <Label htmlFor="permit-date" className="text-sm font-medium">Fecha del permiso</Label>
-                    <DatePicker date={permitDate} onDateChange={setPermitDate} placeholder="Seleccionar fecha" />
+                    <Label className="text-sm font-medium">Tipo de solicitud</Label>
+                    <div className="flex gap-2 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => handlePermitTypeChange("permiso")}
+                        className={`flex-1 py-2 px-3 text-sm font-medium rounded-md border transition-colors ${
+                          permitType === "permiso"
+                            ? "bg-blue-600 text-white border-blue-600"
+                            : "bg-white text-gray-600 border-gray-300 hover:border-blue-400"
+                        }`}
+                      >
+                        Permiso laboral
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handlePermitTypeChange("incapacidad")}
+                        className={`flex-1 py-2 px-3 text-sm font-medium rounded-md border transition-colors ${
+                          permitType === "incapacidad"
+                            ? "bg-orange-500 text-white border-orange-500"
+                            : "bg-white text-gray-600 border-gray-300 hover:border-orange-400"
+                        }`}
+                      >
+                        Incapacidad médica
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handlePermitTypeChange("duelo")}
+                        className={`flex-1 py-2 px-3 text-sm font-medium rounded-md border transition-colors ${
+                          permitType === "duelo"
+                            ? "bg-gray-700 text-white border-gray-700"
+                            : "bg-white text-gray-600 border-gray-300 hover:border-gray-500"
+                        }`}
+                      >
+                        Permiso por duelo
+                      </button>
+                    </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">Hora de inicio</Label>
-                      <TimePicker value={startTime} onChange={setStartTime} placeholder="HH:MM" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">Hora de finalización</Label>
-                      <TimePicker value={endTime} onChange={setEndTime} placeholder="HH:MM" />
-                    </div>
-                  </div>
+                  {/* Campos para Permiso laboral */}
+                  {permitType === "permiso" && (
+                    <>
+                      <div className="space-y-2">
+                        <Label htmlFor="permit-date" className="text-sm font-medium">Fecha del permiso</Label>
+                        <DatePicker date={permitDate} onDateChange={setPermitDate} placeholder="Seleccionar fecha" />
+                      </div>
 
-                  {/* Feedback visual si la hora es inválida */}
-                  {startTime && endTime && !isTimeRangeValid() && (
-                    <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 p-2 rounded-md">
-                      <AlertCircle className="h-4 w-4" />
-                      La hora de finalización debe ser posterior a la de inicio.
-                    </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">Hora de inicio</Label>
+                          <TimePicker value={startTime} onChange={setStartTime} placeholder="HH:MM" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">Hora de finalización</Label>
+                          <TimePicker value={endTime} onChange={setEndTime} placeholder="HH:MM" />
+                        </div>
+                      </div>
+
+                      {startTime && endTime && !isTimeRangeValid() && (
+                        <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 p-2 rounded-md">
+                          <AlertCircle className="h-4 w-4" />
+                          La hora de finalización debe ser posterior a la de inicio.
+                        </div>
+                      )}
+
+                      <label className="flex items-center gap-3 cursor-pointer select-none w-fit">
+                        <input
+                          type="checkbox"
+                          checked={esCompensatorio}
+                          onChange={(e) => setEsCompensatorio(e.target.checked)}
+                          className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-gray-700">
+                          Tiempo compensatorio
+                          <span className="ml-1 text-xs text-gray-400">(trabajé fuera de horario)</span>
+                        </span>
+                      </label>
+                    </>
+                  )}
+
+                  {/* Campos para Permiso por duelo */}
+                  {permitType === "duelo" && (
+                    <>
+                      <div className="flex items-start gap-2 bg-gray-50 border border-gray-200 rounded-md px-3 py-2 text-sm text-gray-600">
+                        <span>🕊️</span>
+                        <span>Lamentamos tu pérdida. Completa el período de ausencia y el motivo para procesar tu solicitud.</span>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">Fecha de inicio</Label>
+                          <DatePicker date={incapacidadStartDate} onDateChange={setIncapacidadStartDate} placeholder="Desde" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">Fecha de fin</Label>
+                          <DatePicker date={incapacidadEndDate} onDateChange={setIncapacidadEndDate} placeholder="Hasta" />
+                        </div>
+                      </div>
+
+                      {incapacidadStartDate && incapacidadEndDate && incapacidadEndDate < incapacidadStartDate && (
+                        <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 p-2 rounded-md">
+                          <AlertCircle className="h-4 w-4" />
+                          La fecha de fin debe ser igual o posterior a la fecha de inicio.
+                        </div>
+                      )}
+
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">
+                          Documento de respaldo
+                          <span className="ml-1 text-xs text-gray-400">(opcional — acta o esquela)</span>
+                        </Label>
+                        <FileUpload onFilesChange={setFiles} maxFiles={1} />
+                      </div>
+                    </>
+                  )}
+
+                  {/* Campos para Incapacidad médica */}
+                  {permitType === "incapacidad" && (
+                    <>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">Fecha de inicio</Label>
+                          <DatePicker date={incapacidadStartDate} onDateChange={setIncapacidadStartDate} placeholder="Desde" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">Fecha de fin</Label>
+                          <DatePicker date={incapacidadEndDate} onDateChange={setIncapacidadEndDate} placeholder="Hasta" />
+                        </div>
+                      </div>
+
+                      {incapacidadStartDate && incapacidadEndDate && incapacidadEndDate < incapacidadStartDate && (
+                        <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 p-2 rounded-md">
+                          <AlertCircle className="h-4 w-4" />
+                          La fecha de fin debe ser igual o posterior a la fecha de inicio.
+                        </div>
+                      )}
+
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">
+                          Comprobante médico <span className="text-red-500">*</span>
+                        </Label>
+                        <FileUpload onFilesChange={setFiles} maxFiles={1} />
+                        {files.length === 0 && (
+                          <p className="text-xs text-orange-600">Adjunta el documento de incapacidad para continuar.</p>
+                        )}
+                      </div>
+                    </>
                   )}
 
                   <div className="space-y-2">
-                    <Label htmlFor="reason" className="text-sm font-medium">Motivo del permiso</Label>
+                    <Label htmlFor="reason" className="text-sm font-medium">Motivo</Label>
                     <input
                       id="reason"
                       placeholder="Título breve del motivo"
@@ -159,11 +308,6 @@ export default function AttendanceManagement() {
                   <div className="space-y-2">
                     <Label htmlFor="permit-comments" className="text-sm font-medium">Comentarios detallados</Label>
                     <RichTextEditor value={permitComments} onChange={setPermitComments} placeholder="Describe detalladamente el motivo..." minHeight="150px" />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Documentos justificativos</Label>
-                    <FileUpload onFilesChange={setFiles} />
                   </div>
 
                   <div className="flex gap-3 pt-4">
@@ -279,9 +423,13 @@ export default function AttendanceManagement() {
         open={showPermitPreview}
         onOpenChange={setShowPermitPreview}
         data={{
+          tipo: permitType,
+          esCompensatorio,
           date: permitDate,
           startTime,
           endTime,
+          incapacidadStartDate,
+          incapacidadEndDate,
           reason,
           comments: permitComments,
           files,

@@ -51,21 +51,24 @@ export function TableFilters({ onFiltersChange, type }: TableFiltersProps) {
 
   return (
     <div className="space-y-4">
-      {/* Barra de búsqueda principal */}
+      {/* Barra de controles */}
       <div className="flex gap-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <Input
-            placeholder={`Buscar ${type === "permits" ? "permisos" : "vacaciones"}...`}
-            value={filters.keyword}
-            onChange={(e) => handleFilterChange("keyword", e.target.value)}
-            className="pl-10"
-          />
-        </div>
+        {/* Buscador solo para permisos */}
+        {type === "permits" && (
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              placeholder="Buscar permisos..."
+              value={filters.keyword}
+              onChange={(e) => handleFilterChange("keyword", e.target.value)}
+              className="pl-10"
+            />
+          </div>
+        )}
         <Button
           variant="outline"
           onClick={() => setShowFilters(!showFilters)}
-          className={`${hasActiveFilters ? "border-blue-500 text-blue-600" : ""}`}
+          className={`${type === "vacations" ? "flex-1" : ""} ${hasActiveFilters ? "border-blue-500 text-blue-600" : ""}`}
         >
           <Filter className="h-4 w-4 mr-2" />
           Filtros
@@ -134,7 +137,7 @@ export function TableFilters({ onFiltersChange, type }: TableFiltersProps) {
               <div className="bg-blue-50 p-3 rounded-lg">
                 <p className="text-sm text-blue-800 font-medium mb-2">Filtros activos:</p>
                 <div className="flex flex-wrap gap-2">
-                  {filters.keyword && (
+                  {filters.keyword && type === "permits" && (
                     <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
                       Búsqueda: "{filters.keyword}"
                     </span>

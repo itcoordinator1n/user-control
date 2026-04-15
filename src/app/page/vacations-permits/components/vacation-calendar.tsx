@@ -70,7 +70,7 @@ export function VacationCalendar({ startDate, endDate, onDateRangeChange, availa
 
   const handleDateClick = (date: Date) => {
     if (selectingStart || !startDate) {
-      onDateRangeChange?.(date, null)
+      onDateRangeChange?.(date, date)
       setSelectingStart(false)
     } else {
       if (date < startDate) {
@@ -99,10 +99,28 @@ export function VacationCalendar({ startDate, endDate, onDateRangeChange, availa
     setSelectingStart(true)
   }
 
+  const countWorkDays = (start: Date, end: Date): number => {
+    let count = 0
+    const current = new Date(start)
+    while (current <= end) {
+      const dow = current.getDay()
+      if (dow !== 0 && dow !== 6) count++
+      current.setDate(current.getDate() + 1)
+    }
+    return count
+  }
+
   const days = getDaysInMonth(currentMonth)
-  const totalDays =
-    startDate && endDate ? (Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1) * (halfDay && startDate?.getTime() == endDate?.getTime()?0.5:1) : 0
-  console.log(startDate, endDate, totalDays)
+  const isSingleDay = startDate && endDate && startDate.getTime() === endDate.getTime()
+  const halfDayMultiplier = halfDay && isSingleDay ? 0.5 : 1
+
+  const totalDays = startDate && endDate
+    ? (Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1) * halfDayMultiplier
+    : 0
+
+  const workDays = startDate && endDate
+    ? countWorkDays(startDate, endDate) * halfDayMultiplier
+    : 0
   return (
     <div className="space-y-4">
       <div className="text-center">
@@ -163,7 +181,7 @@ export function VacationCalendar({ startDate, endDate, onDateRangeChange, availa
         <div className="flex justify-between">
           <span>Días laborables:</span>
           <span className="bg-blue-600 text-white px-2 py-1 rounded text-xs font-medium">
-            {totalDays > 0 ? Math.max(0, totalDays - Math.floor(totalDays / 7) * 2) : 0}
+            {workDays}
           </span>
         </div>
       </div>
