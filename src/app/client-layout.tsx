@@ -80,7 +80,7 @@ export default function ClientLayout(
         <PasswordChangeModal isOpen={open} setOpen={setOpen}/>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
           {!isLoggedIn ? (
-            <div className="min-h-screen bg-white dark:bg-gray-950 transition-colors duration-300">
+            <div className="min-h-screen bg-white dark:bg-background transition-colors duration-300">
               <Navbar isLoggedIn={isLoggedIn} />
               <main className="container  w-screen px-0 ">
                 {children}
@@ -90,7 +90,7 @@ export default function ClientLayout(
             <SidebarProvider>
               <div className="flex min-h-screen w-full">
                 <AppSidebar />
-                <SidebarInset className="flex flex-1 flex-col bg-white dark:bg-gray-950 transition-colors duration-300">
+                <SidebarInset className="flex flex-1 flex-col bg-white dark:bg-background transition-colors duration-300">
                   <Navbar isLoggedIn={isLoggedIn} />
                   <main className="flex-1">
                     <div className="mx-auto w-full">

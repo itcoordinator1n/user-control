@@ -208,12 +208,12 @@ export function AppSidebar() {
   };
 
   return (
-    <Sidebar className="bg-infarma-light-blue border-r border-gray-200">
+    <Sidebar className="bg-sidebar border-r border-sidebar-border transition-colors duration-300">
       <SidebarHeader className="flex justify-center py-4">
         <Button
           variant="ghost"
           size="icon"
-          className="h-10 w-10 rounded-full bg-white text-infarma-blue hover:bg-white/90"
+          className="h-10 w-10 rounded-full bg-background text-primary hover:bg-muted"
           asChild
         >
           <a href="/page/profile" onClick={() => setOpenMobile(false)}>
@@ -222,7 +222,7 @@ export function AppSidebar() {
                 src={user.avatar}
                 alt={user.name}
               />
-              <AvatarFallback className="bg-[#7BA7C7] text-white">
+              <AvatarFallback className="bg-primary text-primary-foreground">
                 {user.initials}
               </AvatarFallback>
             </Avatar>
@@ -246,7 +246,7 @@ export function AppSidebar() {
                       <div className="w-full">
                         <button
                           onClick={() => toggleSection(item.id)}
-                          className="flex w-full items-center justify-between rounded-md p-2 text-infarma-blue hover:bg-white/50 transition-all duration-200"
+                          className="flex w-full items-center justify-between rounded-md p-2 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200"
                         >
                           <div className="flex items-center gap-2">
                             <item.icon className="h-4 w-4" />
@@ -273,9 +273,9 @@ export function AppSidebar() {
                               <SidebarMenuSubItem key={subItem.id}>
                                 <SidebarMenuSubButton
                                   asChild
-                                  className={`text-infarma-blue hover:bg-white/50 transition-all duration-200 ${
+                                  className={`text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200 ${
                                     activeSubsection === subItem.id
-                                      ? "bg-white font-medium text-infarma-blue"
+                                      ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
                                       : ""
                                   }`}
                                 >
@@ -297,7 +297,7 @@ export function AppSidebar() {
                       <Link
                         href={item.url as string}
                         onClick={() => setOpenMobile(false)}
-                        className="flex items-center gap-2 rounded-md p-2 text-infarma-blue hover:bg-white/50 transition-all duration-200"
+                        className="flex items-center gap-2 rounded-md p-2 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200"
                       >
                         <item.icon className="h-4 w-4" />
                         <span>{item.title}</span>

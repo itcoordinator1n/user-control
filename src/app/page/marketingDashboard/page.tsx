@@ -248,25 +248,25 @@ export default function MarketingDashboard() {
 
   // --- Render ---
   return (
-    <div className="min-h-screen bg-gray-50/50 p-6 font-sans">
+    <div className="min-h-screen bg-background p-6 font-sans transition-colors duration-300">
       <div className="max-w-7xl mx-auto space-y-6">
         
         {/* Header Section */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-card p-6 rounded-2xl shadow-sm border border-border">
           <div>
-            <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Dashboard General</h1>
-            <p className="text-gray-500 mt-1">Análisis competitivo e histórico del mercado.</p>
+            <h1 className="text-3xl font-extrabold text-foreground tracking-tight">Dashboard General</h1>
+            <p className="text-muted-foreground mt-1">Análisis competitivo e histórico del mercado.</p>
           </div>
           
           <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
              
              {/* Filtro Categoría */}
              <div className="w-full sm:w-auto min-w-[150px]">
-               <label className="block text-xs font-semibold text-gray-500 mb-1">Categoría</label>
+               <label className="block text-xs font-semibold text-muted-foreground mb-1">Categoría</label>
                <select
                  value={selectedCategoryId}
                  onChange={(e) => setSelectedCategoryId(e.target.value)}
-                 className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-blue-500 focus:border-blue-500 block p-2.5 transition-colors"
+                 className="w-full bg-muted border border-border text-foreground text-sm rounded-xl focus:ring-primary focus:border-primary block p-2.5 transition-colors"
                >
                  <option value="">Todas</option>
                  {categories.map(c => (
@@ -277,11 +277,11 @@ export default function MarketingDashboard() {
 
              {/* Filtro Comparación */}
              <div className="w-full sm:w-auto min-w-[200px]">
-               <label className="block text-xs font-semibold text-gray-500 mb-1">Grupo / Producto</label>
+               <label className="block text-xs font-semibold text-muted-foreground mb-1">Grupo / Producto</label>
                <select
                  value={selectedComparisonId}
                  onChange={(e) => setSelectedComparisonId(e.target.value)}
-                 className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-blue-500 focus:border-blue-500 block p-2.5 transition-colors"
+                 className="w-full bg-muted border border-border text-foreground text-sm rounded-xl focus:ring-primary focus:border-primary block p-2.5 transition-colors"
                >
                  {filteredComparisons.map(c => (
                    <option key={c.id_comparacion} value={c.id_comparacion}>{c.txt_nombre_comparacion}</option>
@@ -291,12 +291,12 @@ export default function MarketingDashboard() {
              
              <div className="flex gap-2 w-full sm:w-auto">
                <div>
-                  <label className="block text-xs font-semibold text-gray-500 mb-1">Desde</label>
-                  <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-blue-500 focus:border-blue-500 block p-2.5 transition-colors" />
+                  <label className="block text-xs font-semibold text-muted-foreground mb-1">Desde</label>
+                  <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full bg-muted border border-border text-foreground text-sm rounded-xl focus:ring-primary focus:border-primary block p-2.5 transition-colors" />
                </div>
                <div>
-                  <label className="block text-xs font-semibold text-gray-500 mb-1">Hasta</label>
-                  <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-blue-500 focus:border-blue-500 block p-2.5 transition-colors" />
+                  <label className="block text-xs font-semibold text-muted-foreground mb-1">Hasta</label>
+                  <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-full bg-muted border border-border text-foreground text-sm rounded-xl focus:ring-primary focus:border-primary block p-2.5 transition-colors" />
                </div>
              </div>
           </div>
@@ -304,60 +304,60 @@ export default function MarketingDashboard() {
 
         {/* KPIs Section */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col justify-between hover:shadow-md transition-shadow">
+          <div className="bg-card rounded-2xl p-6 shadow-sm border border-border flex flex-col justify-between hover:shadow-md transition-shadow">
             <div className="flex justify-between items-start">
               <div>
-                <p className="text-sm font-medium text-gray-500">Precio Promedio Mercado</p>
-                <h3 className="text-3xl font-bold text-gray-900 mt-2">L. {currentAvgPrice.toFixed(2)}</h3>
+                <p className="text-sm font-medium text-muted-foreground">Precio Promedio Mercado</p>
+                <h3 className="text-3xl font-bold text-foreground mt-2">L. {currentAvgPrice.toFixed(2)}</h3>
               </div>
-              <div className="p-3 bg-blue-50 rounded-xl">
-                <CurrencyDollarIcon className="w-6 h-6 text-blue-600" />
+              <div className="p-3 bg-primary/10 rounded-xl">
+                <CurrencyDollarIcon className="w-6 h-6 text-primary" />
               </div>
             </div>
             <div className="mt-4 flex items-center text-sm">
-              <span className={`flex items-center font-medium ${priceVariation > 0 ? 'text-red-500' : 'text-green-500'}`}>
+              <span className={`flex items-center font-medium ${priceVariation > 0 ? 'text-destructive' : 'text-green-500'}`}>
                 {priceVariation > 0 ? <ArrowTrendingUpIcon className="w-4 h-4 mr-1" /> : <ArrowTrendingDownIcon className="w-4 h-4 mr-1" />}
                 {Math.abs(priceVariation).toFixed(2)}%
               </span>
-              <span className="text-gray-400 ml-2">vs {firstData?.displayDate || 'inicio'}</span>
+              <span className="text-muted-foreground ml-2">vs {firstData?.displayDate || 'inicio'}</span>
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col justify-between hover:shadow-md transition-shadow">
+          <div className="bg-card rounded-2xl p-6 shadow-sm border border-border flex flex-col justify-between hover:shadow-md transition-shadow">
             <div className="flex justify-between items-start">
               <div className="w-full">
-                <p className="text-sm font-medium text-gray-500">Cadena Recomendada</p>
-                <h3 className="text-base sm:text-lg font-bold text-gray-900 mt-2 leading-tight pr-2 break-words">{cheapestChain.name}</h3>
+                <p className="text-sm font-medium text-muted-foreground">Cadena Recomendada</p>
+                <h3 className="text-base sm:text-lg font-bold text-foreground mt-2 leading-tight pr-2 break-words">{cheapestChain.name}</h3>
               </div>
-              <div className="p-3 bg-green-50 rounded-xl shrink-0">
-                <ShoppingBagIcon className="w-6 h-6 text-green-600" />
+              <div className="p-3 bg-green-500/10 rounded-xl shrink-0">
+                <ShoppingBagIcon className="w-6 h-6 text-green-500" />
               </div>
             </div>
             <div className="mt-4">
-               <span className="text-sm text-gray-500">L. {cheapestChain.price.toFixed(2)} precio min. detectado</span>
+               <span className="text-sm text-muted-foreground">L. {cheapestChain.price.toFixed(2)} precio min. detectado</span>
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col justify-between hover:shadow-md transition-shadow">
+          <div className="bg-card rounded-2xl p-6 shadow-sm border border-border flex flex-col justify-between hover:shadow-md transition-shadow">
             <div className="flex justify-between items-start">
               <div>
-                <p className="text-sm font-medium text-gray-500">Métricas en Intervalo</p>
-                <h3 className="text-3xl font-bold text-gray-900 mt-2">{filteredData.length}</h3>
+                <p className="text-sm font-medium text-muted-foreground">Métricas en Intervalo</p>
+                <h3 className="text-3xl font-bold text-foreground mt-2">{filteredData.length}</h3>
               </div>
-              <div className="p-3 bg-purple-50 rounded-xl">
-                <CalendarDaysIcon className="w-6 h-6 text-purple-600" />
+              <div className="p-3 bg-secondary/10 rounded-xl">
+                <CalendarDaysIcon className="w-6 h-6 text-secondary" />
               </div>
             </div>
             <div className="mt-4">
-              <span className="text-sm text-gray-500">Días con registros</span>
+              <span className="text-sm text-muted-foreground">Días con registros</span>
             </div>
           </div>
 
           {/* Quick Status / Alert */}
-          <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-6 shadow-sm text-white flex flex-col justify-between">
+          <div className="bg-gradient-to-br from-primary to-primary/80 rounded-2xl p-6 shadow-sm text-primary-foreground flex flex-col justify-between">
             <div className="flex justify-between items-start">
                <div>
-                  <p className="text-blue-100 text-sm font-medium">Estado del Mercado</p>
+                  <p className="opacity-80 text-sm font-medium">Estado del Mercado</p>
                   <h3 className="text-xl font-bold mt-2 leading-tight">
                     {priceVariation > 5 ? "Alerta de Inflación" : priceVariation < -5 ? "Bajas Pronunciadas" : "Mercado Estable"}
                   </h3>
@@ -366,21 +366,21 @@ export default function MarketingDashboard() {
                   <ExclamationCircleIcon className="w-6 h-6 text-white" />
                </div>
             </div>
-            <p className="text-xs text-blue-200 mt-4 leading-relaxed">
+            <p className="text-xs opacity-70 mt-4 leading-relaxed">
               Basado en la variación porcentual del grupo durante el periodo de tiempo analizado.
             </p>
           </div>
         </div>
 
         {/* Chart Section */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+        <div className="bg-card p-6 rounded-2xl shadow-sm border border-border">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold text-gray-900">Histórico de Volatilidad</h2>
+            <h2 className="text-xl font-bold text-foreground">Histórico de Volatilidad</h2>
           </div>
           
           {loading ? (
-             <div className="bg-gray-50 h-[400px] rounded-xl flex items-center justify-center animate-pulse">
-               <span className="text-gray-400 font-medium">Analizando datos del mercado...</span>
+             <div className="bg-muted h-[400px] rounded-xl flex items-center justify-center animate-pulse">
+               <span className="text-muted-foreground font-medium">Analizando datos del mercado...</span>
              </div>
           ) : filteredData.length > 0 ? (
             <div className="h-[400px] w-full">
@@ -394,7 +394,7 @@ export default function MarketingDashboard() {
                        </linearGradient>
                      ))}
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="text-border" />
                   <XAxis 
                     dataKey="fullDate" 
                     type="number"
@@ -406,19 +406,20 @@ export default function MarketingDashboard() {
                       const d = new Date(tick);
                       return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
                     }}
-                    tick={{fontSize: 12, fill: '#6b7280'}} 
+                    tick={{fontSize: 12, fill: 'currentColor'}} 
+                    className="text-muted-foreground"
                     tickLine={false} 
                     axisLine={false} 
                     dy={10} 
                     minTickGap={30} 
                   />
-                  <YAxis domain={['auto', 'auto']} tick={{fontSize: 12, fill: '#6b7280'}} tickLine={false} axisLine={false} dx={-10} tickFormatter={val => typeof val === 'number' ? `L. ${val.toFixed(2)}` : val} />
+                  <YAxis domain={['auto', 'auto']} tick={{fontSize: 12, fill: 'currentColor'}} className="text-muted-foreground" tickLine={false} axisLine={false} dx={-10} tickFormatter={val => typeof val === 'number' ? `L. ${val.toFixed(2)}` : val} />
                   <Tooltip 
                     labelFormatter={(label) => {
                        const d = new Date(label);
                        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
                     }}
-                    contentStyle={{ borderRadius: '12px', border: '1px solid #f3f4f6', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                    contentStyle={{ borderRadius: '12px', border: '1px solid hsl(var(--border))', backgroundColor: 'hsl(var(--popover))', color: 'hsl(var(--popover-foreground))', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
                   />
                   <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
                   {pharmacyNames.map((name, index) => (
@@ -438,21 +439,21 @@ export default function MarketingDashboard() {
               </ResponsiveContainer>
             </div>
           ) : (
-            <div className="bg-gray-50 h-[400px] rounded-xl flex items-center justify-center">
-              <span className="text-gray-400 font-medium">No hay registros para este rango de fechas.</span>
+            <div className="bg-muted h-[400px] rounded-xl flex items-center justify-center">
+              <span className="text-muted-foreground font-medium">No hay registros para este rango de fechas.</span>
             </div>
           )}
         </div>
 
         {/* Data Breakdown Table */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-           <div className="p-6 border-b border-gray-100">
-             <h3 className="text-lg font-bold text-gray-900">Desglose de la Última Métrica</h3>
+        <div className="bg-card rounded-2xl shadow-sm border border-border overflow-hidden">
+           <div className="p-6 border-b border-border">
+             <h3 className="text-lg font-bold text-foreground">Desglose de la Última Métrica</h3>
            </div>
            
            <div className="overflow-x-auto">
-             <table className="w-full text-left text-sm text-gray-600">
-               <thead className="bg-gray-50/50 text-gray-500 uppercase text-xs font-semibold">
+             <table className="w-full text-left text-sm text-muted-foreground">
+               <thead className="bg-muted/50 text-muted-foreground uppercase text-xs font-semibold">
                  <tr>
                    <th className="px-6 py-4">Cadena</th>
                    <th className="px-6 py-4 text-right">Precio Inicial del Periodo</th>
@@ -460,7 +461,7 @@ export default function MarketingDashboard() {
                    <th className="px-6 py-4 text-right">Variación</th>
                  </tr>
                </thead>
-               <tbody className="divide-y divide-gray-100">
+               <tbody className="divide-y divide-border">
                   {pharmacyNames.map(name => {
                     const latestPrice = latestData ? latestData[name] as number : 0;
                     const firstPrice = firstData ? firstData[name] as number : 0;
@@ -468,17 +469,17 @@ export default function MarketingDashboard() {
                     const pVariation = hasData && firstPrice > 0 ? ((latestPrice - firstPrice) / firstPrice) * 100 : 0;
                     
                     return (
-                      <tr key={name} className="hover:bg-gray-50/50 transition-colors">
-                        <td className="px-6 py-4 font-medium text-gray-900">{name}</td>
+                      <tr key={name} className="hover:bg-muted/50 transition-colors">
+                        <td className="px-6 py-4 font-medium text-foreground">{name}</td>
                         <td className="px-6 py-4 text-right">{firstPrice ? `L. ${firstPrice.toFixed(2)}` : '-'}</td>
-                        <td className="px-6 py-4 text-right font-semibold">{latestPrice ? `L. ${latestPrice.toFixed(2)}` : '-'}</td>
+                        <td className="px-6 py-4 text-right font-semibold text-foreground">{latestPrice ? `L. ${latestPrice.toFixed(2)}` : '-'}</td>
                         <td className="px-6 py-4 text-right">
                            {hasData ? (
-                             <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-bold ${pVariation > 0 ? 'bg-red-50 text-red-600' : pVariation < 0 ? 'bg-green-50 text-green-600' : 'bg-gray-100 text-gray-500'}`}>
+                             <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-bold ${pVariation > 0 ? 'bg-destructive/10 text-destructive' : pVariation < 0 ? 'bg-green-500/10 text-green-500' : 'bg-muted text-muted-foreground'}`}>
                                 {pVariation > 0 ? '+' : ''}{pVariation.toFixed(2)}%
                              </span>
                            ) : (
-                             <span className="text-gray-400">-</span>
+                             <span className="text-muted-foreground/50">-</span>
                            )}
                         </td>
                       </tr>
@@ -486,7 +487,7 @@ export default function MarketingDashboard() {
                   })}
                   {pharmacyNames.length === 0 && (
                     <tr>
-                      <td colSpan={4} className="px-6 py-8 text-center text-gray-500">Seleccione un grupo para visualizar el desglose</td>
+                      <td colSpan={4} className="px-6 py-8 text-center text-muted-foreground">Seleccione un grupo para visualizar el desglose</td>
                     </tr>
                   )}
                </tbody>

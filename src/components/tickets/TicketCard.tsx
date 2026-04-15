@@ -20,14 +20,14 @@ export function TicketCard({ ticket, href, showAssignee = false }: TicketCardPro
   return (
     <Link
       href={href}
-      className="block rounded-lg border bg-white p-4 shadow-sm transition-shadow hover:shadow-md dark:bg-gray-900 dark:border-gray-700"
+      className="block rounded-lg border bg-white p-4 shadow-sm transition-shadow hover:shadow-md dark:bg-card dark:border-gray-700"
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">
             {ticket.code}
           </p>
-          <p className="mt-0.5 truncate text-xs text-gray-500 dark:text-gray-400">
+          <p className="mt-0.5 truncate text-xs text-gray-500 dark:text-muted-foreground">
             {ticket.category}
             {ticket.subcategory ? ` / ${ticket.subcategory}` : ''}
           </p>
@@ -43,7 +43,7 @@ export function TicketCard({ ticket, href, showAssignee = false }: TicketCardPro
         <StatusBadge status={ticket.status} />
 
         {showAssignee && ticket.assigned_to_name && (
-          <span className="inline-flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+          <span className="inline-flex items-center gap-1 text-xs text-gray-500 dark:text-muted-foreground">
             <User className="h-3 w-3" />
             {ticket.assigned_to_name}
           </span>

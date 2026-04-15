@@ -2211,7 +2211,7 @@ export default function AttendanceDashboard() {
   if (!isClient) { return null } else {
     if (showAttendanceDetail) {
       return (
-        <div className="min-h-screen bg-gray-50 p-6">
+        <div className="min-h-screen bg-background transition-colors duration-300 p-6">
           <div className="max-w-7xl mx-auto">
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
@@ -2960,7 +2960,7 @@ export default function AttendanceDashboard() {
 
   if (showVacationDetail) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
+      <div className="min-h-screen bg-background transition-colors duration-300 p-6">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
@@ -4144,7 +4144,7 @@ export default function AttendanceDashboard() {
 
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-background transition-colors duration-300 p-6">
       {/*
       
       <PermissionsDashboard setShowPermissionDetail={setShowPermissionDetail} showPermissionDetail={showPermissionDetail}></PermissionsDashboard>
