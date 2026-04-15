@@ -530,7 +530,7 @@ export default function SupervisorDashboard() {
     if (status !== "authenticated" || !session?.user?.accessToken) return;
     setEmployeesLoading(true);
     fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/permissions/my-team`, {
-      headers: { Authorization: `Bearer ${session.user.accessToken}` },
+      headers: { Authorization: `Bearer ${session?.user?.accessToken}` },
     })
       .then((res) => {
         if (!res.ok) throw new Error();
@@ -576,7 +576,7 @@ export default function SupervisorDashboard() {
     setIsLoading(true);
     fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/api/permissions/get-all-request-to-me?${params}`,
-      { headers: { Authorization: `Bearer ${session.user.accessToken}` } }
+      { headers: { Authorization: `Bearer ${session?.user?.accessToken}` } }
     )
       .then((res) => {
         if (!res.ok) throw new Error("Error al cargar solicitudes");
@@ -662,7 +662,7 @@ export default function SupervisorDashboard() {
           signal: controller.signal,
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${session?.user.accessToken}`,
+            Authorization: `Bearer ${session?.user?.accessToken}`,
           },
           body: JSON.stringify({
             id: selectedRequest.id,

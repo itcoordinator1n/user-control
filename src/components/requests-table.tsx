@@ -60,7 +60,7 @@ const requests = [
     id: "REQ-001",
     employeeId: "EMP-001",
     employeeName: "Ana Martínez",
-    employeePhoto: "/placeholder.svg?height=40&width=40",
+    employeePhoto: undefined,
     employeePosition: "Analista de Marketing",
     employeeDepartment: "Marketing",
     type: "Vacaciones",
@@ -76,7 +76,7 @@ const requests = [
     id: "REQ-002",
     employeeId: "EMP-002",
     employeeName: "Miguel Sánchez",
-    employeePhoto: "/placeholder.svg?height=40&width=40",
+    employeePhoto: undefined,
     employeePosition: "Desarrollador Frontend",
     employeeDepartment: "Tecnología",
     type: "Permiso",
@@ -92,7 +92,7 @@ const requests = [
     id: "REQ-003",
     employeeId: "EMP-003",
     employeeName: "Laura Gómez",
-    employeePhoto: "/placeholder.svg?height=40&width=40",
+    employeePhoto: undefined,
     employeePosition: "Contadora",
     employeeDepartment: "Finanzas",
     type: "Permiso",
@@ -108,7 +108,7 @@ const requests = [
     id: "REQ-004",
     employeeId: "EMP-004",
     employeeName: "Javier Pérez",
-    employeePhoto: "/placeholder.svg?height=40&width=40",
+    employeePhoto: undefined,
     employeePosition: "Ejecutivo de Ventas",
     employeeDepartment: "Ventas",
     type: "Vacaciones",
@@ -123,7 +123,7 @@ const requests = [
     id: "REQ-005",
     employeeId: "EMP-005",
     employeeName: "Sofía Ramírez",
-    employeePhoto: "/placeholder.svg?height=40&width=40",
+    employeePhoto: undefined,
     employeePosition: "Diseñadora Gráfica",
     employeeDepartment: "Marketing",
     type: "Permiso",
@@ -165,7 +165,7 @@ export default function RequestsTable() {
           {
             method: "GET",
             headers: {
-              Authorization: `Bearer ${session?.user.accessToken}`,
+              Authorization: `Bearer ${session?.user?.accessToken}`,
             },
           }
         );
@@ -312,7 +312,7 @@ export default function RequestsTable() {
                             <TableCell className="font-medium">
                               <div className="flex items-center gap-2">
                                 <img
-                                  src={"/placeholder.svg"}
+                                  src={undefined}
                                   alt={request.nombreSolicitante}
                                   className="w-8 h-8 rounded-full"
                                 />

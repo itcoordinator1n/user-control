@@ -198,7 +198,7 @@ export function AppSidebar() {
   const user = {
     name: session?.user?.name ?? "Usuario",
     title: "Tecnologías de la Información (TI)",
-    avatar: "/placeholder.svg?height=32&width=32",
+    avatar: undefined,
     initials: (
       session?.user?.name
         ?.split(" ")
@@ -221,7 +221,7 @@ export function AppSidebar() {
           <a href="/page/profile">
             <Avatar className="h-8 w-8">
               <AvatarImage
-                src={user.avatar || "/placeholder.svg"}
+                src={user.avatar}
                 alt={user.name}
               />
               <AvatarFallback className="bg-[#7BA7C7] text-white">

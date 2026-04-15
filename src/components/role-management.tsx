@@ -541,7 +541,7 @@ function RoleDialog({ open, onOpenChange, role }: RoleDialogProps) {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${session?.user.accessToken}`,
+        Authorization: `Bearer ${session?.user?.accessToken}`,
       },
     })
       .then((response) => {

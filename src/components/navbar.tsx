@@ -13,7 +13,7 @@ export default function Navbar() {
         <Link href="/" className="flex items-center gap-2">
           <div className="relative h-10 w-10 overflow-hidden rounded-full bg-customPalette-gold flex items-center justify-center">
             <Image
-              src="/placeholder.svg?height=32&width=32"
+              src="/logo.jpeg"
               alt="Company Logo"
               width={32}
               height={32}

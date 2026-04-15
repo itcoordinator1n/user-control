@@ -32,7 +32,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
         <div className="ml-auto flex items-center gap-4">
           <Avatar>
-            <AvatarImage src="/placeholder.svg?height=32&width=32" alt="Supervisor" />
+            <AvatarImage src={undefined} alt="Supervisor" />
             <AvatarFallback>SV</AvatarFallback>
           </Avatar>
           <div className="hidden md:block">

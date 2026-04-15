@@ -123,8 +123,8 @@ export default function AttendanceManagement() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <div className="container mx-auto p-4">
-        <h1 className="mb-6 text-2xl font-bold text-blue-900">Gestión de Asistencia</h1>
+      <div className="container mx-auto p-0 sm:p-4">
+        <h1 className="mb-6 mt-4 ml-4 sm:ml-0 text-2xl font-bold text-blue-900">Gestión de Asistencia</h1>
 
         <Tabs defaultValue="permisos" className="w-full">
           <TabsList className="grid w-full grid-cols-2 bg-white">
@@ -138,12 +138,12 @@ export default function AttendanceManagement() {
 
           <TabsContent value="permisos" className="mt-6">
             <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
-              <Card>
+              <Card className="border-0 sm:border shadow-none sm:shadow-sm">
                 <CardHeader className="bg-blue-50 border-b">
                   <CardTitle className="text-blue-900">Solicitud de Permiso</CardTitle>
                   <CardDescription>Completa el formulario para solicitar un permiso laboral</CardDescription>
                 </CardHeader>
-                <CardContent className="p-6 space-y-6">
+                <CardContent className="p-4 sm:p-6 space-y-6">
                   {/* Selector de tipo */}
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">Tipo de solicitud</Label>
@@ -354,11 +354,11 @@ export default function AttendanceManagement() {
           {/* Tab de Vacaciones - Mantenido similar pero con validación de botón */}
           <TabsContent value="vacaciones" className="mt-6">
             <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
-              <Card>
+              <Card className="border-0 sm:border shadow-none sm:shadow-sm">
                 <CardHeader className="bg-blue-50 border-b">
                   <CardTitle className="text-blue-900">Solicitud de Vacaciones</CardTitle>
                 </CardHeader>
-                <CardContent className="p-6 space-y-6">
+                <CardContent className="p-4 sm:p-6 space-y-6">
                   <div className="bg-blue-50 p-4 rounded-lg">
                     <div className="flex justify-between items-center">
                       <div>
@@ -366,13 +366,15 @@ export default function AttendanceManagement() {
                         <p className="text-sm text-blue-700">Período 2025-2026</p>
                       </div>
                       <div className="text-right">
-                        <div className="text-3xl font-bold text-blue-900">{vacationDays}</div>
+                        <div className="text-3xl font-bold text-blue-900">
+                          {Number(vacationDays).toLocaleString('es-ES', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                        </div>
                         <div className="text-sm text-blue-700">días</div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="border rounded-lg p-4">
+                  <div className="border rounded-lg p-2 sm:p-4">
                     <VacationCalendar
                       startDate={vacationStartDate || undefined}
                       endDate={vacationEndDate || undefined}

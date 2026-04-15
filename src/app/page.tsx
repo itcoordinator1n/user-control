@@ -79,7 +79,7 @@ export default function Home() {
     //                 <div className="p-4 space-y-4">
     //                   <div className="aspect-square relative rounded-md overflow-hidden">
     //                     <Image
-    //                       src={`/placeholder.svg?height=280&width=280&text=Producto ${item}`}
+    //                       src={""}
     //                       alt={`Producto ${item}`}
     //                       fill
     //                       className="object-cover transition-all hover:scale-105"

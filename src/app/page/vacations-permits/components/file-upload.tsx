@@ -70,7 +70,7 @@ export function FileUpload({ onFilesChange, maxFiles = 5 }: FileUploadProps) {
       const url = URL.createObjectURL(file)
       return (
         <img
-          src={url || "/placeholder.svg"}
+          src={url || ""}
           alt={file.name}
           className="w-12 h-12 object-cover rounded"
           onLoad={() => URL.revokeObjectURL(url)}

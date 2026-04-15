@@ -155,7 +155,7 @@ export function AppSidebar() {
   const user = {
     name: "ANIBAL ALEJANDRO REYES",
     title: "Tecnologías de la Información (TI)",
-    avatar: "/placeholder.svg?height=32&width=32",
+    avatar: undefined,
     initials: "AA",
   }
 
@@ -170,7 +170,7 @@ export function AppSidebar() {
         >
           <a href="#/profile">
             <Avatar className="h-8 w-8">
-              <AvatarImage src={user.avatar || "/placeholder.svg"} alt={user.name} />
+              <AvatarImage src={user.avatar} alt={user.name} />
               <AvatarFallback className="bg-[#7BA7C7] text-white">{user.initials}</AvatarFallback>
             </Avatar>
             <span className="sr-only">Profile</span>

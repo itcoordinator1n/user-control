@@ -280,30 +280,25 @@ export function RequestsTable({ type, onRequestDeleted, canApprove = false, mode
                     <div className="w-full overflow-hidden">
                       <table className="w-full table-fixed">
                         <colgroup>
-                          {type === "permits" ? (
-                            <>
-                              <col style={{ width: "15%" }} />  {/* Fecha/Horario */}
-                              <col style={{ width: "10%" }} />  {/* Tipo */}
-                              <col style={{ width: isSupervisor ? "26%" : "31%" }} />  {/* Motivo */}
-                              <col style={{ width: "13%" }} />  {/* Estado */}
-                              {isSupervisor
-                                ? <col style={{ width: "22%" }} />  /* Empleado */
-                                : <col style={{ width: "16%" }} />  /* Aprobador */
-                              }
-                              <col style={{ width: "14%" }} />  {/* Fecha Solicitud */}
-                            </>
-                          ) : (
-                            <>
-                              <col style={{ width: "18%" }} />  {/* Período */}
-                              <col style={{ width: isSupervisor ? "28%" : "34%" }} />  {/* Días/Comentarios */}
-                              <col style={{ width: "14%" }} />  {/* Estado */}
-                              {isSupervisor
-                                ? <col style={{ width: "22%" }} />  /* Empleado */
-                                : <col style={{ width: "18%" }} />  /* Aprobador */
-                              }
-                              <col style={{ width: "18%" }} />  {/* Fecha Solicitud */}
-                            </>
-                          )}
+                          {(type === "permits" 
+                            ? [
+                                "15%", // Fecha/Horario
+                                "10%", // Tipo
+                                isSupervisor ? "26%" : "31%", // Motivo
+                                "13%", // Estado
+                                isSupervisor ? "22%" : "16%", // Empleado/Aprobador
+                                "14%"  // Fecha Solicitud
+                              ]
+                            : [
+                                "18%", // Período
+                                isSupervisor ? "28%" : "34%", // Días/Comentarios
+                                "14%", // Estado
+                                isSupervisor ? "22%" : "18%", // Empleado/Aprobador
+                                "18%"  // Fecha Solicitud
+                              ]
+                          ).map((width, idx) => (
+                            <col key={idx} style={{ width }} />
+                          ))}
                         </colgroup>
                         <thead className="bg-gray-50 border-b">
                           <tr>

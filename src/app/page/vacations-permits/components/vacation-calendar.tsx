@@ -136,22 +136,22 @@ export function VacationCalendar({ startDate, endDate, onDateRangeChange, availa
           </Button>
         </div>
 
-        <div className="grid grid-cols-7 gap-1 mb-2">
+        <div className="grid grid-cols-7 gap-0.5 sm:gap-1 mb-2">
           {dayNames.map((day) => (
-            <div key={day} className="text-xs font-medium text-gray-500 p-2">
+            <div key={day} className="text-[10px] sm:text-xs font-medium text-gray-500 p-1 sm:p-2">
               {day}
             </div>
           ))}
         </div>
 
-        <div className="grid grid-cols-7 gap-1">
+        <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
           {days.map((day, index) => (
             <div key={index} className="aspect-square">
               {day && (
                 <button
                   onClick={() => handleDateClick(day)}
                   className={cn(
-                    "w-full h-full text-sm rounded hover:bg-blue-100 transition-colors",
+                    "w-full h-full text-xs sm:text-sm rounded hover:bg-blue-100 transition-colors",
                     isDateSelected(day) && "bg-yellow-400 text-white font-medium",
                     isDateInRange(day) && !isDateSelected(day) && "bg-blue-100",
                     !day && "invisible",
@@ -165,14 +165,14 @@ export function VacationCalendar({ startDate, endDate, onDateRangeChange, availa
         </div>
       </div>
 
-      <div className="space-y-2 text-sm">
+      <div className="space-y-2 text-xs sm:text-sm">
         <div className="flex justify-between">
           <span>Fecha inicio:</span>
-          <span className="text-blue-600">{startDate ? startDate.toLocaleDateString("es-ES") : "No seleccionada"}</span>
+          <span className="text-blue-600 font-medium">{startDate ? startDate.toLocaleDateString("es-ES") : "No seleccionada"}</span>
         </div>
         <div className="flex justify-between">
           <span>Fecha fin:</span>
-          <span className="text-blue-600">{endDate ? endDate.toLocaleDateString("es-ES") : "No seleccionada"}</span>
+          <span className="text-blue-600 font-medium">{endDate ? endDate.toLocaleDateString("es-ES") : "No seleccionada"}</span>
         </div>
         <div className="flex justify-between">
           <span>Días totales:</span>
@@ -180,7 +180,7 @@ export function VacationCalendar({ startDate, endDate, onDateRangeChange, availa
         </div>
         <div className="flex justify-between">
           <span>Días laborables:</span>
-          <span className="bg-blue-600 text-white px-2 py-1 rounded text-xs font-medium">
+          <span className="bg-blue-600 text-white px-2 py-0.5 rounded text-[10px] sm:text-xs font-medium">
             {workDays}
           </span>
         </div>
@@ -188,15 +188,15 @@ export function VacationCalendar({ startDate, endDate, onDateRangeChange, availa
       
       {
         startDate?.getTime() == endDate?.getTime() && startDate!=undefined?  (
-          <div className="p-4 bg-yellow-100 text-yellow-800 rounded flex gap-5">
-              <p className="">
+          <div className="p-3 sm:p-4 bg-yellow-100 text-yellow-800 rounded flex items-center gap-3 sm:gap-5">
+              <p className="text-xs sm:text-sm flex-1">
                 Seleccionaste un solo día. activa esta opcion si quieres medio dia de vacaciones.
               </p>
                <input
                 type="checkbox"
                 checked={halfDay}
                 onChange={e => setHalfDay(e.target.checked)}
-                className="scale-200"
+                className="w-5 h-5 cursor-pointer shrink-0"
               />
             </div>
         ) :null

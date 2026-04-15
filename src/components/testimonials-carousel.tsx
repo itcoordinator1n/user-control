@@ -13,7 +13,7 @@ const testimonials = [
     role: "Paciente crónico",
     quote:
       "Los productos de PharmaCare han mejorado significativamente mi calidad de vida. El servicio al cliente es excepcional y los envíos siempre llegan a tiempo.",
-    avatar: "/placeholder.svg?height=80&width=80",
+    avatar: undefined,
     rating: 5,
   },
   {
@@ -22,7 +22,7 @@ const testimonials = [
     role: "Deportista",
     quote:
       "Como atleta, necesito productos de calidad para mantener mi salud. PharmaCare ofrece exactamente lo que necesito con ingredientes de primera calidad.",
-    avatar: "/placeholder.svg?height=80&width=80",
+    avatar: undefined,
     rating: 4,
   },
   {
@@ -31,7 +31,7 @@ const testimonials = [
     role: "Madre de familia",
     quote:
       "Confío en PharmaCare para toda mi familia. Sus productos son seguros, efectivos y siempre tienen lo que necesitamos para mantenernos saludables.",
-    avatar: "/placeholder.svg?height=80&width=80",
+    avatar: undefined,
     rating: 5,
   },
 ]
@@ -124,7 +124,7 @@ export function TestimonialCarousel() {
                 <div className="flex items-center gap-4 mb-4">
                   <div className="relative h-16 w-16 flex-shrink-0">
                     <Image
-                      src={testimonial.avatar || "/placeholder.svg"}
+                      src={testimonial.avatar}
                       alt={testimonial.name}
                       width={80}
                       height={80}

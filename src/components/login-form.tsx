@@ -96,8 +96,8 @@ export default function LoginForm() {
       password: values.password,
     });
     console.log("Token de acceso",session);
-    if(session?.user.accessToken){
-      const payload:TokenPayload = jwtDecode(session?.user.accessToken);
+    if(session?.user?.accessToken){
+      const payload:TokenPayload = jwtDecode(session?.user?.accessToken);
     }
     // Si el inicio de sesión es exitoso, redirige a /dashboard
     if (result?.ok) {

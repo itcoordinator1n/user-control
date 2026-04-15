@@ -36,7 +36,7 @@ export function Navbar({ isLoggedIn, onLogin, onLogout }: NavbarProps) {
     name: "ANIBAL ALEJANDRO REYES",
     title: "Tecnologías de la Información (TI)",
     email: "anibal@example.com",
-    avatar: "/placeholder.svg?height=32&width=32",
+    avatar: undefined,
     initials: "AA",
   }
 
@@ -149,7 +149,7 @@ export function Navbar({ isLoggedIn, onLogin, onLogout }: NavbarProps) {
                   className="relative h-10 w-auto px-2 text-infarma-blue dark:text-white transition-all duration-200"
                 >
                   <Avatar className="h-10 w-10 bg-[#7BA7C7] text-white">
-                    <AvatarImage src={user.avatar || "/placeholder.svg"} alt={user.name} />
+                    <AvatarImage src={user.avatar} alt={user.name} />
                     <AvatarFallback>{user.initials}</AvatarFallback>
                   </Avatar>
                   <div className="ml-2 hidden flex-col items-start text-left sm:flex">

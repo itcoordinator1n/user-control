@@ -1702,14 +1702,14 @@ export default function AttendanceDashboard() {
 
   useEffect(() => {
 
-    if (session?.user.accessToken) {
+    if (session?.user?.accessToken) {
       const fetchEntryDate = async () => {
         try {
           const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/requests/assistance-detail-resume`, {
             method: "GET",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${session.user.accessToken}`,
+              Authorization: `Bearer ${session?.user?.accessToken}`,
             },
           });
 
@@ -1733,7 +1733,7 @@ export default function AttendanceDashboard() {
             method: "GET",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${session.user.accessToken}`,
+              Authorization: `Bearer ${session?.user?.accessToken}`,
             },
           });
 
@@ -1760,14 +1760,14 @@ export default function AttendanceDashboard() {
 
   useEffect(() => {
 
-    if (session?.user.accessToken) {
+    if (session?.user?.accessToken) {
       const fetchEntryDate = async () => {
         try {
           const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/requests/get-monthly-attendance`, {
             method: "GET",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${session.user.accessToken}`,
+              Authorization: `Bearer ${session?.user?.accessToken}`,
             },
           });
 
@@ -1792,7 +1792,7 @@ export default function AttendanceDashboard() {
             method: "GET",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${session.user.accessToken}`,
+              Authorization: `Bearer ${session?.user?.accessToken}`,
             },
           });
 

@@ -11,37 +11,37 @@ const products = [
     id: 1,
     name: "AlivioRápido",
     description: "Analgésico de acción rápida para dolores leves y moderados",
-    image: "/placeholder.svg?height=300&width=300",
+    image: "",
   },
   {
     id: 2,
     name: "DormiPax",
     description: "Ayuda natural para conciliar el sueño y mejorar su calidad",
-    image: "/placeholder.svg?height=300&width=300",
+    image: "",
   },
   {
     id: 3,
     name: "RespiClear",
     description: "Descongestionante nasal para alergias y resfriados",
-    image: "/placeholder.svg?height=300&width=300",
+    image: "",
   },
   {
     id: 4,
     name: "DigestiCalm",
     description: "Alivio para problemas digestivos y acidez estomacal",
-    image: "/placeholder.svg?height=300&width=300",
+    image: "",
   },
   {
     id: 5,
     name: "VitaPlus",
     description: "Complejo multivitamínico para reforzar el sistema inmune",
-    image: "/placeholder.svg?height=300&width=300",
+    image: "",
   },
   {
     id: 6,
     name: "ArticuFlex",
     description: "Suplemento para la salud articular y movilidad",
-    image: "/placeholder.svg?height=300&width=300",
+    image: "",
   },
 ]
 
@@ -155,7 +155,7 @@ export function ProductCarousel() {
               <div className="bg-background rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
                 <div className="aspect-square relative mb-4">
                   <Image
-                    src={product.image || "/placeholder.svg"}
+                    src={product.image || ""}
                     alt={product.name}
                     width={300}
                     height={300}

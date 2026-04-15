@@ -52,7 +52,7 @@ useEffect(() => {
   let interval: NodeJS.Timeout;
   let isMounted = true;
 
-  if (session?.user.accessToken) {
+  if (session?.user?.accessToken) {
     const fetchEntryDate = async () => {
       try {
         setLoading(true);
@@ -60,7 +60,7 @@ useEffect(() => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${session.user.accessToken}`,
+            Authorization: `Bearer ${session?.user?.accessToken}`,
           },
         });
 
@@ -111,7 +111,7 @@ useEffect(() => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${session?.user.accessToken}`,
+            Authorization: `Bearer ${session?.user?.accessToken}`,
           },
         }
       );
@@ -143,7 +143,7 @@ useEffect(() => {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${session?.user.accessToken}`,
+            Authorization: `Bearer ${session?.user?.accessToken}`,
           },
         }
       );
@@ -165,7 +165,7 @@ useEffect(() => {
       fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/profile/profile_info`, {
         method: "GET",
         headers: {
-          Authorization: `Bearer ${session?.user.accessToken}`,
+          Authorization: `Bearer ${session?.user?.accessToken}`,
         },
       })
         .then((res) => {
@@ -229,7 +229,7 @@ useEffect(() => {
             <div className="flex flex-col items-center space-y-4">
               <Avatar className="h-24 w-24">
                 <AvatarImage
-                  src="/placeholder.svg?height=96&width=96"
+                  src={undefined}
                   alt="Foto de perfil"
                 />
                 <AvatarFallback>{userName}</AvatarFallback>

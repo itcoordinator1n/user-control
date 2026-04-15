@@ -55,7 +55,7 @@ export function ParallaxImage({ src, alt, width, height, className = "", paralla
         }}
       >
         <Image
-          src={src || "/placeholder.svg"}
+          src={src || ""}
           alt={alt}
           width={width}
           height={height}

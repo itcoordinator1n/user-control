@@ -46,7 +46,7 @@ export function UserAvatarMenu({
       fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/profile/profile_info`, {
         method: "GET",
         headers: {
-          Authorization: `Bearer ${session?.user.accessToken}`,
+          Authorization: `Bearer ${session?.user?.accessToken}`,
         },
       })
         .then((res) => {
@@ -74,7 +74,7 @@ export function UserAvatarMenu({
         <div className="ml-auto flex cursor-pointer items-center gap-4">
           <Avatar>
             <AvatarImage
-              src={avatarSrc || "/placeholder.svg?height=32&width=32"}
+              src={avatarSrc || undefined}
               alt={name}
             />
             <AvatarFallback>{userName}</AvatarFallback>

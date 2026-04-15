@@ -85,7 +85,7 @@ export default function PasswordChangeModal({ isOpen, setOpen }: PasswordChangeM
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${session?.user.accessToken}`,
+          Authorization: `Bearer ${session?.user?.accessToken}`,
           // NO Content-Type: lo gestiona automáticamente FormData
         },
         body:JSON.stringify({ newPassword:formData.newPassword })

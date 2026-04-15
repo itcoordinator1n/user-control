@@ -52,7 +52,7 @@ export function Navbar({ isLoggedIn }: NavbarProps) {
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/profile/profile_info`, {
           method: "GET",
           headers: {
-            Authorization: `Bearer ${session?.user.accessToken}`,
+            Authorization: `Bearer ${session?.user?.accessToken}`,
           },
         })
           .then((res) => {
@@ -77,7 +77,7 @@ export function Navbar({ isLoggedIn }: NavbarProps) {
     name: "ANIBAL ALEJANDRO REYES",
     title: "Tecnologías de la Información (TI)",
     email: "anibal@example.com",
-    avatar: "/placeholder.svg?height=32&width=32",
+    avatar: undefined,
     initials: "AA",
   }
 
@@ -197,7 +197,7 @@ export function Navbar({ isLoggedIn }: NavbarProps) {
                   className="relative h-10 w-auto px-2 text-infarma-blue dark:text-white transition-all duration-200"
                 >
                   <Avatar className="h-10 w-10 bg-[#7BA7C7] text-white">
-                    <AvatarImage src={userName || "/placeholder.svg"} alt={userName} />
+                    <AvatarImage src={undefined} alt={profile?.name} />
                     <AvatarFallback>{userName}</AvatarFallback>
                   </Avatar>
                   <div className="ml-2 hidden flex-col items-start text-left sm:flex">

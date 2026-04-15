@@ -91,7 +91,7 @@ export function PermitPreview({
       const url = URL.createObjectURL(file);
       return (
         <img
-          src={url || "/placeholder.svg"}
+          src={url || ""}
           alt={file.name}
           className="w-16 h-16 object-cover rounded border"
           onLoad={() => URL.revokeObjectURL(url)}
