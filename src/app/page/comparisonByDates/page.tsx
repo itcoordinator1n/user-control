@@ -8,8 +8,8 @@ interface FilterState {
   idCadena: string;
   idCategoria: string;
   keyword: string;
-  anio: number;
-  mes: number;
+  fechaInicio: string;
+  fechaFin: string;
   fechasEspecificas?: string[];
   page: number;
   limit: number;
@@ -64,8 +64,15 @@ export default function PriceComparisonTable() {
     idCadena: "1",
     idCategoria: "",
     keyword: "",
-    anio: new Date().getFullYear(),
-    mes: new Date().getMonth() + 1,
+    fechaInicio: (() => {
+      const d = new Date();
+      d.setDate(d.getDate() - 7);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    })(),
+    fechaFin: (() => {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    })(),
     page: 1,
     limit: 10,
     datePage: 1,
@@ -132,8 +139,8 @@ export default function PriceComparisonTable() {
 
       // Parámetros obligatorios para este reporte
       params.append("idCadena", filters.idCadena);
-      params.append("anio", filters.anio.toString());
-      params.append("mes", filters.mes.toString());
+      params.append("fechaInicio", filters.fechaInicio);
+      params.append("fechaFin", filters.fechaFin);
 
       // Parámetros opcionales (solo si tienen valor)
       if (filters.idCategoria) params.append("idCategoria", filters.idCategoria);
@@ -161,8 +168,8 @@ export default function PriceComparisonTable() {
       // 4. Forzar la descarga en el navegador
       const a = document.createElement("a");
       a.href = url;
-      // El nombre del archivo sugerido incluye cadena, mes y año para orden
-      a.download = `Historial_Cadena${filters.idCadena}_${filters.anio}_${filters.mes}.xlsx`;
+      // El nombre del archivo sugerido incluye cadena, fechas para orden
+      a.download = `Historial_Cadena${filters.idCadena}_${filters.fechaInicio}_${filters.fechaFin}.xlsx`;
       document.body.appendChild(a);
       a.click();
       
@@ -185,8 +192,8 @@ export default function PriceComparisonTable() {
     filters.page,
     filters.limit,
     filters.datePage,
-    filters.anio,
-    filters.mes,
+    filters.fechaInicio,
+    filters.fechaFin,
     filters.idCadena,
   ]);
 
@@ -277,45 +284,43 @@ export default function PriceComparisonTable() {
             </select>
           </div>
 
-          {/* 2. Año */}
+          {/* 2. Fecha de Inicio */}
           <div className="flex flex-col">
             <label
-              htmlFor="anio"
+              htmlFor="fechaInicio"
               className="text-xs font-bold text-gray-600 mb-1"
             >
-              Año
+              Fecha de Inicio
             </label>
             <input
-              id="anio"
-              type="number"
-              name="anio"
-              value={filters.anio}
+              id="fechaInicio"
+              type="date"
+              name="fechaInicio"
+              max={filters.fechaFin} // Restringe a no pasar de la fecha final actual
+              value={filters.fechaInicio}
               onChange={handleFilterChange}
               className="border border-gray-300 p-2 rounded text-sm focus:ring-2 focus:ring-blue-500 outline-none"
             />
           </div>
 
-          {/* 3. Mes */}
+          {/* 3. Fecha de Final */}
           <div className="flex flex-col">
             <label
-              htmlFor="mes"
+              htmlFor="fechaFin"
               className="text-xs font-bold text-gray-600 mb-1"
             >
-              Mes
+              Fecha de Final
             </label>
-            <select
-              id="mes"
-              name="mes"
-              value={filters.mes}
+            <input
+              id="fechaFin"
+              type="date"
+              name="fechaFin"
+              min={filters.fechaInicio} // No puede ser menor a la de inicio
+              max={todayStr}            // No puede ser mayor al día de hoy
+              value={filters.fechaFin}
               onChange={handleFilterChange}
               className="border border-gray-300 p-2 rounded text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-            >
-              {Array.from({ length: 12 }, (_, i) => (
-                <option key={i + 1} value={i + 1}>
-                  {new Date(0, i).toLocaleString("es-HN", { month: "short" })}
-                </option>
-              ))}
-            </select>
+            />
           </div>
 
           {/* 4. Categoría */}
