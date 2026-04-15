@@ -62,7 +62,7 @@ export default function AttendanceManagement() {
       ? incapacidadStartDate && incapacidadEndDate && reason && files.length > 0
       : incapacidadStartDate && incapacidadEndDate && reason  // duelo: adjunto opcional
 
-  const handlePermitTypeChange = (type: "permiso" | "incapacidad") => {
+  const handlePermitTypeChange = (type: "permiso" | "incapacidad" | "duelo") => {
     setPermitType(type)
     setPermitDate(undefined)
     setStartTime("")
