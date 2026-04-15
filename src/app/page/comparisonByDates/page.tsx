@@ -116,6 +116,7 @@ export default function PriceComparisonTable() {
       console.log(params.toString());
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/priceComparison/get-comparison-by-dates?${params.toString()}`,
+        { cache: 'no-store' }
       );
 
       if (!response.ok) throw new Error("Error al obtener datos");
@@ -391,6 +392,7 @@ export default function PriceComparisonTable() {
                 className="border border-gray-300 p-2 rounded text-sm w-full focus:ring-2 focus:ring-blue-500 outline-none"
               />
               <button
+                type="button"
                 onClick={fetchData}
                 className="bg-blue-600 text-white px-3 rounded hover:bg-blue-700"
               >
@@ -445,18 +447,8 @@ export default function PriceComparisonTable() {
       </span>
     </td>
 
-    {/* Renderizado de Precios: FILTRANDO fechas futuras antes de mapear */}
-    {data.columnas
-      .filter((fecha) => {
-        // 1. Replicamos tu lógica de ajuste de fecha para el filtro
-        const dateObj = new Date(fecha);
-        dateObj.setHours(dateObj.getHours() - 6);
-        const adjustedDateStr = dateObj.toISOString().split("T")[0];
-        
-        // 2. Condición: Solo pasa si la fecha es menor o igual a hoy
-        return adjustedDateStr <= todayStr;
-      })
-      .map((fecha) => {
+    {/* Renderizado de Precios: Usamos exactamente las mismas columnas que thead para evitar desfasajes */}
+    {data.columnas.map((fecha) => {
         const precio = row[fecha];
 
         return (
