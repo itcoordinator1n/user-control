@@ -13,7 +13,7 @@ const testimonials = [
     role: "Paciente crónico",
     quote:
       "Los productos de PharmaCare han mejorado significativamente mi calidad de vida. El servicio al cliente es excepcional y los envíos siempre llegan a tiempo.",
-    avatar: undefined,
+    avatar: "",
     rating: 5,
   },
   {
@@ -22,7 +22,7 @@ const testimonials = [
     role: "Deportista",
     quote:
       "Como atleta, necesito productos de calidad para mantener mi salud. PharmaCare ofrece exactamente lo que necesito con ingredientes de primera calidad.",
-    avatar: undefined,
+    avatar: "",
     rating: 4,
   },
   {
@@ -31,7 +31,7 @@ const testimonials = [
     role: "Madre de familia",
     quote:
       "Confío en PharmaCare para toda mi familia. Sus productos son seguros, efectivos y siempre tienen lo que necesitamos para mantenernos saludables.",
-    avatar: undefined,
+    avatar: "",
     rating: 5,
   },
 ]

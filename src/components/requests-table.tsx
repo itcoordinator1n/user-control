@@ -312,7 +312,7 @@ export default function RequestsTable() {
                             <TableCell className="font-medium">
                               <div className="flex items-center gap-2">
                                 <img
-                                  src={undefined}
+                                  src={""}
                                   alt={request.nombreSolicitante}
                                   className="w-8 h-8 rounded-full"
                                 />
