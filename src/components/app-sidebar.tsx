@@ -26,6 +26,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import Link from "next/link";
 
@@ -132,14 +133,12 @@ const sidebarNavigation: NavItem[] = [
 ];
 
 // ---------------- Mapa de permisos por ruta ----------------
-// ajusta aquí si agregas nuevas rutas
 const routePermission: Record<string, string> = {
   "/page/profile":         "EMPLOYEE:PROFILE",
   "/page/vacations-permits": "EMPLOYEE:PERMITS",
   "/page/dashboard":       "RRHH:DASHBOARD",
   "/page/admin":           "ADMIN:VIEW",
   "/page/applications":    "BOSS:APPLICATIONS",
-  // /page/tickets no requiere permiso especial — cualquier autenticado
   "/page/tech":            "TICKET:TECH",
   "/page/ticket-admin":    "TICKET:ADMIN",
   "/page/ticket-mgmt":     "TICKET:MGMT",
@@ -147,17 +146,16 @@ const routePermission: Record<string, string> = {
 
 export function AppSidebar() {
   const { data: session, status } = useSession();
+  const { setOpenMobile } = useSidebar();
   const userPerms = useMemo(() => (session?.user as any)?.permissions ?? [], [session]);
 
-  // helpers
   const hasPerm = (required?: string) =>
     !required || userPerms.includes(required);
 
-  // 1) Filtra subItems por permisos; conserva "Cerrar Sesión" siempre
   const filteredNav: NavItem[] = useMemo(() => {
     return sidebarNavigation
       .map((item) => {
-        if (!item.subItems) return item; // items simples (logout)
+        if (!item.subItems) return item;
         const visibleSubs = item.subItems.filter((s) =>
           hasPerm(routePermission[s.url]),
         );
@@ -165,19 +163,17 @@ export function AppSidebar() {
         return { ...item, subItems: visibleSubs };
       })
       .filter((item) => {
-        if (!item.subItems) return true; // deja logout
-        return item.subItems.length > 0; // oculta secciones vacías
+        if (!item.subItems) return true;
+        return item.subItems.length > 0;
       });
   }, [userPerms]);
 
-  // 2) Estado UI (expand/activo) con defaults basados en lo visible
   const [expandedSections, setExpandedSections] = useState<
     Record<string, boolean>
   >({});
   const [activeSubsection, setActiveSubsection] = useState<string>("");
 
   useEffect(() => {
-    // expandir la primera sección visible y seleccionar su primer subitem
     const firstSection = filteredNav.find(
       (i) => i.subItems && i.subItems.length > 0,
     );
@@ -187,13 +183,15 @@ export function AppSidebar() {
         setActiveSubsection(firstSection.subItems[0].id);
       }
     }
-  }, [filteredNav]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [filteredNav]);
 
   const toggleSection = (sectionId: string) =>
-    setExpandedSections((prev) => ({ ...prev, [sectionId]: !prev[sectionId] }));
+    setExpandedSections((prev) => ({ [sectionId]: !prev[sectionId] }));
 
-  const handleSubsectionClick = (subsectionId: string) =>
+  const handleSubsectionClick = (subsectionId: string) => {
     setActiveSubsection(subsectionId);
+    setOpenMobile(false);
+  };
 
   const user = {
     name: session?.user?.name ?? "Usuario",
@@ -218,7 +216,7 @@ export function AppSidebar() {
           className="h-10 w-10 rounded-full bg-white text-infarma-blue hover:bg-white/90"
           asChild
         >
-          <a href="/page/profile">
+          <a href="/page/profile" onClick={() => setOpenMobile(false)}>
             <Avatar className="h-8 w-8">
               <AvatarImage
                 src={user.avatar}
@@ -236,7 +234,6 @@ export function AppSidebar() {
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent>
-            {/* Estado de carga opcional */}
             {status === "loading" ? (
               <div className="px-3 py-2 text-sm text-muted-foreground">
                 Cargando menú…
@@ -297,9 +294,9 @@ export function AppSidebar() {
                         </div>
                       </div>
                     ) : (
-                      // Item simple (e.g., Cerrar Sesión)
                       <Link
                         href={item.url as string}
+                        onClick={() => setOpenMobile(false)}
                         className="flex items-center gap-2 rounded-md p-2 text-infarma-blue hover:bg-white/50 transition-all duration-200"
                       >
                         <item.icon className="h-4 w-4" />

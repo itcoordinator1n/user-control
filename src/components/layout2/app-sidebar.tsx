@@ -29,6 +29,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+  useSidebar,
 } from "@/components/ui/sidebar"
 
 // Define the sidebar navigation structure
@@ -133,6 +134,7 @@ const sidebarNavigation: NavItem[] = [
 ]
 
 export function AppSidebar() {
+  const { setOpenMobile } = useSidebar()
   // Track which sections are expanded
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     "recursos-humanos": true, // Default first section open
@@ -143,13 +145,13 @@ export function AppSidebar() {
 
   const toggleSection = (sectionId: string) => {
     setExpandedSections((prev) => ({
-      ...prev,
       [sectionId]: !prev[sectionId],
     }))
   }
 
   const handleSubsectionClick = (subsectionId: string) => {
     setActiveSubsection(subsectionId)
+    setOpenMobile(false)
   }
 
   const user = {
@@ -168,7 +170,7 @@ export function AppSidebar() {
           className="h-10 w-10 rounded-full bg-white text-infarma-blue hover:bg-white/90"
           asChild
         >
-          <a href="#/profile">
+          <a href="#/profile" onClick={() => setOpenMobile(false)}>
             <Avatar className="h-8 w-8">
               <AvatarImage src={user.avatar} alt={user.name} />
               <AvatarFallback className="bg-[#7BA7C7] text-white">{user.initials}</AvatarFallback>
@@ -234,6 +236,7 @@ export function AppSidebar() {
                   ) : (
                     <a
                       href={item.url}
+                      onClick={() => setOpenMobile(false)}
                       className="flex items-center gap-2 rounded-md p-2 text-infarma-blue hover:bg-white/50 transition-all duration-200"
                     >
                       <item.icon className="h-4 w-4" />

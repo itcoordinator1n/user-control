@@ -132,7 +132,11 @@ export function Navbar({ isLoggedIn }: NavbarProps) {
         )}
 
         {/* Sidebar trigger for logged-in users */}
-        {isLoggedIn && <SidebarTrigger className="mr-2 text-infarma-blue dark:text-white" />}
+        {isLoggedIn && (
+          <SidebarTrigger 
+            className="mr-3 h-10 w-10 flex items-center justify-center rounded-lg bg-blue-50 text-infarma-blue shadow-sm border border-blue-100 hover:bg-blue-100 dark:bg-gray-800 dark:border-gray-700 dark:text-white transition-all duration-200 active:scale-95" 
+          />
+        )}
 
         {/* Logo */}
         <div className="flex items-center gap-2">
