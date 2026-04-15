@@ -113,7 +113,7 @@ export function RequestsTable({ type, onRequestDeleted, canApprove = false, mode
   const [debouncedFilters, setDebouncedFilters] = useState(filters)
   const [requests, setRequests] = useState<(PermitRequest | VacationRequest)[]>([])
   const [totalCount, setTotalCount] = useState(0)
-  const token = session?.user.accessToken
+  const token = session?.user?.accessToken
 
   // Debounce: aplica los filtros 400 ms después del último cambio
   useEffect(() => {

@@ -146,7 +146,7 @@ export function RequestDetailsModal({
         {
           method: "PATCH",
           headers: {
-            Authorization: `Bearer ${session.user.accessToken}`,
+            Authorization: `Bearer ${session?.user?.accessToken}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({ approverComment: approverComment.trim() || undefined }),
@@ -173,7 +173,7 @@ export function RequestDetailsModal({
         {
           method: "PATCH",
           headers: {
-            Authorization: `Bearer ${session.user.accessToken}`,
+            Authorization: `Bearer ${session?.user?.accessToken}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({ approverComment: approverComment.trim() }),
@@ -194,7 +194,7 @@ export function RequestDetailsModal({
       fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/profile/profile_info`, {
         method: "GET",
         headers: {
-          Authorization: `Bearer ${session?.user.accessToken}`,
+          Authorization: `Bearer ${session?.user?.accessToken}`,
         },
       })
         .then((res) => {

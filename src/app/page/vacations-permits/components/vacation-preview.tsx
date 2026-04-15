@@ -61,7 +61,7 @@ export function VacationPreview({ open, onOpenChange, data, onSubmitSuccess }: V
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/profile/profile_info`, {
           method: "GET",
           headers: {
-            Authorization: `Bearer ${session?.user.accessToken}`,
+            Authorization: `Bearer ${session?.user?.accessToken}`,
           },
         })
           .then((res) => {
@@ -116,7 +116,7 @@ const handleSubmit = async () => {
         // link.click();
 
         try {
-          const token = session?.user.accessToken;
+          const token = session?.user?.accessToken;
 
           // const payload = {
           //   fechaInicio: data?.startDate?.toISOString().split("T")[0],

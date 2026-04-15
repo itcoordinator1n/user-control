@@ -70,7 +70,7 @@ export function PermitPreview({
       fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/profile/profile_info`, {
         method: "GET",
         headers: {
-          Authorization: `Bearer ${session?.user.accessToken}`,
+          Authorization: `Bearer ${session?.user?.accessToken}`,
         },
       })
         .then((res) => {
@@ -145,7 +145,7 @@ export function PermitPreview({
       formData.append("comment", data.comments);
 
       // 4. Llamada al endpoint con token desde session
-      const token = session.user.accessToken;
+      const token = session?.user?.accessToken;
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/permissions/request-permission`,
         {

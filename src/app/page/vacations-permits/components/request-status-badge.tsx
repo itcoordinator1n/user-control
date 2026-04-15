@@ -29,7 +29,14 @@ export function RequestStatusBadge({ status }: RequestStatusBadgeProps) {
     },
   }
 
-  const config = statusConfig[status]
+  // Fallback para estados desconocidos o nulos
+  const config = statusConfig[status as keyof typeof statusConfig] || {
+    label: status || "Pendiente",
+    variant: "secondary" as const,
+    className: "bg-gray-100 text-gray-800 border-gray-200",
+    icon: Clock,
+  }
+
   const Icon = config.icon
 
   return (
