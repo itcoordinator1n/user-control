@@ -92,8 +92,8 @@ export default function ClientLayout(
                 <AppSidebar />
                 <SidebarInset className="flex flex-1 flex-col bg-white dark:bg-gray-950 transition-colors duration-300">
                   <Navbar isLoggedIn={isLoggedIn} />
-                  <main className="flex-1 p-6">
-                    <div className="mx-auto max-w-7xl">
+                  <main className="flex-1">
+                    <div className="mx-auto w-full">
                       {children}
                     </div>
                   </main>
