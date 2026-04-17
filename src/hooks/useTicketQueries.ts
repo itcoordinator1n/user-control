@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
 import {
-  fetchTickets, fetchTicket, createTicket, updateTicketStatus, assignTicket,
+  fetchTickets, fetchTicket, fetchTicketLog, createTicket, updateTicketStatus, assignTicket,
   fetchMessages, replyToTicket, createSolution, finalizeSolution,
   fetchKnowledge, searchKnowledge, fetchNotifications, markNotificationsRead,
   startTimerSession, pauseTimerSession, resumeTimerSession, completeTimerSession,
