@@ -216,7 +216,6 @@ export function AttendanceView({ onBack, allowedArea, onNavigateToPermission }: 
   const [modalDateTo, setModalDateTo] = useState("");
   const [activeProfileKey, setActiveProfileKey] = useState<string | null>(null);
   const [recordsPerPage, setRecordsPerPage] = useState(10);
-  const [currentPage, setCurrentPage] = useState(1);
   const [employeesPerPage, setEmployeesPerPage] = useState(10);
   const [currentEmployeePage, setCurrentEmployeePage] = useState(1);
   const [exportLoading, setExportLoading] = useState(false);
@@ -278,21 +277,20 @@ export function AttendanceView({ onBack, allowedArea, onNavigateToPermission }: 
       const monthlyData: any[] = await res.json();
       if (!monthlyData.length) return;
 
+      // Times from get-monthly-attendance are already in local time — no conversion needed
       const setHoursUtil = (hour: string) => {
         if (!hour) return "";
         const [h, m, s] = hour.split(":").map(Number);
-        const d = new Date();
-        d.setHours(h, m, s ?? 0, 0);
-        d.setHours(d.getHours() - 6);
-        return d.toTimeString().split(" ")[0];
+        if (isNaN(h)) return "";
+        return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s ?? 0).padStart(2, "0")}`;
       };
 
-      // Worked hours from raw HH:mm:ss UTC strings
+      // Worked hours from local HH:mm:ss strings
       const calcWorkedHoursRaw = (entryRaw: string, exitRaw: string): string => {
         if (!entryRaw || !exitRaw) return "—";
         const toMins = (t: string) => {
           const [h, m] = t.split(":").map(Number);
-          return (h - 6) * 60 + m; // UTC → local
+          return h * 60 + m;
         };
         const diff = toMins(exitRaw) - toMins(entryRaw);
         if (diff <= 0) return "—";
@@ -550,8 +548,7 @@ export function AttendanceView({ onBack, allowedArea, onNavigateToPermission }: 
     setModalFilters(DEFAULT_MODAL_FILTERS);
     setModalDateFrom(initFrom);
     setModalDateTo(initTo);
-    setCurrentPage(1);
-    const profile = await fetchProfile(buildParams(key, 1, recordsPerPage, DEFAULT_MODAL_FILTERS, initFrom, initTo));
+        const profile = await fetchProfile(buildParams(key, 1, recordsPerPage, DEFAULT_MODAL_FILTERS, initFrom, initTo));
     if (profile) { setSelectedEmployee(profile); setShowEmployeeModal(true); }
   };
 
@@ -564,23 +561,20 @@ export function AttendanceView({ onBack, allowedArea, onNavigateToPermission }: 
 
   // ── Page change ───────────────────────────────────────────────────────────
   const handleRecordPageChange = async (page: number) => {
-    setCurrentPage(page);
     await refetch(modalFilters, modalDateFrom, modalDateTo, page);
   };
 
   // ── Status select change ──────────────────────────────────────────────────
   const handleStatusFilterChange = async (newStatus: string) => {
     const f = { ...modalFilters, status: newStatus, dayOfWeek: null };
-    setModalFilters(f); setCurrentPage(1);
-    await refetch(f, modalDateFrom, modalDateTo);
+    setModalFilters(f);     await refetch(f, modalDateFrom, modalDateTo);
   };
 
   // ── Stat card click (toggle) ──────────────────────────────────────────────
   const handleCardClick = async (status: string) => {
     const newStatus = modalFilters.status === status && !modalFilters.dayOfWeek ? "all" : status;
     const f = { ...modalFilters, status: newStatus, dayOfWeek: null };
-    setModalFilters(f); setCurrentPage(1);
-    await refetch(f, modalDateFrom, modalDateTo);
+    setModalFilters(f);     await refetch(f, modalDateFrom, modalDateTo);
   };
 
   // ── Bar click: status + day-of-week (toggle) ──────────────────────────────
@@ -589,41 +583,35 @@ export function AttendanceView({ onBack, allowedArea, onNavigateToPermission }: 
     const f = alreadyActive
       ? { ...modalFilters, status: "all", dayOfWeek: null }
       : { ...modalFilters, status, dayOfWeek: day };
-    setModalFilters(f); setCurrentPage(1);
-    await refetch(f, modalDateFrom, modalDateTo);
+    setModalFilters(f);     await refetch(f, modalDateFrom, modalDateTo);
   };
 
   // ── Clear day-of-week filter only ─────────────────────────────────────────
   const handleDayFilterClear = async () => {
     const f = { ...modalFilters, dayOfWeek: null };
-    setModalFilters(f); setCurrentPage(1);
-    await refetch(f, modalDateFrom, modalDateTo);
+    setModalFilters(f);     await refetch(f, modalDateFrom, modalDateTo);
   };
 
   // ── Overtime toggle ───────────────────────────────────────────────────────
   const handleOvertimeToggle = async () => {
     const f = { ...modalFilters, hasOvertime: !modalFilters.hasOvertime };
-    setModalFilters(f); setCurrentPage(1);
-    await refetch(f, modalDateFrom, modalDateTo);
+    setModalFilters(f);     await refetch(f, modalDateFrom, modalDateTo);
   };
 
   // ── Permission toggle ─────────────────────────────────────────────────────
   const handlePermissionToggle = async () => {
     const f = { ...modalFilters, hasPermission: !modalFilters.hasPermission };
-    setModalFilters(f); setCurrentPage(1);
-    await refetch(f, modalDateFrom, modalDateTo);
+    setModalFilters(f);     await refetch(f, modalDateFrom, modalDateTo);
   };
 
   // ── Modal date filter change ──────────────────────────────────────────────
   const handleModalDateChange = async (newFrom: string, newTo: string) => {
-    setModalDateFrom(newFrom); setModalDateTo(newTo); setCurrentPage(1);
-    await refetch(modalFilters, newFrom, newTo);
+    setModalDateFrom(newFrom); setModalDateTo(newTo);     await refetch(modalFilters, newFrom, newTo);
   };
 
   // ── Records-per-page change ───────────────────────────────────────────────
   const handleRecordsPerPageChange = async (newLimit: number) => {
-    setRecordsPerPage(newLimit); setCurrentPage(1);
-    await refetch(modalFilters, modalDateFrom, modalDateTo, 1, newLimit);
+    setRecordsPerPage(newLimit);     await refetch(modalFilters, modalDateFrom, modalDateTo, 1, newLimit);
   };
 
   // ── Clear all modal filters ───────────────────────────────────────────────
@@ -631,8 +619,7 @@ export function AttendanceView({ onBack, allowedArea, onNavigateToPermission }: 
     const from = effectiveDates.dateFrom ?? "";
     const to   = effectiveDates.dateTo   ?? "";
     setModalFilters(DEFAULT_MODAL_FILTERS);
-    setModalDateFrom(from); setModalDateTo(to); setCurrentPage(1);
-    await refetch(DEFAULT_MODAL_FILTERS, from, to);
+    setModalDateFrom(from); setModalDateTo(to);     await refetch(DEFAULT_MODAL_FILTERS, from, to);
   };
 
   // ── Active filters flag ───────────────────────────────────────────────────

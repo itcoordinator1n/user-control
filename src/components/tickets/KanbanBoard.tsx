@@ -10,9 +10,10 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from '@dnd-kit/core';
+import { useSession } from 'next-auth/react';
 import { KanbanColumn } from './KanbanColumn';
 import { KanbanCard } from './KanbanCard';
-import { useUpdateTicketStatus } from '@/hooks/useTicketQueries';
+import { useUpdateTicketStatus, useAssignTicket } from '@/hooks/useTicketQueries';
 import { useTimerStore } from '@/hooks/useTimerStore';
 import type { Ticket, TicketStatus } from '@/types/tickets';
 
@@ -20,6 +21,14 @@ interface KanbanBoardProps {
   tickets: Ticket[];
   onStartPomodoro?: (ticket: Ticket) => void;
 }
+
+const DEFAULT_REASONS: Partial<Record<TicketStatus, string>> = {
+  classified: 'Su solicitud ha sido clasificada y está en espera de asignación.',
+  assigned: 'Se ha asignado un técnico para atender su solicitud.',
+  in_progress: 'Su ticket ya está siendo atendido por uno de nuestros técnicos.',
+  pending_user: 'Necesitamos información adicional. Por favor revise el chat de soporte.',
+  resolved: 'Su problema ha sido resuelto. Revise el resumen de la solución enviada.',
+};
 
 const COLUMNS: Array<{
   id: TicketStatus;
@@ -57,9 +66,13 @@ const TRANSITION_MESSAGES: Partial<Record<string, string>> = {
 };
 
 export function KanbanBoard({ tickets, onStartPomodoro }: KanbanBoardProps) {
+  const { data: session } = useSession();
+  const userId = (session?.user as any)?.id;
+
   const [activeTicket, setActiveTicket] = useState<Ticket | null>(null);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const { mutate: updateStatus } = useUpdateTicketStatus();
+  const { mutate: assignTicket } = useAssignTicket();
   const activeTicketId = useTimerStore((s) => s.activeTicketId);
 
   const sensors = useSensors(
@@ -105,20 +118,36 @@ export function KanbanBoard({ tickets, onStartPomodoro }: KanbanBoardProps) {
     }
 
     // Ejecutar transición
-    updateStatus(
-      { id: ticket.id, to_status: toStatus },
-      {
-        onSuccess: () => {
-          // Si se movió a in_progress, ofrecer Pomodoro
-          if (toStatus === 'in_progress' && onStartPomodoro) {
-            onStartPomodoro(ticket);
-          }
+    if (toStatus === 'assigned' && userId) {
+      assignTicket(
+        { id: ticket.id, technician_id: userId },
+        {
+          onSuccess: () => {
+            // El backend suele cambiar el estado a 'assigned' automáticamente al asignar
+          },
+          onError: (err) => showToast(err.message ?? 'Error al asignar técnico.'),
+        }
+      );
+    } else {
+      updateStatus(
+        { 
+          id: ticket.id, 
+          to_status: toStatus, 
+          reason: DEFAULT_REASONS[toStatus] 
         },
-        onError: (err) => {
-          showToast(err.message ?? 'Error al cambiar estado.');
-        },
-      }
-    );
+        {
+          onSuccess: () => {
+            // Si se movió a in_progress, ofrecer Pomodoro
+            if (toStatus === 'in_progress' && onStartPomodoro) {
+              onStartPomodoro(ticket);
+            }
+          },
+          onError: (err) => {
+            showToast(err.message ?? 'Error al cambiar estado.');
+          },
+        }
+      );
+    }
   };
 
   const ticketsByStatus = (status: TicketStatus) =>

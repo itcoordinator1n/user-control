@@ -91,6 +91,16 @@ export function useAssignTicket() {
   });
 }
 
+export function useTicketLog(id: string) {
+  const token = useToken();
+  return useQuery({
+    queryKey: ['ticket-log', id],
+    queryFn: () => fetchTicketLog(token, id),
+    enabled: !!token && !!id,
+    staleTime: 60_000,
+  });
+}
+
 // ─── Mensajes ─────────────────────────────────────────────────────────────────
 
 export function useMessages(ticketId: string) {

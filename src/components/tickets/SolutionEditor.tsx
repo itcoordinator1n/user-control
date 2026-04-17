@@ -95,9 +95,15 @@ export function SolutionEditor({ ticketId, existingSolution, onResolved }: Solut
 
   const handleFinalize = () => {
     setFinalizeError(null);
+    const solutionApplied = watch('solution_applied');
+    
     finalize(undefined, {
       onSuccess: () => {
-        updateStatus({ id: ticketId, to_status: 'resolved' }, {
+        updateStatus({ 
+          id: ticketId, 
+          to_status: 'resolved',
+          reason: solutionApplied 
+        }, {
           onSuccess: () => onResolved?.(),
           onError: (err) => setFinalizeError(err.message),
         });

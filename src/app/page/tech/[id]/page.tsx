@@ -6,10 +6,12 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PriorityBadge } from '@/components/tickets/PriorityBadge';
 import { StatusBadge } from '@/components/tickets/StatusBadge';
 import { ChatTimeline } from '@/components/tickets/ChatTimeline';
 import { SolutionEditor } from '@/components/tickets/SolutionEditor';
+import { TicketTimeline } from '@/components/tickets/TicketTimeline';
 import { useTicket, useMessages, useReplyToTicket, useStartSession } from '@/hooks/useTicketQueries';
 import { useTimerStore } from '@/hooks/useTimerStore';
 import { usePomodoroConfig } from '@/hooks/useTicketQueries';
@@ -31,7 +33,6 @@ export default function TechTicketPage({ params }: Props) {
 
   const isRunning = useTimerStore((s) => s.isRunning);
   const activeTicketId = useTimerStore((s) => s.activeTicketId);
-  const pomodoroSequence = useTimerStore((s) => s.pomodoroSequence);
   const startFocus = useTimerStore((s) => s.startFocus);
 
   const messages = messagesData?.pages.flatMap((p) => p.data) ?? [];
@@ -87,24 +88,42 @@ export default function TechTicketPage({ params }: Props) {
 
       {/* Split body */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Panel izquierdo — Chat */}
-        <div className="flex-1 min-w-0 border-r overflow-hidden">
-          <div className="px-3 py-2 border-b bg-muted/30">
-            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Chat con usuario
-            </span>
-          </div>
-          <div className="h-[calc(100%-37px)]">
-            <ChatTimeline
-              messages={chronologicalMessages}
-              isReadOnly={false}
-              onSendReply={(text) => reply(text)}
-              isSending={isSending}
-              onLoadMore={() => fetchNextPage()}
-              hasMore={hasNextPage}
-              isLoadingMore={isFetchingNextPage}
-            />
-          </div>
+        {/* Panel izquierdo — Tabs Chat / Historial */}
+        <div className="flex-1 min-w-0 border-r overflow-hidden flex flex-col">
+          <Tabs defaultValue="chat" className="flex-1 flex flex-col">
+            <div className="px-3 py-1.5 border-b bg-muted/30 flex items-center justify-between">
+              <TabsList className="h-8 bg-transparent p-0 gap-4">
+                <TabsTrigger 
+                  value="chat" 
+                  className="px-0 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none text-xs font-semibold uppercase tracking-wider"
+                >
+                  Chat con usuario
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="timeline" 
+                  className="px-0 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none text-xs font-semibold uppercase tracking-wider"
+                >
+                  Historial de estados
+                </TabsTrigger>
+              </TabsList>
+            </div>
+
+            <TabsContent value="chat" className="flex-1 m-0 overflow-hidden">
+              <ChatTimeline
+                messages={chronologicalMessages}
+                isReadOnly={false}
+                onSendReply={(text) => reply(text)}
+                isSending={isSending}
+                onLoadMore={() => fetchNextPage()}
+                hasMore={hasNextPage}
+                isLoadingMore={isFetchingNextPage}
+              />
+            </TabsContent>
+
+            <TabsContent value="timeline" className="flex-1 m-0 overflow-y-auto">
+              <TicketTimeline ticketId={id} />
+            </TabsContent>
+          </Tabs>
         </div>
 
         {/* Panel derecho — Documentación */}
