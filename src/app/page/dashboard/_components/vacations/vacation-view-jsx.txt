@@ -1,0 +1,1178 @@
+      <div className="min-h-screen bg-background transition-colors duration-300 p-6">
+        <div className="max-w-7xl mx-auto">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onBack()}
+                className="flex items-center gap-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Volver al Resumen
+              </Button>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  Análisis de Uso de Vacaciones
+                </h1>
+                <p className="text-gray-600">
+                  Análisis detallado del uso de vacaciones por área y empleado
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowFilters(!showFilters)}
+                className="flex items-center gap-2"
+              >
+                <Filter className="h-4 w-4" />
+                {showFilters ? "Ocultar Filtros" : "Mostrar Filtros"}
+                {showFilters ? (
+                  <ChevronUp className="h-4 w-4" />
+                ) : (
+                  <ChevronDown className="h-4 w-4" />
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAreaCards(!showAreaCards)}
+                className="flex items-center gap-2"
+              >
+                <BarChart3 className="h-4 w-4" />
+                {showAreaCards ? "Ocultar Métricas" : "Mostrar Métricas"}
+                {showAreaCards ? (
+                  <ChevronUp className="h-4 w-4" />
+                ) : (
+                  <ChevronDown className="h-4 w-4" />
+                )}
+              </Button>
+              <Button className="flex items-center gap-2" onClick={() => handleVacationExcel()}>
+                <Download className="h-4 w-4" />
+                Exportar Análisis
+              </Button>
+            </div>
+          </div>
+
+          {/* Filters */}
+          {showFilters && (
+            <div className="flex items-center gap-4 mb-6 p-4 bg-white rounded-lg border shadow-sm transition-all duration-300 ease-in-out">
+              <Select value={selectedArea} onValueChange={setSelectedArea}>
+                <SelectTrigger className="w-48">
+                  <Building2 className="h-4 w-4 mr-2" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Todas">Todas las Áreas</SelectItem>
+                  <SelectItem value="Planta">Planta</SelectItem>
+                  <SelectItem value="Administración">Administración</SelectItem>
+                  <SelectItem value="Contabilidad">Contabilidad</SelectItem>
+                  <SelectItem value="Bodega">Bodega</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+                <SelectTrigger className="w-48">
+                  <Calendar className="h-4 w-4 mr-2" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Este Mes">Este Mes</SelectItem>
+                  <SelectItem value="Último Trimestre">
+                    Último Trimestre
+                  </SelectItem>
+                  <SelectItem value="Este Año">Este Año</SelectItem>
+                  <SelectItem value="Año Anterior">Año Anterior</SelectItem>
+                  <SelectItem value="Comparación Interanual">
+                    Comparación Interanual
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="Buscar empleado..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Current Filter Summary */}
+          {!showFilters && (
+            <div className="mb-6 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4 text-sm text-blue-800">
+                  <span className="flex items-center gap-1">
+                    <Building2 className="h-4 w-4" />
+                    <strong>Área:</strong> {selectedArea}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Calendar className="h-4 w-4" />
+                    <strong>Período:</strong> {selectedPeriod}
+                  </span>
+                  {searchTerm && (
+                    <span className="flex items-center gap-1">
+                      <Search className="h-4 w-4" />
+                      <strong>Búsqueda:</strong> "{searchTerm}"
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Vacation Metrics Cards */}
+          {showAreaCards && (
+            <div className="space-y-6 mb-8 transition-all duration-300 ease-in-out">
+              {/* Top Level Metrics */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {
+                  /*
+                    <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium text-blue-800 flex items-center gap-2">
+                      <Plane className="h-4 w-4" />
+                      Uso Total de Vacaciones
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-blue-900">
+                      {vacationData.reduce(
+                        (acc, area) => acc + area.usagePercentage,
+                        0
+                      ) / vacationData.length}
+                      %
+                    </div>
+                    <p className="text-sm text-blue-700">Promedio general</p>
+                    <div className="mt-2">
+                      <Progress
+                        value={
+                          vacationData.reduce(
+                            (acc, area) => acc + area.usagePercentage,
+                            0
+                          ) / vacationData.length
+                        }
+                        className="h-2"
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+                  */
+                }
+
+                {/*
+                <Card className="bg-gradient-to-r from-green-50 to-green-100 border-green-200">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium text-green-800 flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      Promedio por Empleado
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-green-900">
+                      {(
+                        vacationData.reduce(
+                          (acc, area) => acc + area.averageDaysPerEmployee,
+                          0
+                        ) / vacationData.length
+                      ).toFixed(1)}{" "}
+                      días
+                    </div>
+                    <p className="text-sm text-green-700">Por colaborador</p>
+                  </CardContent>
+                </Card>
+                
+                */}
+
+                {/*
+                 <Card className="bg-gradient-to-r from-orange-50 to-orange-100 border-orange-200">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium text-orange-800 flex items-center gap-2">
+                      <AlertCircle className="h-4 w-4" />
+                      Días Acumulados
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-orange-900">
+                      {vacationData.reduce(
+                        (acc, area) => acc + area.accumulatedDays,
+                        0
+                      )}
+                    </div>
+                    <p className="text-sm text-orange-700">Total sin usar</p>
+                    <div className="text-xs text-orange-600 mt-1">
+                      {Math.round(
+                        vacationData.reduce(
+                          (acc, area) => acc + area.accumulationPercentage,
+                          0
+                        ) / vacationData.length
+                      )}
+                      % acumulación
+                    </div>
+                  </CardContent>
+                </Card>
+                */}
+
+                {
+                  /*
+                  <Card className="bg-gradient-to-r from-purple-50 to-purple-100 border-purple-200">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium text-purple-800 flex items-center gap-2">
+                    <CalendarDays className="h-4 w-4" />
+                    Planificación
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-purple-900">
+                    {Math.round(
+                      vacationData.reduce(
+                        (acc, area) => acc + area.plannedVsLastMinute.planned,
+                        0
+                      ) / vacationData.length
+                    )}
+                    %
+                  </div>
+                  <p className="text-sm text-purple-700">Planificadas</p>
+                  <div className="text-xs text-purple-600 mt-1">
+                    vs{" "}
+                    {Math.round(
+                      vacationData.reduce(
+                        (acc, area) =>
+                          acc + area.plannedVsLastMinute.lastMinute,
+                        0
+                      ) / vacationData.length
+                    )}
+                    % último momento
+                  </div>
+                </CardContent>
+              </Card>
+                  */
+                }
+
+              </div>
+
+              {/* Area Comparison Cards */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5" />
+                  Análisis por Área
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {vacationData.map((area) => (
+                    <Card
+                      key={area.area}
+                      className={`hover:shadow-lg transition-all duration-200 cursor-pointer transform hover:scale-105 ${selectedArea === area.area
+                        ? "ring-2 ring-blue-500 bg-blue-50 shadow-md"
+                        : "hover:bg-gray-50"
+                        }`}
+                      onClick={() => {
+                        setSelectedArea(area.area);
+                        setCurrentEmployeePage(1);
+                      }}
+                    >
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-sm font-medium text-gray-600">
+                            {area.area}
+                          </CardTitle>
+                          <Building2 className="h-4 w-4 text-gray-400" />
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        {/*
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600">Uso</span>
+                            <span className="font-medium">
+                              {area.usagePercentage}%
+                            </span>
+                          </div>
+                          <Progress
+                            value={area.usagePercentage}
+                            className="h-2"
+                          />
+                        </div>
+                        */}
+
+
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div className="text-center p-2 bg-blue-50 rounded">
+                            <div className="font-semibold text-blue-800">
+                              {area.averageDaysPerEmployee}
+                            </div>
+                            <div className="text-blue-600">Promedio</div>
+                          </div>
+                          <div className="text-center p-2 bg-orange-50 rounded">
+                            <div className="font-semibold text-orange-800">
+                              {area.accumulatedDays}
+                            </div>
+                            <div className="text-orange-600">Acumulados</div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-2 border-t">
+                          <Badge
+                            variant={
+                              area.trend >= 0 ? "default" : "destructive"
+                            }
+                            className="text-xs"
+                          >
+                            {area.trend >= 0 ? (
+                              <TrendingUp className="h-3 w-3 mr-1" />
+                            ) : (
+                              <TrendingDown className="h-3 w-3 mr-1" />
+                            )}
+                            {Math.abs(area.trend)}%
+                          </Badge>
+                          <span className="text-xs text-gray-500">
+                            {area.totalEmployees} empleados
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+
+              {/* Top Areas Analysis */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/*
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <TrendingUp className="h-5 w-5 text-green-600" />
+                      Áreas con Mayor Uso
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {vacationData
+                        .sort((a, b) => 0)
+                        .slice(0, 3)
+                        .map((area, index) => (
+                          <div
+                            key={area.area}
+                            className="flex items-center justify-between p-3 bg-green-50 rounded-lg"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center text-sm font-bold text-green-800">
+                                {index + 1}
+                              </div>
+                              <div>
+                                <p className="font-medium text-gray-900">
+                                  {area.area}
+                                </p>
+                                <p className="text-sm text-gray-600">
+                                  {area.averageDaysPerEmployee} días promedio
+                                </p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-bold text-green-800">
+                                {//area.usagePercentage
+                                 }%
+                              </p>
+                              <p className="text-xs text-green-600">
+                                uso total
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                */}
+
+                {
+                  /*
+                  <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <TrendingDown className="h-5 w-5 text-red-600" />
+                      Áreas con Menor Uso
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {vacationData
+                        .sort((a, b) => 0)
+                        .slice(0, 3)
+                        .map((area, index) => (
+                          <div
+                            key={area.area}
+                            className="flex items-center justify-between p-3 bg-red-50 rounded-lg"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center text-sm font-bold text-red-800">
+                                {index + 1}
+                              </div>
+                              <div>
+                                <p className="font-medium text-gray-900">
+                                  {area.area}
+                                </p>
+                                <p className="text-sm text-gray-600">
+                                  {area.accumulatedDays} días acumulados
+                                </p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-bold text-red-800">
+                                {//area.usagePercentage
+                                }%
+                              </p>
+                              <p className="text-xs text-red-600">uso total</p>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  </CardContent>
+                </Card>
+                  */
+                }
+
+              </div>
+            </div>
+          )}
+
+          {/* Employee Vacation Details */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Detalle de Vacaciones por Empleado -{" "}
+                {selectedArea === "Todas" ? "Todas las Áreas" : selectedArea}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {/* Pagination Controls */}
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-4">
+                    <Select
+                      value={employeesPerPage.toString()}
+                      onValueChange={(value) => {
+                        setEmployeesPerPage(Number.parseInt(value));
+                        setCurrentEmployeePage(1);
+                      }}
+                    >
+                      <SelectTrigger className="w-40">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="5">5 por página</SelectItem>
+                        <SelectItem value="10">10 por página</SelectItem>
+                        <SelectItem value="15">15 por página</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <div className="text-sm text-gray-500">
+                      Total:{" "}
+                      {vacationData
+                        .filter(
+                          (area) =>
+                            selectedArea === "Todas" ||
+                            area.area === selectedArea
+                        )
+                        .reduce(
+                          (acc, area) => acc + area.employees.length,
+                          0
+                        )}{" "}
+                      empleados
+                    </div>
+                  </div>
+                </div>
+
+                {/* Employee Vacation List */}
+                <div className="space-y-3">
+                  {vacationData
+                    .filter(
+                      (area) =>
+                        selectedArea === "Todas" || area.area === selectedArea
+                    )
+                    .flatMap((area) =>
+                      area.employees
+                        .filter(
+                          (employee) =>
+                            searchTerm === "" ||
+                            employee.name
+                              .toLowerCase()
+                              .includes(searchTerm.toLowerCase())
+                        )
+                        .map((employee) => ({ ...employee, area: area.area }))
+                    )
+                    .slice(
+                      (currentEmployeePage - 1) * employeesPerPage,
+                      currentEmployeePage * employeesPerPage
+                    )
+                    .map((employee, index) => (
+                      <div
+                        key={`${employee.area}-${employee.name}-${index}`}
+                        className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-blue-50 hover:border-blue-200 border border-transparent transition-all duration-200 cursor-pointer"
+                        onClick={() =>
+                          handleVacationEmployeeClick(employee.name)
+                        }
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                            <Plane className="h-5 w-5 text-blue-600" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-900">
+                              {employee.name}
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              {employee.area}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-6">
+                          <div className="text-center">
+                            <p className="font-semibold text-lg text-blue-600">
+                              {employee.daysUsed}
+                            </p>
+                            <p className="text-xs text-gray-500">días usados</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="font-semibold text-lg text-orange-600">
+                              {employee.daysAccumulated}
+                            </p>
+                            <p className="text-xs text-gray-500">acumulados</p>
+                          </div>
+                          {
+                            /*
+                            <div className="text-center">
+                            <p className="font-semibold text-lg text-green-600">
+                              {
+                              //employee.plannedPercentage
+                              }%
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              planificadas
+                            </p>
+                          </div>
+                            */
+                          }
+
+                          {/*
+                          <div className="text-center">
+                            <p className="font-semibold text-lg text-purple-600">
+                              {//employee.productivity
+                              }%
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              productividad
+                            </p>
+                          </div>
+                          */}
+                          <div className="w-20">
+                            <Progress
+                              value={
+                                (//employee.daysUsed / employee.daysAvailable
+                                  1) *
+                                100
+                              }
+                              className="h-2"
+                            />
+                            <p className="text-xs text-gray-500 text-center mt-1">
+                              {Math.round(
+                                (employee.daysUsed / (employee.daysUsed + employee.daysAccumulated)) *
+                                100
+                              )}
+                              % uso
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+
+                {/* Pagination */}
+                {Math.ceil(
+                  vacationData
+                    .filter(
+                      (area) =>
+                        selectedArea === "Todas" || area.area === selectedArea
+                    )
+                    .reduce((acc, area) => acc + area.employees.length, 0) /
+                  employeesPerPage
+                ) > 1 && (
+                    <div className="flex justify-between items-center pt-4 border-t">
+                      <div className="text-sm text-gray-500">
+                        Mostrando{" "}
+                        {(currentEmployeePage - 1) * employeesPerPage + 1} a{" "}
+                        {Math.min(
+                          currentEmployeePage * employeesPerPage,
+                          vacationData
+                            .filter(
+                              (area) =>
+                                selectedArea === "Todas" ||
+                                area.area === selectedArea
+                            )
+                            .reduce((acc, area) => acc + area.employees.length, 0)
+                        )}{" "}
+                        de{" "}
+                        {vacationData
+                          .filter(
+                            (area) =>
+                              selectedArea === "Todas" ||
+                              area.area === selectedArea
+                          )
+                          .reduce(
+                            (acc, area) => acc + area.employees.length,
+                            0
+                          )}{" "}
+                        empleados
+                      </div>
+                      <Pagination>
+                        <PaginationContent>
+                          <PaginationItem>
+                            <PaginationPrevious
+                              onClick={() =>
+                                setCurrentEmployeePage(
+                                  Math.max(1, currentEmployeePage - 1)
+                                )
+                              }
+                              className={
+                                currentEmployeePage === 1
+                                  ? "pointer-events-none opacity-50"
+                                  : "cursor-pointer"
+                              }
+                            />
+                          </PaginationItem>
+                          {Array.from(
+                            {
+                              length: Math.ceil(
+                                vacationData
+                                  .filter(
+                                    (area) =>
+                                      selectedArea === "Todas" ||
+                                      area.area === selectedArea
+                                  )
+                                  .reduce(
+                                    (acc, area) => acc + area.employees.length,
+                                    0
+                                  ) / employeesPerPage
+                              ),
+                            },
+                            (_, i) => i + 1
+                          ).map((page) => (
+                            <PaginationItem key={page}>
+                              <PaginationLink
+                                onClick={() => setCurrentEmployeePage(page)}
+                                isActive={currentEmployeePage === page}
+                                className="cursor-pointer"
+                              >
+                                {page}
+                              </PaginationLink>
+                            </PaginationItem>
+                          ))}
+                          <PaginationItem>
+                            <PaginationNext
+                              onClick={() =>
+                                setCurrentEmployeePage(
+                                  Math.min(
+                                    Math.ceil(
+                                      vacationData
+                                        .filter(
+                                          (area) =>
+                                            selectedArea === "Todas" ||
+                                            area.area === selectedArea
+                                        )
+                                        .reduce(
+                                          (acc, area) =>
+                                            acc + area.employees.length,
+                                          0
+                                        ) / employeesPerPage
+                                    ),
+                                    currentEmployeePage + 1
+                                  )
+                                )
+                              }
+                              className={
+                                currentEmployeePage ===
+                                  Math.ceil(
+                                    vacationData
+                                      .filter(
+                                        (area) =>
+                                          selectedArea === "Todas" ||
+                                          area.area === selectedArea
+                                      )
+                                      .reduce(
+                                        (acc, area) => acc + area.employees.length,
+                                        0
+                                      ) / employeesPerPage
+                                  )
+                                  ? "pointer-events-none opacity-50"
+                                  : "cursor-pointer"
+                              }
+                            />
+                          </PaginationItem>
+                        </PaginationContent>
+                      </Pagination>
+                    </div>
+                  )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+        {/* Vacation Employee Detail Modal */}
+        <Dialog
+          open={showVacationEmployeeModal}
+          onOpenChange={setShowVacationEmployeeModal}
+        >
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                  <Plane className="h-6 w-6 text-blue-600" />
+                </div>
+                Perfil de Vacaciones - {selectedVacationEmployee?.name}
+              </DialogTitle>
+            </DialogHeader>
+
+            {selectedVacationEmployee && (
+              <div className="space-y-6">
+                {/* Vacation Summary Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-medium text-blue-800 flex items-center gap-2">
+                        <CalendarDays className="h-4 w-4" />
+                        Días Disponibles
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-blue-900">
+                        {selectedVacationEmployee.daysAccumulated}
+                      </div>
+                      <p className="text-sm text-blue-700">Total asignados</p>
+                    </CardContent>
+                  </Card>
+
+
+                  {/*
+                  <Card className="bg-gradient-to-r from-green-50 to-green-100 border-green-200">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-medium text-green-800 flex items-center gap-2">
+                        <CheckCircle className="h-4 w-4" />
+                        Días Tomados
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-green-900">
+                        {selectedVacationEmployee.daysUsed}
+                      </div>
+                      <p className="text-sm text-green-700">Ya utilizados</p>
+                      <div className="mt-2">
+                        <Progress
+                          value={
+                            (selectedVacationEmployee.daysUsed /1
+                              //selectedVacationEmployee.daysAvailable
+                              ) *
+                            100
+                          }
+                          className="h-2"
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                  */}
+                  {/*
+                  <Card className="bg-gradient-to-r from-yellow-50 to-yellow-100 border-yellow-200">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-medium text-yellow-800 flex items-center gap-2">
+                        <Clock className="h-4 w-4" />
+                        Pendientes por Aprobar
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-yellow-900">
+                        {1 //selectedVacationEmployee.daysPending
+                        }
+                      </div>
+                      <p className="text-sm text-yellow-700">En proceso</p>
+                    </CardContent>
+                  </Card>
+                  */}
+
+                  <Card className="bg-gradient-to-r from-orange-50 to-orange-100 border-orange-200">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-medium text-orange-800 flex items-center gap-2">
+                        <AlertCircle className="h-4 w-4" />
+                        Días Acumulados
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-orange-900">
+                        {selectedVacationEmployee.daysAccumulated}
+                      </div>
+                      <p className="text-sm text-orange-700">Sin usar</p>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Expiration Warning */}
+                {/*
+                  selectedVacationEmployee.daysExpiring > 0 && (
+                  <Card className="bg-gradient-to-r from-red-50 to-red-100 border-red-200">
+                    <CardContent className="pt-6">
+                      <div className="flex items-center gap-3">
+                        <AlertCircle className="h-8 w-8 text-red-600" />
+                        <div>
+                          <h3 className="font-semibold text-red-900">
+                            ⚠️ Días por Vencer
+                          </h3>
+                          <p className="text-red-700">
+                            Tienes{" "}
+                            <strong>
+                              {selectedVacationEmployee.daysExpiring} días
+                            </strong>{" "}
+                            que vencerán el{" "}
+                            <strong>
+                              {selectedVacationEmployee.expirationDate}
+                            </strong>
+                          </p>
+                          <p className="text-sm text-red-600 mt-1">
+                            Te recomendamos planificar tus vacaciones para no
+                            perder estos días.
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+                */
+                }
+
+                {/* Comparison with Area Average */}
+                {/*
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <BarChart3 className="h-5 w-5" />
+                      Comparativa Personal vs. Promedio del Área
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="text-center p-4 bg-blue-50 rounded-lg">
+                        <div className="text-2xl font-bold text-blue-800">
+                          {selectedVacationEmployee.daysUsed}
+                        </div>
+                        <div className="text-sm text-blue-600">
+                          Tus días tomados
+                        </div>
+                      </div>
+                      <div className="text-center p-4 bg-gray-50 rounded-lg">
+                        <div className="text-2xl font-bold text-gray-800">
+                          {selectedVacationEmployee.areaAverage}
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          Promedio en {selectedVacationEmployee.area}
+                        </div>
+                      </div>
+                      <div className="text-center p-4 bg-purple-50 rounded-lg">
+                        <div className="text-2xl font-bold text-purple-800">
+                          {selectedVacationEmployee.daysUsed >
+                            selectedVacationEmployee.areaAverage
+                            ? "+"
+                            : ""}
+                          {(
+                            selectedVacationEmployee.daysUsed -
+                            selectedVacationEmployee.areaAverage
+                          ).toFixed(1)}
+                        </div>
+                        <div className="text-sm text-purple-600">Diferencia</div>
+                      </div>
+                    </div>
+                    <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                      <p className="text-sm text-blue-800">
+                        {selectedVacationEmployee.daysUsed >
+                          selectedVacationEmployee.areaAverage
+                          ? "🎉 Estás tomando más vacaciones que el promedio de tu área. ¡Excelente balance vida-trabajo!"
+                          : selectedVacationEmployee.daysUsed <
+                            selectedVacationEmployee.areaAverage
+                            ? "💡 Estás por debajo del promedio de tu área. Considera planificar más tiempo de descanso."
+                            : "✅ Estás en línea con el promedio de tu área."}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                */}
+
+                {/* Monthly Usage Chart */}
+                {/*
+                
+                */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <BarChart3 className="h-5 w-5" />
+                      Evolución del Uso de Vacaciones (2025)
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {
+                        /* 
+                          selectedVacationEmployee.monthlyUsage.map((month) => (
+                          <div
+                            key={month.month}
+                            className="flex items-center gap-4"
+                          >
+                            <div className="w-12 text-sm font-medium text-gray-600">
+                              {month.month}
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <div className="flex-1 bg-gray-200 rounded-full h-6 relative">
+                                  <div
+                                    className="bg-blue-500 h-6 rounded-full flex items-center justify-center text-white text-xs font-medium"
+                                    style={{
+                                      width: `${Math.max(
+                                        (month.days / 5) * 100,
+                                        month.days > 0 ? 20 : 0
+                                      )}%`,
+                                    }}
+                                  >
+                                    {month.days > 0 && month.days}
+                                  </div>
+                                </div>
+                                <div className="w-16 text-sm text-gray-600">
+                                  {month.days} día{month.days !== 1 ? "s" : ""}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                        */
+                      }
+                    </div>
+                    <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                      <p className="text-sm text-gray-600">
+                        <strong>Meses con más vacaciones:</strong>{" "}
+                        {
+                          /*
+                          selectedVacationEmployee.monthlyUsage
+                          .filter((m) => m.days > 0)
+                          .sort((a, b) => b.days - a.days)
+                          .slice(0, 3)
+                          .map((m) => `${m.month} (${m.days})`)
+                          .join(", ")
+                          */
+
+                        }
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Vacation History */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <FileText className="h-5 w-5" />
+                      Historial de Solicitudes de Vacaciones
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {/* Filter Controls */}
+                      <div className="flex flex-wrap gap-4 items-center">
+                        <Select
+                          value={vacationRecordsFilter}
+                          onValueChange={setVacationRecordsFilter}
+                        >
+                          <SelectTrigger className="w-48">
+                            <SelectValue placeholder="Filtrar por estado" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">
+                              Todas ({getVacationFilterCount("all")})
+                            </SelectItem>
+                            <SelectItem value="approved">
+                              Aprobadas ({getVacationFilterCount("approved")})
+                            </SelectItem>
+                            <SelectItem value="pending">
+                              Pendientes ({getVacationFilterCount("pending")})
+                            </SelectItem>
+                            <SelectItem value="rejected">
+                              Rechazadas ({getVacationFilterCount("rejected")})
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+
+                        <Select
+                          value={vacationRecordsPerPage.toString()}
+                          onValueChange={(value) =>
+                            setVacationRecordsPerPage(Number.parseInt(value))
+                          }
+                        >
+                          <SelectTrigger className="w-32">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="5">5 por página</SelectItem>
+                            <SelectItem value="10">10 por página</SelectItem>
+                            <SelectItem value="15">15 por página</SelectItem>
+                          </SelectContent>
+                        </Select>
+
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setVacationRecordsFilter("all");
+                            setCurrentVacationPage(1);
+                          }}
+                          className="flex items-center gap-2"
+                        >
+                          <XCircle className="h-4 w-4" />
+                          Limpiar Filtros
+                        </Button>
+                      </div>
+
+                      {/* Records Table */}
+                      <div className="border rounded-lg">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Fecha Solicitud</TableHead>
+                              <TableHead>Período</TableHead>
+                              <TableHead>Días</TableHead>
+                              <TableHead>Estado</TableHead>
+                              <TableHead>Motivo</TableHead>
+                              <TableHead>Aprobado Por</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {getPaginatedVacationRecords().map((request) => (
+                              <TableRow key={request.id}>
+                                <TableCell className="font-medium">
+                                  {request.requestDate}
+                                </TableCell>
+                                <TableCell>
+                                  {request.startDate === request.endDate
+                                    ? request.startDate
+                                    : `${request.startDate} - ${request.endDate}`}
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  {request.daysRequested}
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-2">
+                                    {getVacationStatusIcon(request.status)}
+                                    <span
+                                      className={getVacationStatusColor(
+                                        request.status
+                                      )}
+                                    >
+                                      {getVacationStatusText(request.status)}
+                                    </span>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-sm">
+                                  {request.reason}
+                                </TableCell>
+                                <TableCell className="text-sm">
+                                  {request.approvedBy || "-"}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                            {getPaginatedVacationRecords().length === 0 && (
+                              <TableRow>
+                                <TableCell
+                                  colSpan={6}
+                                  className="text-center py-8 text-gray-500"
+                                >
+                                  No se encontraron solicitudes con los filtros
+                                  aplicados
+                                </TableCell>
+                              </TableRow>
+                            )}
+                          </TableBody>
+                        </Table>
+                      </div>
+
+                      {/* Pagination */}
+                      {getTotalVacationPages() > 1 && (
+                        <div className="flex justify-between items-center">
+                          <div className="text-sm text-gray-500">
+                            Mostrando{" "}
+                            {(currentVacationPage - 1) * vacationRecordsPerPage +
+                              1}{" "}
+                            a{" "}
+                            {Math.min(
+                              currentVacationPage * vacationRecordsPerPage,
+                              getFilteredVacationRecords().length
+                            )}{" "}
+                            de {getFilteredVacationRecords().length} solicitudes
+                          </div>
+                          <Pagination>
+                            <PaginationContent>
+                              <PaginationItem>
+                                <PaginationPrevious
+                                  onClick={() =>
+                                    setCurrentVacationPage(
+                                      Math.max(1, currentVacationPage - 1)
+                                    )
+                                  }
+                                  className={
+                                    currentVacationPage === 1
+                                      ? "pointer-events-none opacity-50"
+                                      : "cursor-pointer"
+                                  }
+                                />
+                              </PaginationItem>
+                              {Array.from(
+                                { length: getTotalVacationPages() },
+                                (_, i) => i + 1
+                              ).map((page) => (
+                                <PaginationItem key={page}>
+                                  <PaginationLink
+                                    onClick={() => setCurrentVacationPage(page)}
+                                    isActive={currentVacationPage === page}
+                                    className="cursor-pointer"
+                                  >
+                                    {page}
+                                  </PaginationLink>
+                                </PaginationItem>
+                              ))}
+                              <PaginationItem>
+                                <PaginationNext
+                                  onClick={() =>
+                                    setCurrentVacationPage(
+                                      Math.min(
+                                        getTotalVacationPages(),
+                                        currentVacationPage + 1
+                                      )
+                                    )
+                                  }
+                                  className={
+                                    currentVacationPage ===
+                                      getTotalVacationPages()
+                                      ? "pointer-events-none opacity-50"
+                                      : "cursor-pointer"
+                                  }
+                                />
+                              </PaginationItem>
+                            </PaginationContent>
+                          </Pagination>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+      </div>

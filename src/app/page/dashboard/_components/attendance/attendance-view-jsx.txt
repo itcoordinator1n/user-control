@@ -1,0 +1,739 @@
+        <div className="min-h-screen bg-background transition-colors duration-300 p-6">
+          <div className="max-w-7xl mx-auto">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onBack()}
+                  className="flex items-center gap-2"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Volver al Resumen
+                </Button>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">
+                    Detalle de Asistencias
+                  </h1>
+                  <p className="text-gray-600">
+                    Análisis detallado por área y empleado
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="flex items-center gap-2"
+                >
+                  <Filter className="h-4 w-4" />
+                  {showFilters ? "Ocultar Filtros" : "Mostrar Filtros"}
+                  {showFilters ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowAreaCards(!showAreaCards)}
+                  className="flex items-center gap-2"
+                >
+                  <BarChart3 className="h-4 w-4" />
+                  {showAreaCards ? "Ocultar Tarjetas" : "Mostrar Tarjetas"}
+                  {showAreaCards ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
+                </Button>
+                <Button onClick={() => exportToExcel()} className="flex items-center gap-2">
+                  <Download className="h-4 w-4" />
+                  Exportar Detalle
+                </Button>
+              </div>
+            </div>
+
+            {/* Filters - Collapsible */}
+            {showFilters && (
+              <div className="flex items-center gap-4 mb-6 p-4 bg-white rounded-lg border shadow-sm transition-all duration-300 ease-in-out">
+                <Select value={selectedArea} onValueChange={setSelectedArea}>
+                  <SelectTrigger className="w-48">
+                    <Building2 className="h-4 w-4 mr-2" />
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Todas">Todas las Áreas</SelectItem>
+                    <SelectItem value="Planta">Planta</SelectItem>
+                    <SelectItem value="Administración">Administración</SelectItem>
+                    <SelectItem value="Contabilidad">Contabilidad</SelectItem>
+                    <SelectItem value="Bodega">Bodega</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+                  <SelectTrigger className="w-48">
+                    <Calendar className="h-4 w-4 mr-2" />
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Hoy">Hoy</SelectItem>
+                    <SelectItem value="Esta Semana">Esta Semana</SelectItem>
+                    <SelectItem value="Este Mes">Este Mes</SelectItem>
+                    <SelectItem value="Último Trimestre">
+                      Último Trimestre
+                    </SelectItem>
+                    <SelectItem value="Este Año">Este Año</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <div className="relative flex-1 max-w-md">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input
+                    placeholder="Buscar empleado..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Area Overview Cards - Collapsible */}
+            {showAreaCards && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 transition-all duration-300 ease-in-out">
+                {/* Todas las Áreas Card */}
+                <Card
+                  className={`hover:shadow-lg transition-all duration-200 cursor-pointer transform hover:scale-105 ${selectedArea === "Todas"
+                    ? "ring-2 ring-purple-500 bg-purple-50 shadow-md"
+                    : "hover:bg-gray-50"
+                    }`}
+                  onClick={() => {
+                    setSelectedArea("Todas");
+                    setCurrentEmployeePage(1);
+                  }}
+                >
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
+                        Todas las Áreas
+                        <span className="text-xs text-purple-600 opacity-70">
+                          Click para ver todas
+                        </span>
+                      </CardTitle>
+                      <Users className="h-4 w-4 text-purple-400" />
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <Badge
+                          variant="default"
+                          className="text-xs bg-purple-100 text-purple-800"
+                        >
+                          <TrendingUp className="h-3 w-3 mr-1" />
+                          General
+                        </Badge>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Promedio</span>
+                          <span className="font-medium">
+                            {(() => {
+                              const areasObjetivo = ["Planta", "Control de Calidad", "Mantenimiento"];
+
+                              const filtradas =
+                                Array.isArray(cardsData) && cardsData.length > 0
+                                  ? cardsData.filter((area: any) =>
+                                    areasObjetivo.includes(area.txt_nombre_area)
+                                  )
+                                  : [];
+
+                              const totalEmpleados = filtradas.reduce(
+                                (acc: any, area: any) => acc + area.total_empleados,
+                                0
+                              );
+
+                              const totalAsistencias = filtradas.reduce((acc: any, area: any) => {
+                                switch (selectedPeriod) {
+                                  case "Hoy":
+                                    return acc + area.asistencias_hoy;
+                                  case "Esta Semana":
+                                    return acc + area.asistencias_ayer;
+                                  case "Este Mes":
+                                    return acc + area.semana_actual;
+                                  case "Último Trimestre":
+                                    return acc + area.mes_actual;
+                                  case "Este Año":
+                                    return acc + area.trimestre_actual;
+                                  default:
+                                    return acc;
+                                }
+                              }, 0);
+
+                              const porcentaje = totalEmpleados
+                                ? Math.round((totalAsistencias * 100) / totalEmpleados)
+                                : 0;
+
+                              return `${porcentaje}%`;
+                            })()}
+                          </span>
+                        </div>
+                        <Progress
+                          value={Math.round(
+                            attendanceData.reduce(
+                              (acc, area) => acc + area.percentage,
+                              0
+                            ) / attendanceData.length
+                          )}
+                          className="h-2"
+                        />
+                      </div>
+                      <div className="text-xs text-gray-500 text-center pt-2 border-t">
+                        {attendanceData.reduce(
+                          (acc, area) => acc + area.employees.length,
+                          0
+                        )}{" "}
+                        empleados total
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Individual Area Cards */}
+                {attendanceData.map((area) => (
+                  <Card
+                    key={area.area}
+                    className={`hover:shadow-lg transition-all duration-200 cursor-pointer transform hover:scale-105 ${selectedArea === area.area
+                      ? "ring-2 ring-blue-500 bg-blue-50 shadow-md"
+                      : "hover:bg-gray-50"
+                      }`}
+                    onClick={() => {
+                      setSelectedArea(area.area);
+                      setCurrentEmployeePage(1);
+                    }}
+                  >
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
+                          {area.area}
+                          <span className="text-xs text-blue-600 opacity-70">
+                            Click para filtrar
+                          </span>
+                        </CardTitle>
+                        <Building2 className="h-4 w-4 text-gray-400" />
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <Badge
+                            variant={area.trend >= 0 ? "default" : "destructive"}
+                            className="text-xs"
+                          >
+                            {area.trend >= 0 ? (
+                              <TrendingUp className="h-3 w-3 mr-1" />
+                            ) : (
+                              <TrendingDown className="h-3 w-3 mr-1" />
+                            )}
+                            {Math.abs(area.trend)}%
+                          </Badge>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600">Asistencia</span>
+                            <span className="font-medium">
+                              {area.percentage}%
+                            </span>
+                          </div>
+                          <Progress value={area.percentage} className="h-2" />
+                        </div>
+                        <div className="text-xs text-gray-500 text-center pt-2 border-t">
+                          {area.employees.length} empleados
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+
+            {/* Current Filter Summary - Always visible when filters are hidden */}
+            {!showFilters && (
+              <div className="mb-6 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4 text-sm text-blue-800">
+                    <span className="flex items-center gap-1">
+                      <Building2 className="h-4 w-4" />
+                      <strong>Área:</strong> {selectedArea}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Calendar className="h-4 w-4" />
+                      <strong>Período:</strong> {selectedPeriod}
+                    </span>
+                    {searchTerm && (
+                      <span className="flex items-center gap-1">
+                        <Search className="h-4 w-4" />
+                        <strong>Búsqueda:</strong> "{searchTerm}"
+                      </span>
+                    )}
+                  </div>
+                  <Badge variant="secondary" className="text-xs">
+                    {getFilteredEmployees().length} empleados encontrados
+                  </Badge>
+                </div>
+              </div>
+            )}
+
+            {/* Detailed Employee List */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Detalle por Empleado -{" "}
+                  {selectedArea === "Todas" ? "Todas las Áreas" : selectedArea}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {/* Pagination Controls */}
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-4">
+                      <Select
+                        value={employeesPerPage.toString()}
+                        onValueChange={(value) => {
+                          setEmployeesPerPage(Number.parseInt(value));
+                          setCurrentEmployeePage(1);
+                        }}
+                      >
+                        <SelectTrigger className="w-40">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="5">5 por página</SelectItem>
+                          <SelectItem value="10">10 por página</SelectItem>
+                          <SelectItem value="15">15 por página</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <div className="text-sm text-gray-500">
+                        Total: {getFilteredEmployees().length} empleados
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Employee List */}
+                  <div className="space-y-3">
+                    {getPaginatedEmployees().length > 0 ? (
+                      getPaginatedEmployees().map((employee, index) => (
+                        <div
+                          key={`${employee.area}-${employee.name}-${index}`}
+                          className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-blue-50 hover:border-blue-200 border border-transparent transition-all duration-200 cursor-pointer transform hover:scale-[1.02]"
+                          onClick={() => handleEmployeeClick(employee.name)}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                              <Users className="h-5 w-5 text-blue-600" />
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-900 flex items-center gap-2">
+                                {employee.name}
+                                <span className="text-xs text-blue-600 opacity-70">
+                                  Click para ver detalles
+                                </span>
+                              </p>
+                              <p className="text-sm text-gray-500">
+                                {employee.area}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <div className="text-right">
+                              <p className="font-semibold text-lg">
+                                {employee.attendance}%
+                              </p>
+                              <p className="text-sm text-gray-500">Asistencia</p>
+                            </div>
+                            <Badge className={getStatusColor(employee.status)}>
+                              {getStatusText(employee.status)}
+                            </Badge>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-8 text-gray-500">
+                        No se encontraron empleados con los filtros aplicados
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Pagination */}
+                  {getTotalEmployeePages() > 1 && (
+                    <div className="flex justify-between items-center pt-4 border-t">
+                      <div className="text-sm text-gray-500">
+                        Mostrando{" "}
+                        {(currentEmployeePage - 1) * employeesPerPage + 1} a{" "}
+                        {Math.min(
+                          currentEmployeePage * employeesPerPage,
+                          getFilteredEmployees().length
+                        )}{" "}
+                        de {getFilteredEmployees().length} empleados
+                      </div>
+                      <Pagination>
+                        <PaginationContent>
+                          <PaginationItem>
+                            <PaginationPrevious
+                              onClick={() =>
+                                setCurrentEmployeePage(
+                                  Math.max(1, currentEmployeePage - 1)
+                                )
+                              }
+                              className={
+                                currentEmployeePage === 1
+                                  ? "pointer-events-none opacity-50"
+                                  : "cursor-pointer"
+                              }
+                            />
+                          </PaginationItem>
+                          {Array.from(
+                            { length: getTotalEmployeePages() },
+                            (_, i) => i + 1
+                          ).map((page) => (
+                            <PaginationItem key={page}>
+                              <PaginationLink
+                                onClick={() => setCurrentEmployeePage(page)}
+                                isActive={currentEmployeePage === page}
+                                className="cursor-pointer"
+                              >
+                                {page}
+                              </PaginationLink>
+                            </PaginationItem>
+                          ))}
+                          <PaginationItem>
+                            <PaginationNext
+                              onClick={() =>
+                                setCurrentEmployeePage(
+                                  Math.min(
+                                    getTotalEmployeePages(),
+                                    currentEmployeePage + 1
+                                  )
+                                )
+                              }
+                              className={
+                                currentEmployeePage === getTotalEmployeePages()
+                                  ? "pointer-events-none opacity-50"
+                                  : "cursor-pointer"
+                              }
+                            />
+                          </PaginationItem>
+                        </PaginationContent>
+                      </Pagination>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          {/* Employee Detail Modal */}
+          <Dialog open={showEmployeeModal} onOpenChange={setShowEmployeeModal}>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                    <User className="h-6 w-6 text-blue-600" />
+                  </div>
+                  Perfil de Empleado
+                </DialogTitle>
+              </DialogHeader>
+
+              {selectedEmployee && (
+                <div className="space-y-6">
+                  {/* Employee Profile */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg">
+                          Información Personal
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4 text-gray-500" />
+                          <span className="font-medium">Nombre:</span>
+                          <span>{selectedEmployee.name}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Building2 className="h-4 w-4 text-gray-500" />
+                          <span className="font-medium">Área:</span>
+                          <span>{selectedEmployee.area}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Users className="h-4 w-4 text-gray-500" />
+                          <span className="font-medium">Jefe:</span>
+                          <span>{selectedEmployee.supervisor}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-4 w-4 text-gray-500" />
+                          <span className="font-medium">Cargo:</span>
+                          <span>{selectedEmployee.position}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline">ID: {selectedEmployee.id}</Badge>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg">
+                          Métricas de Asistencia
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">
+                            Asistencia General
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <Progress
+                              value={selectedEmployee.attendanceRate}
+                              className="w-20 h-2"
+                            />
+                            <span className="font-semibold">
+                              {selectedEmployee.attendanceRate}%
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">
+                            Llegadas Tardías
+                          </span>
+                          <Badge variant="destructive">
+                            {selectedEmployee.lateArrivals}
+                          </Badge>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">Ausencias</span>
+                          <Badge variant="destructive">
+                            {selectedEmployee.absences}
+                          </Badge>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Records Filters */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">
+                        Historial de Marcajes
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {/* Filter Controls */}
+                        <div className="flex flex-wrap gap-4 items-center">
+                          <Select
+                            value={recordsFilter}
+                            onValueChange={setRecordsFilter}
+                          >
+                            <SelectTrigger className="w-48">
+                              <SelectValue placeholder="Filtrar por estado" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">
+                                Todos ({getFilterCount("all")})
+                              </SelectItem>
+                              <SelectItem value="on_time">
+                                A Tiempo ({getFilterCount("on_time")})
+                              </SelectItem>
+                              <SelectItem value="late">
+                                Llegadas Tardías ({getFilterCount("late")})
+                              </SelectItem>
+                              <SelectItem value="early_departure">
+                                Salidas Tempranas (
+                                {getFilterCount("early_departure")})
+                              </SelectItem>
+                              <SelectItem value="absent">
+                                Inasistencias ({getFilterCount("absent")})
+                              </SelectItem>
+                              <SelectItem value="incomplete">
+                                Marcajes Incompletos ({getFilterCount("incomplete")}
+                                )
+                              </SelectItem>
+                              <SelectItem value="early_arrival">
+                                Llegadas Tempranas (
+                                {getFilterCount("early_arrival")})
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+
+                          <div className="flex gap-2 items-center">
+                            <CalendarDays className="h-4 w-4 text-gray-500" />
+                            <Input
+                              type="date"
+                              value={dateFrom}
+                              onChange={(e) => setDateFrom(e.target.value)}
+                              className="w-40"
+                              placeholder="Desde"
+                            />
+                            <span className="text-gray-500">hasta</span>
+                            <Input
+                              type="date"
+                              value={dateTo}
+                              onChange={(e) => setDateTo(e.target.value)}
+                              className="w-40"
+                              placeholder="Hasta"
+                            />
+                          </div>
+
+                          <Select
+                            value={recordsPerPage.toString()}
+                            onValueChange={(value) =>
+                              setRecordsPerPage(Number.parseInt(value))
+                            }
+                          >
+                            <SelectTrigger className="w-32">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="5">5 por página</SelectItem>
+                              <SelectItem value="10">10 por página</SelectItem>
+                              <SelectItem value="15">15 por página</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setRecordsFilter("all");
+                              setDateFrom("");
+                              setDateTo("");
+                              setCurrentPage(1);
+                            }}
+                            className="flex items-center gap-2"
+                          >
+                            <XCircle className="h-4 w-4" />
+                            Limpiar Filtros
+                          </Button>
+                        </div>
+
+                        {/* Records Table */}
+                        <div className="border rounded-lg">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Fecha</TableHead>
+                                <TableHead>Entrada</TableHead>
+                                <TableHead>Salida</TableHead>
+                                <TableHead>Estado</TableHead>
+                                <TableHead>Notas</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {getPaginatedRecords().map((record) => (
+                                <TableRow key={record.id}>
+                                  <TableCell className="font-medium">
+                                    {record.date}
+                                  </TableCell>
+                                  <TableCell>{setHours(record.entryTime ? record.entryTime + ":00" : "") || "-"}</TableCell>
+                                  <TableCell>{setHours(record.exitTime ? record.exitTime + ":00" : "") || "-"}</TableCell>
+                                  <TableCell>
+                                    <div className="flex items-center gap-2">
+                                      {getRecordStatusIcon(record.status)}
+                                      <span
+                                        className={getRecordStatusColor(
+                                          record.status
+                                        )}
+                                      >
+                                        {getRecordStatusText(record.status)}
+                                      </span>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-sm text-gray-500">
+                                    {record.notes || "-"}
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                              {getPaginatedRecords().length === 0 && (
+                                <TableRow>
+                                  <TableCell
+                                    colSpan={5}
+                                    className="text-center py-8 text-gray-500"
+                                  >
+                                    No se encontraron registros con los filtros
+                                    aplicados
+                                  </TableCell>
+                                </TableRow>
+                              )}
+                            </TableBody>
+                          </Table>
+                        </div>
+
+                        {/* Pagination */}
+                        {getTotalPages() > 1 && (
+                          <div className="flex justify-between items-center">
+                            <div className="text-sm text-gray-500">
+                              Mostrando {(currentPage - 1) * recordsPerPage + 1} a{" "}
+                              {Math.min(
+                                currentPage * recordsPerPage,
+                                getFilteredRecords().length
+                              )}{" "}
+                              de {getFilteredRecords().length} registros
+                            </div>
+                            <Pagination>
+                              <PaginationContent>
+                                <PaginationItem>
+                                  <PaginationPrevious
+                                    onClick={() =>
+                                      setCurrentPage(Math.max(1, currentPage - 1))
+                                    }
+                                    className={
+                                      currentPage === 1
+                                        ? "pointer-events-none opacity-50"
+                                        : "cursor-pointer"
+                                    }
+                                  />
+                                </PaginationItem>
+                                {Array.from(
+                                  { length: getTotalPages() },
+                                  (_, i) => i + 1
+                                ).map((page) => (
+                                  <PaginationItem key={page}>
+                                    <PaginationLink
+                                      onClick={() => setCurrentPage(page)}
+                                      isActive={currentPage === page}
+                                      className="cursor-pointer"
+                                    >
+                                      {page}
+                                    </PaginationLink>
+                                  </PaginationItem>
+                                ))}
+                                <PaginationItem>
+                                  <PaginationNext
+                                    onClick={() =>
+                                      setCurrentPage(
+                                        Math.min(getTotalPages(), currentPage + 1)
+                                      )
+                                    }
+                                    className={
+                                      currentPage === getTotalPages()
+                                        ? "pointer-events-none opacity-50"
+                                        : "cursor-pointer"
+                                    }
+                                  />
+                                </PaginationItem>
+                              </PaginationContent>
+                            </Pagination>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
+        </div>

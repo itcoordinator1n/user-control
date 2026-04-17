@@ -20,6 +20,9 @@ declare module "next-auth/jwt" {
   interface JWT {
     id: string;
     accessToken: string;
+    permissions: string[];
+    area: { name: string; color?: string } | null;
+    idEmployee: string | number | null;
   }
 }
 
@@ -67,24 +70,21 @@ const handler = NextAuth({
       }
 
       if (token.accessToken) {
-        const payload:Pay = jwtDecode(token.accessToken as string);;
+        const payload: Pay = jwtDecode(token.accessToken as string);
 
-        token.permissions = payload ? payload.permissions : [];
-        // Opcionalmente sobreescribe id con el del token si existe
-        // if (id !== undefined && id !== null) token.id = String(id);
-        // if (idEmployee !== undefined) token.idEmployee = idEmployee;
-        // if (name !== undefined) token.name = name;
-        // if (email !== undefined) token.email = email;
-        // if (area !== undefined) token.area = area as any;
+        token.permissions = payload?.permissions ?? [];
+        token.area = payload?.area ?? null;
+        token.idEmployee = payload?.idEmployee ?? null;
       }
 
       return token;
     },
     async session({ session, token }) {
-      
       if (session) {
         session.user.accessToken = token.accessToken as string;
-        session.user.permissions= (token.permissions as string[]) || []
+        session.user.permissions = (token.permissions as string[]) || [];
+        session.user.area = (token.area as { name: string; color?: string } | null) ?? null;
+        session.user.idEmployee = (token.idEmployee as string | number | undefined) ?? undefined;
       }
       return session;
     },

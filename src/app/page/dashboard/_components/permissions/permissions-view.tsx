@@ -1,12 +1,13 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { useSession } from "next-auth/react"
+import { useState } from "react"
+import { usePermissionsData } from "../../_hooks/use-permissions"
+import { AreaFilter } from "../shared/area-filter"
+import { PeriodFilter } from "../shared/period-filter"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
@@ -33,7 +34,6 @@ import {
   Clock,
   AlertCircle,
   TrendingUp,
-  TrendingDown,
   CheckCircle,
   XCircle,
   FileText,
@@ -44,351 +44,6 @@ import {
 } from "lucide-react"
 
 
-const permissionsData2 = [
-  {
-    area: "Planta",
-    totalPermissions: 145,
-    totalHours: 580,
-    averageHoursPerPermission: 4.0,
-    averagePermissionsPerEmployee: 8.5,
-    totalEmployees: 17,
-    supervisor: "Carlos Mendoza",
-    employees: [
-      {
-        name: "Juan Pérez",
-        totalPermissions: 12,
-        totalHours: 48,
-        averageHours: 4.0,
-        lastPermission: "2024-01-15",
-        pendingPermissions: 1,
-        weeklyPattern: {
-          monday: 3,
-          tuesday: 1,
-          wednesday: 2,
-          thursday: 1,
-          friday: 5,
-        },
-        areaAverage: 8.5,
-        comparisonWithArea: 3.5,
-      },
-
-    ],
-  },
-  {
-    area: "Administración",
-    totalPermissions: 89,
-    totalHours: 267,
-    averageHoursPerPermission: 3.0,
-    averagePermissionsPerEmployee: 7.4,
-    totalEmployees: 12,
-    trend: -5,
-    supervisor: "Ana Rodríguez",
-    supervisorPermissions: 89,
-    employees: [
-      {
-        name: "Pedro Martínez",
-        totalPermissions: 8,
-        totalHours: 24,
-        averageHours: 3.0,
-        lastPermission: "2024-01-18",
-        riskLevel: "green",
-        pendingPermissions: 0,
-        monthlyData: [
-          { month: "Ene", permissions: 1, hours: 3 },
-          { month: "Feb", permissions: 2, hours: 6 },
-          { month: "Mar", permissions: 2, hours: 6 },
-          { month: "Abr", permissions: 1, hours: 3 },
-          { month: "May", permissions: 1, hours: 3 },
-          { month: "Jun", permissions: 1, hours: 3 },
-        ],
-        weeklyPattern: {
-          monday: 2,
-          tuesday: 1,
-          wednesday: 1,
-          thursday: 2,
-          friday: 2,
-        },
-        areaAverage: 7.4,
-        frequentDates: ["Martes", "Jueves"],
-        comparisonWithArea: 0.6,
-      },
-    ],
-  },
-  {
-    area: "Contabilidad",
-    totalPermissions: 67,
-    totalHours: 201,
-    averageHoursPerPermission: 3.0,
-    averagePermissionsPerEmployee: 6.7,
-    totalEmployees: 10,
-    trend: 8,
-    supervisor: "Luis Torres",
-    supervisorPermissions: 67,
-    employees: [
-      {
-        name: "Carmen Silva",
-        totalPermissions: 10,
-        totalHours: 30,
-        averageHours: 3.0,
-        lastPermission: "2024-01-22",
-        riskLevel: "yellow",
-        pendingPermissions: 1,
-        monthlyData: [
-          { month: "Ene", permissions: 2, hours: 6 },
-          { month: "Feb", permissions: 1, hours: 3 },
-          { month: "Mar", permissions: 2, hours: 6 },
-          { month: "Abr", permissions: 2, hours: 6 },
-          { month: "May", permissions: 2, hours: 6 },
-          { month: "Jun", permissions: 1, hours: 3 },
-        ],
-        weeklyPattern: {
-          monday: 3,
-          tuesday: 1,
-          wednesday: 2,
-          thursday: 1,
-          friday: 3,
-        },
-        areaAverage: 6.7,
-        frequentDates: ["Lunes", "Viernes"],
-        comparisonWithArea: 3.3,
-      },
-    ],
-  },
-  {
-    area: "Bodega",
-    totalPermissions: 78,
-    totalHours: 312,
-    averageHoursPerPermission: 4.0,
-    averagePermissionsPerEmployee: 9.8,
-    totalEmployees: 8,
-    trend: 15,
-    supervisor: "Roberto Vega",
-    supervisorPermissions: 78,
-    employees: [
-      {
-        name: "Diego Morales",
-        totalPermissions: 18,
-        totalHours: 72,
-        averageHours: 4.0,
-        lastPermission: "2024-01-25",
-        riskLevel: "red",
-        pendingPermissions: 3,
-        monthlyData: [
-          { month: "Ene", permissions: 4, hours: 16 },
-          { month: "Feb", permissions: 3, hours: 12 },
-          { month: "Mar", permissions: 3, hours: 12 },
-          { month: "Abr", permissions: 3, hours: 12 },
-          { month: "May", permissions: 3, hours: 12 },
-          { month: "Jun", permissions: 2, hours: 8 },
-        ],
-        weeklyPattern: {
-          monday: 5,
-          tuesday: 2,
-          wednesday: 3,
-          thursday: 2,
-          friday: 6,
-        },
-        areaAverage: 9.8,
-        frequentDates: ["Viernes", "Lunes"],
-        comparisonWithArea: 8.2,
-      },
-    ],
-  },
-]
-
-
-
-
-// Mock data for permissions
-const permissionsData = [
-  {
-    area: "Planta",
-    totalPermissions: 145,
-    totalHours: 580,
-    averageHoursPerPermission: 4.0,
-    averagePermissionsPerEmployee: 8.5,
-    totalEmployees: 17,
-    //trend: 12,
-    supervisor: "Carlos Mendoza",
-    supervisorPermissions: 145,
-    employees: [
-      {
-        name: "Juan Pérez",
-        totalPermissions: 12,
-        totalHours: 48,
-        averageHours: 4.0,
-        lastPermission: "2024-01-15",
-        riskLevel: "green",
-        pendingPermissions: 1,
-        monthlyData: [
-          { month: "Ene", permissions: 2, hours: 8 },
-          { month: "Feb", permissions: 1, hours: 4 },
-          { month: "Mar", permissions: 3, hours: 12 },
-          { month: "Abr", permissions: 2, hours: 8 },
-          { month: "May", permissions: 1, hours: 4 },
-          { month: "Jun", permissions: 3, hours: 12 },
-        ],
-        weeklyPattern: {
-          monday: 3,
-          tuesday: 1,
-          wednesday: 2,
-          thursday: 1,
-          friday: 5,
-        },
-        areaAverage: 8.5,
-        frequentDates: ["Viernes", "Lunes después de feriado"],
-        comparisonWithArea: 3.5,
-      },
-      {
-        name: "María González",
-        totalPermissions: 15,
-        totalHours: 75,
-        averageHours: 5.0,
-        lastPermission: "2024-01-20",
-        riskLevel: "yellow",
-        pendingPermissions: 2,
-        monthlyData: [
-          { month: "Ene", permissions: 3, hours: 15 },
-          { month: "Feb", permissions: 2, hours: 10 },
-          { month: "Mar", permissions: 4, hours: 20 },
-          { month: "Abr", permissions: 2, hours: 10 },
-          { month: "May", permissions: 2, hours: 10 },
-          { month: "Jun", permissions: 2, hours: 10 },
-        ],
-        weeklyPattern: {
-          monday: 4,
-          tuesday: 2,
-          wednesday: 3,
-          thursday: 2,
-          friday: 4,
-        },
-        areaAverage: 8.5,
-        frequentDates: ["Viernes", "Lunes"],
-        comparisonWithArea: 6.5,
-      },
-    ],
-  },
-  {
-    area: "Administración",
-    totalPermissions: 89,
-    totalHours: 267,
-    averageHoursPerPermission: 3.0,
-    averagePermissionsPerEmployee: 7.4,
-    totalEmployees: 12,
-    trend: -5,
-    supervisor: "Ana Rodríguez",
-    supervisorPermissions: 89,
-    employees: [
-      {
-        name: "Pedro Martínez",
-        totalPermissions: 8,
-        totalHours: 24,
-        averageHours: 3.0,
-        lastPermission: "2024-01-18",
-        riskLevel: "green",
-        pendingPermissions: 0,
-        monthlyData: [
-          { month: "Ene", permissions: 1, hours: 3 },
-          { month: "Feb", permissions: 2, hours: 6 },
-          { month: "Mar", permissions: 2, hours: 6 },
-          { month: "Abr", permissions: 1, hours: 3 },
-          { month: "May", permissions: 1, hours: 3 },
-          { month: "Jun", permissions: 1, hours: 3 },
-        ],
-        weeklyPattern: {
-          monday: 2,
-          tuesday: 1,
-          wednesday: 1,
-          thursday: 2,
-          friday: 2,
-        },
-        areaAverage: 7.4,
-        frequentDates: ["Martes", "Jueves"],
-        comparisonWithArea: 0.6,
-      },
-    ],
-  },
-  {
-    area: "Contabilidad",
-    totalPermissions: 67,
-    totalHours: 201,
-    averageHoursPerPermission: 3.0,
-    averagePermissionsPerEmployee: 6.7,
-    totalEmployees: 10,
-    trend: 8,
-    supervisor: "Luis Torres",
-    supervisorPermissions: 67,
-    employees: [
-      {
-        name: "Carmen Silva",
-        totalPermissions: 10,
-        totalHours: 30,
-        averageHours: 3.0,
-        lastPermission: "2024-01-22",
-        riskLevel: "yellow",
-        pendingPermissions: 1,
-        monthlyData: [
-          { month: "Ene", permissions: 2, hours: 6 },
-          { month: "Feb", permissions: 1, hours: 3 },
-          { month: "Mar", permissions: 2, hours: 6 },
-          { month: "Abr", permissions: 2, hours: 6 },
-          { month: "May", permissions: 2, hours: 6 },
-          { month: "Jun", permissions: 1, hours: 3 },
-        ],
-        weeklyPattern: {
-          monday: 3,
-          tuesday: 1,
-          wednesday: 2,
-          thursday: 1,
-          friday: 3,
-        },
-        areaAverage: 6.7,
-        frequentDates: ["Lunes", "Viernes"],
-        comparisonWithArea: 3.3,
-      },
-    ],
-  },
-  {
-    area: "Bodega",
-    totalPermissions: 78,
-    totalHours: 312,
-    averageHoursPerPermission: 4.0,
-    averagePermissionsPerEmployee: 9.8,
-    totalEmployees: 8,
-    trend: 15,
-    supervisor: "Roberto Vega",
-    supervisorPermissions: 78,
-    employees: [
-      {
-        name: "Diego Morales",
-        totalPermissions: 18,
-        totalHours: 72,
-        averageHours: 4.0,
-        lastPermission: "2024-01-25",
-        riskLevel: "red",
-        pendingPermissions: 3,
-        monthlyData: [
-          { month: "Ene", permissions: 4, hours: 16 },
-          { month: "Feb", permissions: 3, hours: 12 },
-          { month: "Mar", permissions: 3, hours: 12 },
-          { month: "Abr", permissions: 3, hours: 12 },
-          { month: "May", permissions: 3, hours: 12 },
-          { month: "Jun", permissions: 2, hours: 8 },
-        ],
-        weeklyPattern: {
-          monday: 5,
-          tuesday: 2,
-          wednesday: 3,
-          thursday: 2,
-          friday: 6,
-        },
-        areaAverage: 9.8,
-        frequentDates: ["Viernes", "Lunes"],
-        comparisonWithArea: 8.2,
-      },
-    ],
-  },
-]
 type MonthlyData = {
   month: string
   permissions: number
@@ -418,57 +73,6 @@ type Employee = {
   frequentDates: string[]
   comparisonWithArea: number
 }
-// Mock permission requests data
-const permissionRequests = [
-  {
-    id: 1,
-    employeeName: "Juan Pérez",
-    requestDate: "2024-01-15",
-    startDate: "2024-01-16",
-    endDate: "2024-01-16",
-    hours: 4,
-    reason: "Cita médica",
-    status: "approved",
-    approvedBy: "Carlos Mendoza",
-    area: "Planta",
-  },
-  {
-    id: 2,
-    employeeName: "María González",
-    requestDate: "2024-01-20",
-    startDate: "2024-01-21",
-    endDate: "2024-01-21",
-    hours: 8,
-    reason: "Asuntos personales",
-    status: "pending",
-    approvedBy: null,
-    area: "Planta",
-  },
-  {
-    id: 3,
-    employeeName: "Pedro Martínez",
-    requestDate: "2024-01-18",
-    startDate: "2024-01-19",
-    endDate: "2024-01-19",
-    hours: 3,
-    reason: "Trámite bancario",
-    status: "approved",
-    approvedBy: "Ana Rodríguez",
-    area: "Administración",
-  },
-  {
-    id: 4,
-    employeeName: "Diego Morales",
-    requestDate: "2024-01-25",
-    startDate: "2024-01-26",
-    endDate: "2024-01-26",
-    hours: 4,
-    reason: "Emergencia familiar",
-    status: "rejected",
-    approvedBy: "Roberto Vega",
-    area: "Bodega",
-  },
-]
 
 type PermissionsDashboardProps = {
   showPermissionDetail: boolean
@@ -517,39 +121,10 @@ type permissionsDataType = {
 }
 
 export default function PermissionsDashboard({ showPermissionDetail, setShowPermissionDetail }: PermissionsDashboardProps) {
-  const { data: session } = useSession()
-  const [statistics, setStatistics] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [permissionRequests, setPermissionRequests] = useState<permissionRequestsType[]>()
-  const [permissionsData, setPermissionsData] = useState<permissionsDataType[]>()
-
-  useEffect(() => {
-    if (!session?.user?.accessToken) return
-
-    const fetchStatistics = async () => {
-      try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/statistics/get-permissions-personal-statistics`, {
-          headers: { Authorization: `Bearer ${session.user.accessToken}` },
-        });
-        if (!res.ok) {
-          throw new Error(`Error en la respuesta: ${res.status}`);
-        }
-        const data = await res.json();
-        setStatistics(data);
-        setPermissionRequests(data.permissionRequests)
-        setPermissionsData(data.permissionsData)
-        console.log("Data de solicitudes", data)
-      } catch (err) {
-        console.error(err);
-        setError('Hubo un problema al obtener las estadísticas.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStatistics();
-  }, [session?.user?.accessToken]);
+  const { data: statistics, loading, error: fetchError } = usePermissionsData(true);
+  const permissionRequests = statistics?.permissionRequests as permissionRequestsType[] | undefined;
+  const permissionsData = statistics?.permissionsData as permissionsDataType[] | undefined;
+  const error = fetchError ?? "";
   const [showFilters, setShowFilters] = useState(false)
   const [showAreaCards, setShowAreaCards] = useState(true)
   const [selectedArea, setSelectedArea] = useState("Todas")
@@ -568,8 +143,6 @@ export default function PermissionsDashboard({ showPermissionDetail, setShowPerm
   const handleEmployeeClick = (employeeName: any) => {
     const employee = permissionsData?.flatMap((area) => area.employees.map((emp :any) => ({ ...emp, area: area.area })))
     .find((emp : any) => emp.name === employeeName)
-    console.log("EMPLEADO Horas",employee.totalHours)
-    console.log("EMPLEADO Horas",employee)
     if (employee) {
       setSelectedEmployee(employee)
       setShowEmployeeModal(true)
@@ -839,33 +412,8 @@ const exportToExcel = async (
           {/* Filters */}
           {showFilters && (
             <div className="flex items-center gap-4 mb-6 p-4 bg-white rounded-lg border shadow-sm transition-all duration-300 ease-in-out">
-              <Select value={selectedArea} onValueChange={setSelectedArea}>
-                <SelectTrigger className="w-48">
-                  <Building2 className="h-4 w-4 mr-2" />
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Todas">Todas las Áreas</SelectItem>
-                  <SelectItem value="Planta">Planta</SelectItem>
-                  <SelectItem value="Administración">Administración</SelectItem>
-                  <SelectItem value="Contabilidad">Contabilidad</SelectItem>
-                  <SelectItem value="Bodega">Bodega</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-                <SelectTrigger className="w-48">
-                  <Calendar className="h-4 w-4 mr-2" />
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Este Mes">Este Mes</SelectItem>
-                  <SelectItem value="Último Trimestre">Último Trimestre</SelectItem>
-                  <SelectItem value="Este Año">Este Año</SelectItem>
-                  <SelectItem value="Año Anterior">Año Anterior</SelectItem>
-                  <SelectItem value="Comparación Interanual">Comparación Interanual</SelectItem>
-                </SelectContent>
-              </Select>
+              <AreaFilter value={selectedArea} onChange={setSelectedArea} />
+              <PeriodFilter value={selectedPeriod} onChange={setSelectedPeriod} />
 
               <div className="relative flex-1 max-w-md">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -1057,17 +605,6 @@ const exportToExcel = async (
                         </div>
 
                         <div className="flex items-center justify-between pt-2 border-t">
-                          {/* 
-                          <Badge variant={area.trend >= 0 ? "default" : "destructive"} className="text-xs">
-                            {area.trend >= 0 ? (
-                              <TrendingUp className="h-3 w-3 mr-1" />
-                            ) : (
-                              <TrendingDown className="h-3 w-3 mr-1" />
-                            )}
-                            {Math.abs(area.trend)}%
-                          </Badge>
-                          
-                          */}
                           <span className="text-xs text-gray-500">{area.totalEmployees} empleados</span>
                         </div>
                       </CardContent>
@@ -1228,14 +765,6 @@ const exportToExcel = async (
                             <p className="font-semibold text-lg text-orange-600">{employee.averageHours}h</p>
                             <p className="text-xs text-gray-500">promedio</p>
                           </div>
-                          {/*
-                          <div className="text-center">
-                            <Badge className={`${getRiskLevelColor(employee.riskLevel)} border-0`}>
-                              {getRiskLevelText(employee.riskLevel)}
-                            </Badge>
-                            <p className="text-xs text-gray-500 mt-1">riesgo</p>
-                          </div>
-                           */}
                           <div className="text-center">
                             <p className="font-semibold text-lg text-purple-600">{employee.pendingPermissions}</p>
                             <p className="text-xs text-gray-500">pendientes</p>
