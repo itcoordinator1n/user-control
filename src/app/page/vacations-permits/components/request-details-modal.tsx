@@ -107,7 +107,7 @@ function formatTimePart(dt?: string): string {
   if (!dt) return "—"
   const timePart = dt.includes("T") ? dt.split("T")[1] : dt.split(" ")[1]
   if (!timePart) return "—"
-  return timePart.slice(0, 5)   // "HH:mm"
+  return timePart.slice(0, 5)  // "HH:mm" — ya en hora local
 }
 
 export function RequestDetailsModal({
