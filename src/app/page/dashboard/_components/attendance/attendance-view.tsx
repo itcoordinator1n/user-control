@@ -174,7 +174,7 @@ function toEmployeeKey(name: string) {
 }
 
 function resolveKey(employee: { name: string; key?: string }) {
-  return employee.key ?? toEmployeeKey(employee.name);
+  return employee.key ? employee.key : toEmployeeKey(employee.name);
 }
 
 // ─── Modal filter state ──────────────────────────────────────────────────────
@@ -202,7 +202,7 @@ interface AttendanceViewProps {
 export function AttendanceView({ onBack, allowedArea, onNavigateToPermission }: AttendanceViewProps) {
   // ── State ────────────────────────────────────────────────────────────────────
   const { data: session } = useSession();
-  const [selectedArea, setSelectedArea] = useState(allowedArea ?? "Todas");
+  const [selectedArea, setSelectedArea] = useState(allowedArea ? allowedArea : "Todas");
   const [selectedPeriod, setSelectedPeriod] = useState("Este Mes");
   const [customDateFrom, setCustomDateFrom] = useState("");
   const [customDateTo, setCustomDateTo] = useState("");
@@ -240,7 +240,7 @@ export function AttendanceView({ onBack, allowedArea, onNavigateToPermission }: 
     effectiveDates.dateFrom,
     effectiveDates.dateTo,
   );
-  const attendanceData = hookData?.attendanceData ?? [];
+  const attendanceData = (hookData && hookData.attendanceData) ? hookData.attendanceData : [];
 
   // ── On-demand profiles ────────────────────────────────────────────────────
   const { fetchProfile, loading: profileLoading, isCached } = useEmployeeProfile();
@@ -259,7 +259,7 @@ export function AttendanceView({ onBack, allowedArea, onNavigateToPermission }: 
 
   // ── Export (on-demand fetch of raw records) ───────────────────────────────
   const exportToExcel = async (fileName = "asistencias.xlsx") => {
-    if (!session?.user?.accessToken) return;
+    if (!(session && session.user ? session.user.accessToken : undefined)) return;
     setExportLoading(true);
     try {
       const params = new URLSearchParams();
@@ -282,7 +282,7 @@ export function AttendanceView({ onBack, allowedArea, onNavigateToPermission }: 
         if (!hour) return "";
         const [h, m, s] = hour.split(":").map(Number);
         if (isNaN(h)) return "";
-        return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s ?? 0).padStart(2, "0")}`;
+        return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s != null ? s : 0).padStart(2, "0")}`;
       };
 
       // Worked hours from local HH:mm:ss strings
@@ -315,8 +315,8 @@ export function AttendanceView({ onBack, allowedArea, onNavigateToPermission }: 
         ["Empleados únicos", uniqueEmps],
         ["Área filtrada", selectedArea !== "Todas" ? selectedArea : "Todas las áreas"],
         ["Período", effectiveDates.dateFrom && effectiveDates.dateTo ? `${effectiveDates.dateFrom} — ${effectiveDates.dateTo}` : "Sin filtro"],
-        ["Primer registro", sorted[0]?.fecha?.toString() || ""],
-        ["Último registro", sorted[sorted.length - 1]?.fecha?.toString() || ""],
+        ["Primer registro", (sorted[0] && sorted[0].fecha) ? sorted[0].fecha.toString() : ""],
+        ["Último registro", (sorted[sorted.length - 1] && sorted[sorted.length - 1].fecha) ? sorted[sorted.length - 1].fecha.toString() : ""],
         [],
         ["Registros por Área", "Cantidad"],
         ...Object.entries(countByArea).map(([a, c]) => [a, c]),
@@ -340,13 +340,13 @@ export function AttendanceView({ onBack, allowedArea, onNavigateToPermission }: 
           { name: "Horas Trabajadas", filterButton: true },
         ],
         rows: monthlyData.map((r) => [
-          r.fecha?.toString() ?? "",
+          r.fecha ? r.fecha.toString() : "",
           r.int_id_empleado,
           r.nombre_empleado,
           r.area,
           setHoursUtil(r.entrada),
           setHoursUtil(r.salida),
-          calcWorkedHoursRaw(r.entrada ?? "", r.salida ?? ""),
+          calcWorkedHoursRaw(r.entrada ? r.entrada : "", r.salida ? r.salida : ""),
         ]),
       });
       detail.columns = [
@@ -365,7 +365,7 @@ export function AttendanceView({ onBack, allowedArea, onNavigateToPermission }: 
 
   // ── Profile export (all records with current modal filters) ──────────────
   const exportProfileToExcel = async () => {
-    if (!session?.user?.accessToken || !activeProfileKey || !selectedEmployee) return;
+    if (!(session && session.user ? session.user.accessToken : undefined) || !activeProfileKey || !selectedEmployee) return;
     setProfileExportLoading(true);
     try {
       // Fetch all records (no pagination) with the active modal filters
@@ -415,7 +415,7 @@ export function AttendanceView({ onBack, allowedArea, onNavigateToPermission }: 
             r.permission ? `Permiso — ${r.permission.type === "full_day" ? "Día completo" : r.permission.type === "late_arrival" ? "Llegada tarde" : r.permission.type === "early_departure" ? "Salida temprana" : r.permission.type === "partial" ? "Parcial" : ""}` : "",
             r.vacation   ? "Vacaciones" : "",
             r.holiday    ? `Festivo: ${r.holiday.name}${!r.holiday.isNational ? " (empresa)" : ""}` : "",
-            r.notes      ?? "",
+            r.notes ? r.notes : "",
           ].filter(Boolean).join(" | ");
           return [
             r.date,
@@ -467,7 +467,7 @@ export function AttendanceView({ onBack, allowedArea, onNavigateToPermission }: 
     if (!hour) return "";
     const [h, m, s] = hour.split(":").map(Number);
     const date = new Date();
-    date.setHours(h, m, s ?? 0, 0);
+    date.setHours(h, m, s != null ? s : 0, 0);
     date.setHours(date.getHours() - 6);
     return date.toTimeString().split(" ")[0];
   };
@@ -477,11 +477,11 @@ export function AttendanceView({ onBack, allowedArea, onNavigateToPermission }: 
     good:      "bg-blue-100 text-blue-800",
     regular:   "bg-yellow-100 text-yellow-800",
     poor:      "bg-red-100 text-red-800",
-  }[s] ?? "bg-gray-100 text-gray-800");
+  }[s] || "bg-gray-100 text-gray-800");
 
   const getStatusText = (s: string) => ({
     excellent: "Excelente", good: "Bueno", regular: "Regular", poor: "Deficiente",
-  }[s] ?? "N/A");
+  }[s] || "N/A");
 
   const getRecordStatusColor = (s: string) => ({
     on_time:                    "text-green-600",
@@ -493,7 +493,7 @@ export function AttendanceView({ onBack, allowedArea, onNavigateToPermission }: 
     permitted_late:             "text-indigo-600",
     permitted_absence:          "text-violet-600",
     permitted_early_departure:  "text-purple-600",
-  }[s] ?? "text-gray-600");
+  }[s] || "text-gray-600");
 
   const getRecordStatusText = (s: string) => ({
     on_time:                    "A Tiempo",
@@ -505,7 +505,7 @@ export function AttendanceView({ onBack, allowedArea, onNavigateToPermission }: 
     permitted_late:             "Permiso — Tardanza",
     permitted_absence:          "Permiso — Ausencia",
     permitted_early_departure:  "Permiso — Salida Temp.",
-  }[s] ?? "N/A");
+  }[s] || "N/A");
 
   const getRecordStatusIcon = (s: string) => ({
     on_time:                    <CheckCircle className="h-4 w-4 text-green-600" />,
@@ -517,7 +517,7 @@ export function AttendanceView({ onBack, allowedArea, onNavigateToPermission }: 
     permitted_late:             <ShieldCheck className="h-4 w-4 text-indigo-600" />,
     permitted_absence:          <ShieldCheck className="h-4 w-4 text-violet-600" />,
     permitted_early_departure:  <ShieldCheck className="h-4 w-4 text-purple-600" />,
-  }[s] ?? <AlertCircle className="h-4 w-4 text-gray-600" />);
+  }[s] || <AlertCircle className="h-4 w-4 text-gray-600" />);
 
   const getAttendanceColor = (rate: number) =>
     rate >= 90 ? "text-green-600" : rate >= 75 ? "text-blue-600" : rate >= 60 ? "text-yellow-600" : "text-red-600";
@@ -542,8 +542,8 @@ export function AttendanceView({ onBack, allowedArea, onNavigateToPermission }: 
   // ── Employee click — initialize modal dates from global period ────────────
   const handleEmployeeClick = async (employee: { name: string; key?: string }) => {
     const key      = resolveKey(employee);
-    const initFrom = effectiveDates.dateFrom ?? "";
-    const initTo   = effectiveDates.dateTo   ?? "";
+    const initFrom = effectiveDates.dateFrom ? effectiveDates.dateFrom : "";
+    const initTo   = effectiveDates.dateTo ? effectiveDates.dateTo : "";
     setActiveProfileKey(key);
     setModalFilters(DEFAULT_MODAL_FILTERS);
     setModalDateFrom(initFrom);
@@ -616,8 +616,8 @@ export function AttendanceView({ onBack, allowedArea, onNavigateToPermission }: 
 
   // ── Clear all modal filters ───────────────────────────────────────────────
   const handleClearModalFilters = async () => {
-    const from = effectiveDates.dateFrom ?? "";
-    const to   = effectiveDates.dateTo   ?? "";
+    const from = effectiveDates.dateFrom ? effectiveDates.dateFrom : "";
+    const to   = effectiveDates.dateTo ? effectiveDates.dateTo : "";
     setModalFilters(DEFAULT_MODAL_FILTERS);
     setModalDateFrom(from); setModalDateTo(to);     await refetch(DEFAULT_MODAL_FILTERS, from, to);
   };
@@ -626,8 +626,8 @@ export function AttendanceView({ onBack, allowedArea, onNavigateToPermission }: 
   const hasActiveFilters =
     modalFilters.status !== "all" || modalFilters.hasOvertime ||
     modalFilters.hasPermission    || modalFilters.dayOfWeek !== null ||
-    modalDateFrom !== (effectiveDates.dateFrom ?? "") ||
-    modalDateTo   !== (effectiveDates.dateTo   ?? "");
+    modalDateFrom !== (effectiveDates.dateFrom ? effectiveDates.dateFrom : "") ||
+    modalDateTo   !== (effectiveDates.dateTo ? effectiveDates.dateTo : "");
 
   // ── Employee list filtering ───────────────────────────────────────────────
   const filteredEmployees = useMemo(
@@ -1003,7 +1003,7 @@ export function AttendanceView({ onBack, allowedArea, onNavigateToPermission }: 
                     {cards.map((card) => {
                       const c = COLORS[card.color];
                       const data = selectedEmployee.weeklyDistribution[card.chartKey] as unknown as Record<string, number>;
-                      const max = Math.max(...DAYS.map(d => data[d.key] ?? 0), 1);
+                      const max = Math.max(...DAYS.map(d => data[d.key] || 0), 1);
                       const isCardActive = modalFilters.status === card.filterStatus;
                       return (
                         <div
@@ -1023,7 +1023,7 @@ export function AttendanceView({ onBack, allowedArea, onNavigateToPermission }: 
                           {/* Mini bar chart */}
                           <div className="flex items-end justify-between gap-1 mb-2">
                             {DAYS.map(({ key, label }) => {
-                              const val = data[key] ?? 0;
+                              const val = data[key] || 0;
                               const barH = val > 0 ? Math.max(Math.round((val / max) * 40), 4) : 0;
                               const isDayActive = isCardActive && modalFilters.dayOfWeek === key;
                               return (
@@ -1188,7 +1188,7 @@ export function AttendanceView({ onBack, allowedArea, onNavigateToPermission }: 
                               const effectiveStatus = getEffectiveStatus(record);
                               const overtime = getOvertimeHours(record.exitTime);
                               return (
-                                <TableRow key={record.id ?? `${record.date}-${record.status}`} className="hover:bg-blue-50/40 transition-colors">
+                                <TableRow key={record.id ? record.id : `${record.date}-${record.status}`} className="hover:bg-blue-50/40 transition-colors">
                                   {/* Date cell: day name (primary) + date badge */}
                                   <TableCell>
                                     <div className="flex flex-col gap-0.5">
