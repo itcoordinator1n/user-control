@@ -271,7 +271,7 @@ export function AttendanceView({ onBack, allowedArea, onNavigateToPermission }: 
 
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/requests/get-monthly-attendance?${params}`,
-        { headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.user.accessToken}` } }
+        { headers: { "Content-Type": "application/json", Authorization: `Bearer ${session && session.user ? session.user.accessToken : ""}` } }
       );
       if (!res.ok) throw new Error(res.statusText);
       const monthlyData: any[] = await res.json();
@@ -383,7 +383,7 @@ export function AttendanceView({ onBack, allowedArea, onNavigateToPermission }: 
 
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/attendance/employee-profile?${qp}`,
-        { headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.user.accessToken}` } }
+        { headers: { "Content-Type": "application/json", Authorization: `Bearer ${session && session.user ? session.user.accessToken : ""}` } }
       );
       if (!res.ok) throw new Error(res.statusText);
       const profile: EmployeeProfile = await res.json();
