@@ -367,7 +367,7 @@ export default function AttendanceManagement() {
                       </div>
                       <div className="text-right">
                         <div className="text-3xl font-bold text-blue-900">
-                          {Number(vacationDays).toLocaleString('es-ES', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                          {Number(vacationDays) % 1 === 0 ? Number(vacationDays) : Number(vacationDays).toFixed(2)}
                         </div>
                         <div className="text-sm text-blue-700">días</div>
                       </div>

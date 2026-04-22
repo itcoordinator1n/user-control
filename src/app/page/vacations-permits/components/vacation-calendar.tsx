@@ -168,11 +168,15 @@ export function VacationCalendar({ startDate, endDate, onDateRangeChange, availa
       <div className="space-y-2 text-xs sm:text-sm">
         <div className="flex justify-between">
           <span>Fecha inicio:</span>
-          <span className="text-blue-600 font-medium">{startDate ? startDate.toLocaleDateString("es-ES") : "No seleccionada"}</span>
+          <span className="text-blue-600 font-medium">
+            {startDate ? `${startDate.getDate().toString().padStart(2, '0')}/${(startDate.getMonth() + 1).toString().padStart(2, '0')}/${startDate.getFullYear()}` : "No seleccionada"}
+          </span>
         </div>
         <div className="flex justify-between">
           <span>Fecha fin:</span>
-          <span className="text-blue-600 font-medium">{endDate ? endDate.toLocaleDateString("es-ES") : "No seleccionada"}</span>
+          <span className="text-blue-600 font-medium">
+            {endDate ? `${endDate.getDate().toString().padStart(2, '0')}/${(endDate.getMonth() + 1).toString().padStart(2, '0')}/${endDate.getFullYear()}` : "No seleccionada"}
+          </span>
         </div>
         <div className="flex justify-between">
           <span>Días totales:</span>

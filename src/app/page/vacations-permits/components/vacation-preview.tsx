@@ -210,12 +210,7 @@ const handleSubmit = async () => {
                     <Calendar className="mr-2 h-4 w-4 text-green-600" />
                     <span className="font-medium">
                       {data.startDate
-                        ? data.startDate.toLocaleDateString("es-ES", {
-                            weekday: "long",
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                          })
+                        ? `${data.startDate.getDate().toString().padStart(2, '0')}/${(data.startDate.getMonth() + 1).toString().padStart(2, '0')}/${data.startDate.getFullYear()}`
                         : "No seleccionada"}
                     </span>
                   </div>
@@ -226,12 +221,7 @@ const handleSubmit = async () => {
                     <Calendar className="mr-2 h-4 w-4 text-red-600" />
                     <span className="font-medium">
                       {data.endDate
-                        ? data.endDate.toLocaleDateString("es-ES", {
-                            weekday: "long",
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                          })
+                        ? `${data.endDate.getDate().toString().padStart(2, '0')}/${(data.endDate.getMonth() + 1).toString().padStart(2, '0')}/${data.endDate.getFullYear()}`
                         : "No seleccionada"}
                     </span>
                   </div>
