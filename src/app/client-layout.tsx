@@ -78,8 +78,11 @@ export default function ClientLayout(
   },[status]);
 
   return (
-    <html lang="en">
-      <body>
+    <html lang="es" translate="no" suppressHydrationWarning>
+      <head>
+        <meta name="google" content="notranslate" />
+      </head>
+      <body suppressHydrationWarning>
 
         <PasswordChangeModal isOpen={open} setOpen={setOpen}/>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
