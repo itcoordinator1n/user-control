@@ -87,6 +87,44 @@ function calcVacDays(req: VacationRequest): { total: number; work: number } {
 }
 type Request = PermitRequest | VacationRequest;
 
+function VacationDaysInfo({ request }: { request: VacationRequest }) {
+  const { total, work } = calcVacDays(request)
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      {request.halfDay && (
+        <span className="bg-purple-100 text-purple-700 border border-purple-200 text-xs px-1.5 py-0.5 rounded font-medium">
+          ½ día
+        </span>
+      )}
+      {!request.halfDay && (
+        <span className="text-sm font-medium text-gray-900">{total} días</span>
+      )}
+      <span className="bg-blue-100 text-blue-700 text-xs px-1.5 py-0.5 rounded font-medium">
+        {work} lab.
+      </span>
+    </div>
+  )
+}
+
+function VacationDaysInfoMobile({ request }: { request: VacationRequest }) {
+  const { total, work } = calcVacDays(request)
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between text-sm">
+        <span className="text-gray-600">Días:</span>
+        <div className="flex items-center gap-1.5">
+          {request.halfDay && (
+            <span className="bg-purple-100 text-purple-700 border border-purple-200 text-[10px] px-1.5 py-0.5 rounded font-medium">
+              ½ día
+            </span>
+          )}
+          <span className="font-medium">{total} total / {work} laborables</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 interface RequestsTableProps {
   type: "permits" | "vacations"
   onRequestDeleted?: () => void
@@ -149,9 +187,11 @@ export function RequestsTable({ type, onRequestDeleted, canApprove = false, mode
       })
       .then((json: any) => {
         // Soporta formato nuevo { data, total } y formato anterior { permits, vacations }
-        const data: (PermitRequest | VacationRequest)[] =
-          json.data ?? (type === "permits" ? json.permits : json.vacations) ?? []
-        const total: number = json.total ?? data.length
+        let data = json.data ?? (type === "permits" ? json.permits : json.vacations) ?? []
+        if (!Array.isArray(data)) {
+          data = []
+        }
+        const total: number = json.total ?? data.length ?? 0
         setRequests(data)
         setTotalCount(total)
       })
@@ -160,7 +200,7 @@ export function RequestsTable({ type, onRequestDeleted, canApprove = false, mode
 
   const totalPages = Math.ceil(totalCount / itemsPerPage)
   // El servidor ya devuelve solo la página solicitada
-  const currentRequests = requests ?? []
+  const currentRequests = (Array.isArray(requests) ? requests : []).filter(Boolean)
 
   // Hay algún filtro activo (para distinguir "sin datos" de "sin resultados")
   const hasActiveFilters =
@@ -377,25 +417,9 @@ export function RequestsTable({ type, onRequestDeleted, canApprove = false, mode
                                     </p>
                                   )}
 
-                                  {type === "vacations" && (() => {
-                                    const vac = request as VacationRequest
-                                    const { total, work } = calcVacDays(vac)
-                                    return (
-                                      <div className="flex flex-wrap items-center gap-1.5">
-                                        {vac.halfDay && (
-                                          <span className="bg-purple-100 text-purple-700 border border-purple-200 text-xs px-1.5 py-0.5 rounded font-medium">
-                                            ½ día
-                                          </span>
-                                        )}
-                                        {!vac.halfDay && (
-                                          <span className="text-sm font-medium text-gray-900">{total} días</span>
-                                        )}
-                                        <span className="bg-blue-100 text-blue-700 text-xs px-1.5 py-0.5 rounded font-medium">
-                                          {work} lab.
-                                        </span>
-                                      </div>
-                                    )
-                                  })()}
+                                  {type === "vacations" && (
+                                    <VacationDaysInfo request={request as VacationRequest} />
+                                  )}
 
                                   {request.employeeComments && (
                                     <div className="comment-container rounded bg-gray-50 px-2 py-1 border border-gray-100">
@@ -507,25 +531,9 @@ export function RequestsTable({ type, onRequestDeleted, canApprove = false, mode
                                 </div>
                               )}
 
-                              {type === "vacations" && (() => {
-                                const vac = request as VacationRequest
-                                const { total, work } = calcVacDays(vac)
-                                return (
-                                  <div className="space-y-1.5">
-                                    <div className="flex items-center justify-between text-sm">
-                                      <span className="text-gray-600">Días:</span>
-                                      <div className="flex items-center gap-1.5">
-                                        {vac.halfDay && (
-                                          <span className="bg-purple-100 text-purple-700 border border-purple-200 text-[10px] px-1.5 py-0.5 rounded font-medium">
-                                            ½ día
-                                          </span>
-                                        )}
-                                        <span className="font-medium">{total} total / {work} laborables</span>
-                                      </div>
-                                    </div>
-                                  </div>
-                                )
-                              })()}
+                              {type === "vacations" && (
+                                <VacationDaysInfoMobile request={request as VacationRequest} />
+                              )}
                             </div>
 
                             {/* Supervisor / Empleado y Fecha */}
