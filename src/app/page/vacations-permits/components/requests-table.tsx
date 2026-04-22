@@ -66,12 +66,12 @@ function parseDateOnly(s: string): Date {
 }
 
 function calcVacDays(req: VacationRequest): { total: number; work: number } {
-  const startStr = req.startDateTime ?? req.startDate
-  const endStr   = req.endDateTime   ?? req.endDate
+  const startStr = req.startDateTime ? req.startDateTime : req.startDate
+  const endStr   = req.endDateTime ? req.endDateTime : req.endDate
   const start = parseDateOnly(startStr)
   const end   = parseDateOnly(endStr)
   if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-    return { total: req.days ?? 0, work: req.workDays ?? 0 }
+    return { total: req.days ? req.days : 0, work: req.workDays ? req.workDays : 0 }
   }
   const isSingleDay = start.getTime() === end.getTime()
   const multiplier  = req.halfDay && isSingleDay ? 0.5 : 1
@@ -151,7 +151,7 @@ export function RequestsTable({ type, onRequestDeleted, canApprove = false, mode
   const [debouncedFilters, setDebouncedFilters] = useState(filters)
   const [requests, setRequests] = useState<(PermitRequest | VacationRequest)[]>([])
   const [totalCount, setTotalCount] = useState(0)
-  const token = session?.user?.accessToken
+  const token = session && session.user ? session.user.accessToken : undefined
 
   // Debounce: aplica los filtros 400 ms después del último cambio
   useEffect(() => {
@@ -187,11 +187,12 @@ export function RequestsTable({ type, onRequestDeleted, canApprove = false, mode
       })
       .then((json: any) => {
         // Soporta formato nuevo { data, total } y formato anterior { permits, vacations }
-        let data = json.data ?? (type === "permits" ? json.permits : json.vacations) ?? []
+        const rawData = json.data ? json.data : (type === "permits" ? json.permits : json.vacations);
+        let data = rawData ? rawData : []
         if (!Array.isArray(data)) {
           data = []
         }
-        const total: number = json.total ?? data.length ?? 0
+        const total: number = json.total ? json.total : (data.length ? data.length : 0)
         setRequests(data)
         setTotalCount(total)
       })
@@ -224,7 +225,9 @@ export function RequestsTable({ type, onRequestDeleted, canApprove = false, mode
   setRequests(prev => prev.filter(req => req.id !== requestId))
   setTotalCount(prev => Math.max(0, prev - 1))
   setShowDetailsModal(false)
-  onRequestDeleted?.()
+  if (onRequestDeleted) {
+    onRequestDeleted()
+  }
 }
 
  const handleRequestProcessed = (requestId: string, newStatus: "aprobada" | "rechazada") => {

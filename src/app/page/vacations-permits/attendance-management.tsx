@@ -78,7 +78,7 @@ export default function AttendanceManagement() {
     const getData = async () => {
       try {
         if (status !== "authenticated") return;
-        const token = session?.user?.accessToken
+        const token = session && session.user ? session.user.accessToken : undefined;
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/permissions/vacation-days`, {
           method: "GET",
           headers: { Authorization: `Bearer ${token}` },

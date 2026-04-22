@@ -41,9 +41,9 @@ export default function ClientLayout(
     const getFlag = async ()=>{
       try {
         console.log("token:",session)
-        console.log("Permisos",session?.user?.permissions)
+        console.log("Permisos", session && session.user ? session.user.permissions : undefined)
         
-        if (!session?.user?.accessToken) {
+        if (!session || !session.user || !session.user.accessToken) {
           console.log("No access token available yet")
           return;
         }

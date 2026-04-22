@@ -57,11 +57,11 @@ export function VacationPreview({ open, onOpenChange, data, onSubmitSuccess }: V
   const { data: session, status } = useSession()
     useEffect(() => {
       // Asegúrate de que el token esté disponible
-      if (session?.user?.accessToken) {
+      if (session && session.user && session.user.accessToken) {
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/profile/profile_info`, {
           method: "GET",
           headers: {
-            Authorization: `Bearer ${session?.user?.accessToken}`,
+            Authorization: `Bearer ${session.user.accessToken}`,
           },
         })
           .then((res) => {
@@ -116,7 +116,7 @@ const handleSubmit = async () => {
         // link.click();
 
         try {
-          const token = session?.user?.accessToken;
+          const token = session && session.user ? session.user.accessToken : undefined;
 
           // const payload = {
           //   fechaInicio: data?.startDate?.toISOString().split("T")[0],
@@ -124,8 +124,8 @@ const handleSubmit = async () => {
           //   comentario: data?.comments ?? "",
           // };
           const payload = {
-            fechaInicio: data?.startDate?.toISOString().split('T')[0],
-            fechaFin: data?.endDate?.toISOString().split('T')[0],
+            fechaInicio: data && data.startDate ? data.startDate.toISOString().split('T')[0] : undefined,
+            fechaFin: data && data.endDate ? data.endDate.toISOString().split('T')[0] : undefined,
             comentario: data.comments,
             halfDay: data.halfDay 
           }
@@ -159,14 +159,16 @@ const handleSubmit = async () => {
           const result = await res.json();
           if (!res.ok) {
             setModalStatus("error")
-            console.error("Error al enviar la solicitud:", result?.error || result);
+            console.error("Error al enviar la solicitud:", (result && result.error) ? result.error : result);
             return;
           }
 
           console.log("Solicitud enviada:", result);
           setModalStatus("success")
           onOpenChange(false);
-          onSubmitSuccess?.();
+          if (onSubmitSuccess) {
+            onSubmitSuccess();
+          }
         } catch (err) {
           console.error("Error inesperado:", err);
         }
@@ -265,10 +267,10 @@ const handleSubmit = async () => {
                   <User className="h-6 w-6 text-blue-600" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900">{profile?.supervisorName}</h3>
-                  <p className="text-sm text-gray-600">{profile?.supervisorPosition}</p>
+                  <h3 className="font-semibold text-gray-900">{profile ? profile.supervisorName : ""}</h3>
+                  <p className="text-sm text-gray-600">{profile ? profile.supervisorPosition : ""}</p>
                   <Badge variant="secondary" className="mt-1">
-                    {profile?.supervisorArea}
+                    {profile ? profile.supervisorArea : ""}
                   </Badge>
                 </div>
               </div>
