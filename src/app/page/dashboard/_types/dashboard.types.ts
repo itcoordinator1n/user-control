@@ -194,7 +194,8 @@ export interface ScheduleException {
 export interface PayHoursException {
   id: number;
   date: string;          // "YYYY-MM-DD"
-  employeeId: number;    // FK al empleado (resuelto por backend)
+  employeeId?: number;   // FK al empleado (resuelto por backend)
+  employeeKey?: string;  // Identificador textual (EMP-001)
   employeeName: string;  // devuelto por el JOIN — solo lectura
   area: string;          // nombre del área
   reason: string;
