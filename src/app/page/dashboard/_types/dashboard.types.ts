@@ -159,4 +159,46 @@ export type PermissionsDataType = {
 
 // ─── Resumen principal (cards) ───────────────────────────────────────────────
 
-export type DashboardView = "attendance" | "vacations" | "permissions";
+export type DashboardView = "attendance" | "vacations" | "permissions" | "hr-admin";
+
+// ─── HR Admin ────────────────────────────────────────────────────────────────
+
+export interface AreaSchedule {
+  area: string;
+  startTime: string;   // "HH:mm" local
+  endTime: string;     // "HH:mm" local
+  graceMins: number;
+}
+
+export interface HolidayConfig {
+  id: number;
+  date: string;        // "YYYY-MM-DD"
+  name: string;
+  isNational: boolean;
+  areas: string[];     // empty = applies to all areas
+}
+
+/** A one-off override of entry/exit time for a specific date in an area. */
+export interface ScheduleException {
+  id: number;
+  area: string;
+  date: string;               // "YYYY-MM-DD"
+  entryTime: string | null;   // "HH:mm" — null = keep area default
+  exitTime: string | null;    // "HH:mm" — null = keep area default
+  reason: string;
+  status: "active" | "paused";
+  createdAt: string;
+  createdBy?: string;
+}
+
+export interface PayHoursException {
+  id: number;
+  date: string;          // "YYYY-MM-DD"
+  employeeId: number;    // FK al empleado (resuelto por backend)
+  employeeName: string;  // devuelto por el JOIN — solo lectura
+  area: string;          // nombre del área
+  reason: string;
+  status: "pending" | "approved" | "rejected";
+  approvedBy?: string;
+  createdAt: string;
+}

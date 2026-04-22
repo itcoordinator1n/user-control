@@ -12,6 +12,7 @@ import {
   Users,
   HandCoins,
   Ticket,
+  Factory,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -117,6 +118,14 @@ const sidebarNavigation: NavItem[] = [
     ],
   },
   {
+    title: "Producción",
+    icon: Factory,
+    id: "produccion",
+    subItems: [
+      { title: "Control de tiempos", url: "/page/produccion/control-tiempos", id: "produccion-tiempos" },
+    ],
+  },
+  {
     title: "Metricas",
     icon: BarChart3,
     id: "metricas",
@@ -142,6 +151,10 @@ const routePermission: Record<string, string> = {
   "/page/tech":            "TICKET:TECH",
   "/page/ticket-admin":    "TICKET:ADMIN",
   "/page/ticket-mgmt":     "TICKET:MGMT",
+  "/page/vacations-permits/application": "EMPLOYEE:PERMITS",
+
+  // Rutas de Produccion
+  "/page/produccion/control-tiempos": "PRODUCCION:TIEMPOS",
 };
 
 export function AppSidebar() {

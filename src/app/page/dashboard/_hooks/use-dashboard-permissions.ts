@@ -30,6 +30,8 @@ export function useDashboardPermissions() {
         return permissions.includes("dashboard:vacations:view");
       case "permissions":
         return permissions.includes("dashboard:permissions:view");
+      case "hr-admin":
+        return permissions.includes("dashboard:hr-admin:view");
       default:
         return false;
     }

@@ -77,7 +77,7 @@ function toLocalMinutes(timeHHmm: string | null): number | null {
   if (!timeHHmm) return null;
   const [h, m] = timeHHmm.split(":").map(Number);
   if (isNaN(h) || isNaN(m)) return null;
-  return (h - 6) * 60 + m;
+  return h * 60 + m; // times are already in local time
 }
 
 function isLateArrival(entryTime: string | null): boolean {
@@ -1159,8 +1159,8 @@ export function AttendanceView({ onBack, allowedArea, onNavigateToPermission }: 
                 </div>
 
                 {(() => {
-                  // "Con Permiso" is also filtered client-side so it works even before
-                  // the backend adds the permission JOIN to the employee-profile endpoint.
+                  // "Con Permiso" filtered client-side (backend JOIN pending).
+                  // Status filter is handled server-side by the backend.
                   const displayRecords = modalFilters.hasPermission
                     ? selectedEmployee.records.filter(r => r.permission != null)
                     : selectedEmployee.records;

@@ -30,6 +30,9 @@ const rules: Rule[] = [
 
   // Tickets — gerencia
   { pattern: /^\/page\/ticket-mgmt(?:\/.*)?$/, anyOf: ["TICKET:MGMT", "TICKET:ADMIN"] },
+
+  // Produccion
+  { pattern: /^\/page\/produccion(?:\/.*)?$/, anyOf: ["PRODUCCION:TIEMPOS", "PRODUCCION:REVISION"] },
 ];
 
 export async function middleware(req: NextRequest) {
@@ -47,6 +50,7 @@ export async function middleware(req: NextRequest) {
     '/page/tech',
     '/page/ticket-admin',
     '/page/ticket-mgmt',
+    '/page/produccion',
   ];
 
   const isPublic = (path: string) => publicRoutes.includes(path);

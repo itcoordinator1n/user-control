@@ -17,6 +17,7 @@ import {
   Plane,
   FileText,
   UserCheck,
+  Settings,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,6 +25,10 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 
 // ─── Lazy-loaded sub-views ───────────────────────────────────────────────────
+const HRAdminView = dynamic(
+  () => import("./_components/hr-admin/hr-admin-view").then((m) => m.HRAdminView),
+  { loading: () => <DashboardSkeleton />, ssr: false }
+);
 const AttendanceView = dynamic(
   () => import("./_components/attendance/attendance-view").then((m) => m.AttendanceView),
   { loading: () => <DashboardSkeleton />, ssr: false }
@@ -68,6 +73,10 @@ export default function AttendanceDashboard() {
         setShowPermissionDetail={() => setActiveView(null)}
       />
     );
+  }
+
+  if (activeView === "hr-admin") {
+    return <HRAdminView onBack={() => setActiveView(null)} />;
   }
 
   // ─── Summary (default view) ──────────────────────────────────────────────────
@@ -211,6 +220,28 @@ function DashboardSummary({ canView, isAreaRestricted, userArea, onNavigate }: S
                   <Badge variant="default" className="text-xs bg-purple-100 text-purple-800">
                     <TrendingDown className="h-3 w-3 mr-1" />
                     Ver detalle
+                  </Badge>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {canView("hr-admin") && (
+            <Card
+              className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105 border-2 hover:border-gray-300"
+              onClick={() => onNavigate("hr-admin")}
+            >
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-gray-600">Administración RR.HH.</CardTitle>
+                <Settings className="h-4 w-4 text-gray-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">Config</div>
+                <div className="flex items-center text-sm">
+                  <span className="text-gray-600 mr-2">Horarios · Festivos · Excepciones</span>
+                  <Badge variant="default" className="text-xs bg-gray-100 text-gray-800">
+                    <TrendingUp className="h-3 w-3 mr-1" />
+                    Administrar
                   </Badge>
                 </div>
               </CardContent>

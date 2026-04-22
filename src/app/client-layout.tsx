@@ -39,35 +39,39 @@ export default function ClientLayout(
   }
   useEffect(() => {
     const getFlag = async ()=>{
-      console.log("token:",session)
-      console.log("Permisos",session?.user?.permissions)
-      
-      if (!session?.user?.accessToken) {
-        console.log("No access token available yet")
-        return;
-      }
-
-      const decoded = jwtDecode(session.user.accessToken as string);
-      console.log("Payload del token:", decoded);
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/get-password-flag`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.user.accessToken}`,
-          // NO Content-Type: lo gestiona automáticamente FormData
+      try {
+        console.log("token:",session)
+        console.log("Permisos",session?.user?.permissions)
+        
+        if (!session?.user?.accessToken) {
+          console.log("No access token available yet")
+          return;
         }
-      })
-      
 
-      if (!res.ok) {
-        const err = await res.json()
-        console.error("Error al enviar solicitud:", err)
-        return
+        const decoded = jwtDecode(session.user.accessToken as string);
+        console.log("Payload del token:", decoded);
+        
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+        const res = await fetch(`${apiUrl}/api/auth/get-password-flag`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.user.accessToken}`,
+          }
+        })
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          console.warn("Error al enviar solicitud:", err)
+          return
+        }
+        const result = await res.json();
+        console.log("Bandera",result)
+        setOpen(result.changePassword)
+        console.log("Contraseña actualizada")
+      } catch (error) {
+        console.warn("No se pudo obtener el flag de contraseña, API no disponible:", error);
       }
-      const result = await res.json();
-      console.log("Bandera",result)
-      setOpen(result.changePassword)
-      console.log("Contrase;a actualizada")
     }
     
     getFlag()
