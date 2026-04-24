@@ -179,10 +179,8 @@ export async function exportControlToExcel(control: ProduccionControl) {
 
   const parseUTC = (isoStr: string) => {
     if (!isoStr) return new Date();
-    // Forzamos la resta de 6 horas para que el Excel coincida con la vista web
-    const d = new Date(isoStr.replace(" ", "T"));
-    d.setHours(d.getHours() - 6);
-    return d;
+    // Normalizar formato y dejar que el navegador maneje la zona horaria
+    return new Date(isoStr.replace(" ", "T"));
   };
 
   const renderedIds = new Set<string>();
