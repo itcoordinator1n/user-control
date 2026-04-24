@@ -338,7 +338,7 @@ export default function DetalleControlTiempos() {
                   {(() => {
                     let globalMs = 0;
                     const renderedIds = new Set<string>();
-                    const rows: JSX.Element[] = [];
+                    const rows = [];
 
                     // 1. Renderizar actividades del formato
                     FORMATO_ACTIVIDADES.forEach((item, i) => {
