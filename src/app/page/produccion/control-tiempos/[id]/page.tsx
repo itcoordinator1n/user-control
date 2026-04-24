@@ -43,10 +43,8 @@ const ACTIVIDADES = [
 // Ayudante para normalizar fechas del servidor (usualmente UTC) de forma robusta
 const parseISO = (s: string) => {
   if (!s) return new Date();
-  // Crear fecha y restar 6 horas manualmente para ajustar al horario local
-  const d = new Date(s.replace(" ", "T"));
-  d.setHours(d.getHours() - 6);
-  return d;
+  // Normalizar formato y dejar que el navegador maneje la zona horaria local
+  return new Date(s.replace(" ", "T"));
 };
 
 const TimerDisplay = ({ horaInicio }: { horaInicio: string }) => {

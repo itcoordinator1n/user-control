@@ -12,11 +12,8 @@ import { es } from "date-fns/locale";
 // Ayudante para normalizar fechas del servidor (usualmente UTC) de forma robusta
 const parseISO = (s: string) => {
   if (!s) return new Date();
-  if (s.includes("Z") || s.includes("+")) return new Date(s);
-  const iso = s.replace(" ", "T");
-  const d = new Date(iso);
-  d.setHours(d.getHours() - 6);
-  return d;
+  // Normalizar formato y dejar que el navegador maneje la zona horaria local
+  return new Date(s.replace(" ", "T"));
 };
 import { exportControlToExcel } from "@/lib/exportExcel";
 
