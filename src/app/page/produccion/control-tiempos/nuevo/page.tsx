@@ -69,30 +69,7 @@ const ACTIVIDADES = [
   "Tapar"
 ];
 
-// Ayudante para normalizar fechas del servidor (usualmente UTC) de forma robusta
-const parseISO = (s: string) => {
-  if (!s) return new Date();
-  if (s.includes("Z") || s.includes("+")) return new Date(s);
-  
-  let full = s;
-  if (!full.includes("-")) {
-    full = new Date().toISOString().split("T")[0] + " " + full;
-  }
-  
-  const parts = full.split(/[\sT]/);
-  const dateParts = parts[0].split("-");
-  const timeParts = parts[1].split(":");
-  
-  // Crear fecha interpretando los componentes como UTC
-  return new Date(Date.UTC(
-    parseInt(dateParts[0]),
-    parseInt(dateParts[1]) - 1,
-    parseInt(dateParts[2]),
-    parseInt(timeParts[0]),
-    parseInt(timeParts[1]),
-    timeParts[2] ? parseInt(timeParts[2].split(".")[0]) : 0
-  ));
-};
+
 
 // Componente Timer
 const TimerDisplay = ({ horaInicio }: { horaInicio: string }) => {
