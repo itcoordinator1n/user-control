@@ -30,12 +30,12 @@ export default function ControlTiemposPage() {
   };
 
   return (
-    <div className="container mx-auto py-6 max-w-[1400px]">
+    <div className="w-full px-4 md:px-6 lg:px-8 py-6">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
           Control de Tiempos
         </h1>
-        <p className="text-slate-500 mt-1">Gestión integral de ocupación, tiempos y auditorías de producción.</p>
+        <p className="text-sm md:text-base text-slate-500 mt-1">Gestión integral de ocupación, tiempos y auditorías de producción.</p>
       </div>
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
