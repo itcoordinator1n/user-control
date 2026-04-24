@@ -2,15 +2,27 @@
 
 import { useEffect, useState } from "react";
 import { getOcupacionGlobal, OcupacionGlobal } from "@/lib/services/produccion.service";
+import { useSession } from "next-auth/react";
 import { Factory, Clock, Users, RefreshCw, AlertCircle, Search } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
+
+// Ayudante para normalizar fechas del servidor (usualmente UTC) de forma robusta
+const parseISO = (s: string) => {
+  if (!s) return new Date();
+  if (s.includes("Z") || s.includes("+")) return new Date(s);
+  const iso = s.replace(" ", "T");
+  const d = new Date(iso);
+  // Ajuste manual de 6 horas para el servidor
+  d.setHours(d.getHours() - 6);
+  return d;
+};
 
 const TimerLive = ({ startTime }: { startTime: string }) => {
   const [time, setTime] = useState("");
 
   useEffect(() => {
-    const d = new Date(startTime);
+    const d = parseISO(startTime);
     const interval = setInterval(() => {
       setTime(formatDistanceToNow(d, { locale: es, includeSeconds: true }));
     }, 1000);
@@ -21,6 +33,7 @@ const TimerLive = ({ startTime }: { startTime: string }) => {
 };
 
 export default function TableroOcupacion() {
+  const { data: session } = useSession();
   const [ocupacion, setOcupacion] = useState<OcupacionGlobal[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
@@ -32,7 +45,7 @@ export default function TableroOcupacion() {
 
   const fetchData = async () => {
     try {
-      const data = await getOcupacionGlobal();
+      const data = await getOcupacionGlobal(session?.user?.accessToken);
       setOcupacion(data);
       setLastUpdate(new Date());
     } catch (e) {
@@ -44,10 +57,11 @@ export default function TableroOcupacion() {
 
   // Fetch initial data and set up polling
   useEffect(() => {
+    if (!session?.user?.accessToken) return; // Wait for session
     fetchData();
     const interval = setInterval(fetchData, 30000); // 30 seconds
     return () => clearInterval(interval);
-  }, []);
+  }, [session?.user?.accessToken]);
 
   const totalOcupados = ocupacion.reduce((acc, area) => acc + area.operarios.length, 0);
 

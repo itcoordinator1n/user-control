@@ -5,26 +5,42 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { PlusCircle, Search, FileSpreadsheet, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useSession } from "next-auth/react";
 import { getControlesTiempos, ProduccionControl } from "@/lib/services/produccion.service";
 import { exportControlToExcel } from "@/lib/exportExcel";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
+// Ayudante para normalizar fechas del servidor (usualmente UTC) de forma robusta
+const parseISO = (s: string) => {
+  if (!s) return new Date();
+  if (s.includes("Z") || s.includes("+")) return new Date(s);
+  const iso = s.replace(" ", "T");
+  const d = new Date(iso);
+  // Ajuste manual de 6 horas para el servidor
+  d.setHours(d.getHours() - 6);
+  return d;
+};
+
 export default function ControlTiemposHistory() {
   const router = useRouter();
+  const { data: session } = useSession();
   const [controles, setControles] = useState<ProduccionControl[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
+    if (!session?.user?.accessToken) return;
     fetchControles();
-  }, []);
+  }, [session?.user?.accessToken]);
 
   const fetchControles = async () => {
     setLoading(true);
-    const data = await getControlesTiempos();
-    setControles(data);
-    setLoading(false);
+    try {
+      const data = await getControlesTiempos(session?.user?.accessToken);
+      setControles(data);
+    } catch(e) { console.error(e); setControles([]); }
+    finally { setLoading(false); }
   };
 
   const filteredControles = controles.filter((c) => 
@@ -107,7 +123,20 @@ export default function ControlTiemposHistory() {
                     </td>
                     <td className="px-6 py-4 font-mono">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
-                        {control.total_horas.toFixed(2)} hrs
+                        {(() => {
+                          let totalMs = 0;
+                          control.actividades?.forEach(act => {
+                            act.intervalos?.forEach(int => {
+                              if (int.hora_inicio) {
+                                const st = parseISO(int.hora_inicio).getTime();
+                                const ed = int.hora_fin ? parseISO(int.hora_fin).getTime() : Date.now();
+                                totalMs += Math.max(0, ed - st);
+                              }
+                            });
+                          });
+                          const totalHours = totalMs / (1000 * 60 * 60);
+                          return totalHours.toFixed(2);
+                        })()} hrs
                       </span>
                     </td>
                     <td className="px-6 py-4">
@@ -118,8 +147,18 @@ export default function ControlTiemposHistory() {
                         </span>
                       )}
                       {control.estado === 'FINALIZADO' && (
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
-                          Finalizado
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300">
+                          Finalizado (Pend. Revisión)
+                        </span>
+                      )}
+                      {control.estado === 'REVISADO' && (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
+                          Validado
+                        </span>
+                      )}
+                      {control.estado === 'APROBADO' && (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
+                          Aprobado
                         </span>
                       )}
                     </td>

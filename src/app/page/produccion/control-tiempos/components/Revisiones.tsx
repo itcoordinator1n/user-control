@@ -4,25 +4,40 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Search, Eye, CheckCircle, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useSession } from "next-auth/react";
 import { getRevisionesPendientes, ProduccionControl } from "@/lib/services/produccion.service";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+
+// Ayudante para normalizar fechas del servidor (usualmente UTC) de forma robusta
+const parseISO = (s: string) => {
+  if (!s) return new Date();
+  if (s.includes("Z") || s.includes("+")) return new Date(s);
+  const iso = s.replace(" ", "T");
+  const d = new Date(iso);
+  d.setHours(d.getHours() - 6);
+  return d;
+};
 import { exportControlToExcel } from "@/lib/exportExcel";
 
 export default function RevisionesProduccion() {
+  const { data: session } = useSession();
   const [controles, setControles] = useState<ProduccionControl[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
+    if (!session?.user?.accessToken) return;
     fetchRevisiones();
-  }, []);
+  }, [session?.user?.accessToken]);
 
   const fetchRevisiones = async () => {
     setLoading(true);
-    const data = await getRevisionesPendientes();
-    setControles(data);
-    setLoading(false);
+    try {
+      const data = await getRevisionesPendientes(session?.user?.accessToken);
+      setControles(data);
+    } catch(e) { console.error(e); setControles([]); }
+    finally { setLoading(false); }
   };
 
   const filteredControles = controles.filter((c) => 
@@ -93,7 +108,20 @@ export default function RevisionesProduccion() {
                     </td>
                     <td className="px-6 py-4 font-mono">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
-                        {control.total_horas.toFixed(2)} hrs
+                        {(() => {
+                          let totalMs = 0;
+                          control.actividades?.forEach(act => {
+                            act.intervalos?.forEach(int => {
+                              if (int.hora_inicio) {
+                                const st = parseISO(int.hora_inicio).getTime();
+                                const ed = int.hora_fin ? parseISO(int.hora_fin).getTime() : Date.now();
+                                totalMs += Math.max(0, ed - st);
+                              }
+                            });
+                          });
+                          const totalHours = totalMs / (1000 * 60 * 60);
+                          return totalHours.toFixed(2);
+                        })()} hrs
                       </span>
                     </td>
                     <td className="px-6 py-4">
@@ -103,8 +131,8 @@ export default function RevisionesProduccion() {
                         </span>
                       )}
                       {control.estado === 'REVISADO' && (
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
-                          Revisado (Pendiente Aprobar)
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
+                          Validado
                         </span>
                       )}
                     </td>

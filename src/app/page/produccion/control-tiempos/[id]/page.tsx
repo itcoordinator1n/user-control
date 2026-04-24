@@ -3,10 +3,13 @@
 import { useState, useEffect, Fragment } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { PlusCircle, StopCircle, Play, Save, Clock, ArrowLeft, Loader2, Trash2, Eye, CheckCircle, ShieldCheck, LayoutGrid, Table, List } from "lucide-react";
+import { PlusCircle, StopCircle, Play, Save, Clock, ArrowLeft, Loader2, Trash2, Eye, CheckCircle, ShieldCheck, LayoutGrid, Table, List, Search, PlayCircle } from "lucide-react";
+import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Combobox } from "@/components/ui/combobox";
 import {
   Select,
   SelectContent,
@@ -22,6 +25,7 @@ import {
   terminarIntervalo,
   deleteActividad,
   deleteIntervalo,
+  updateControlTiempos,
   marcarComoRevisado,
   ProduccionControl,
   ProduccionActividad,
@@ -36,19 +40,33 @@ const ACTIVIDADES = [
   "Sellar Corrugado y Estibar", "Tapar"
 ];
 
+// Ayudante para normalizar fechas del servidor (usualmente UTC) de forma robusta
+const parseISO = (s: string) => {
+  if (!s) return new Date();
+  // Crear fecha y restar 6 horas manualmente para ajustar al horario local
+  const d = new Date(s.replace(" ", "T"));
+  d.setHours(d.getHours() - 6);
+  return d;
+};
+
 const TimerDisplay = ({ horaInicio }: { horaInicio: string }) => {
   const [timeStr, setTimeStr] = useState("00:00:00");
 
   useEffect(() => {
-    const start = new Date(horaInicio).getTime();
-    const interval = setInterval(() => {
-      const now = new Date().getTime();
+    const startDate = parseISO(horaInicio);
+    const start = startDate.getTime();
+    
+    const update = () => {
+      const now = Date.now();
       const diff = Math.max(0, now - start);
-      const hours = Math.floor(diff / (1000 * 60 * 60));
-      const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      const secs = Math.floor((diff % (1000 * 60)) / 1000);
+      const hours = Math.floor(diff / 3600000);
+      const mins = Math.floor((diff % 3600000) / 60000);
+      const secs = Math.floor((diff % 60000) / 1000);
       setTimeStr(`${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`);
-    }, 1000);
+    };
+
+    update();
+    const interval = setInterval(update, 1000);
     return () => clearInterval(interval);
   }, [horaInicio]);
 
@@ -78,11 +96,12 @@ export default function DetalleControlTiempos() {
 
   useEffect(() => {
     const load = async () => {
+      if (!session?.user?.accessToken) return;
       setLoading(true);
       try {
         const [emp, ctrl] = await Promise.all([
-          getEmpleadosProduccion(),
-          getControlTiemposById(id) // This currently returns null if not mocked properly, but let's assume it works or we fetch from list
+          getEmpleadosProduccion(session?.user?.accessToken),
+          getControlTiemposById(id, session?.user?.accessToken) // This currently returns null if not mocked properly, but let's assume it works or we fetch from list
         ]);
         setEmpleados(emp);
         if (ctrl) {
@@ -91,7 +110,7 @@ export default function DetalleControlTiempos() {
           // If the mock getControlTiemposById doesn't return the mock data we added, 
           // let's just fetch all and find it (for the sake of the mock working)
           const { getControlesTiempos } = await import("@/lib/services/produccion.service");
-          const all = await getControlesTiempos();
+          const all = await getControlesTiempos(session?.user?.accessToken);
           const found = all.find(c => c.id === id);
           if (found) setControl(found);
           else {
@@ -117,8 +136,8 @@ export default function DetalleControlTiempos() {
     setIsAddingAct(true);
     try {
       const operario = empleados.find(e => e.int_id_empleado === nuevaAct.fk_operario);
-      const act = await addActividad({ fk_control: control!.id, ...nuevaAct, operario_nombre: operario?.nombre_completo || "Operario" });
-      const intervalo = await iniciarIntervalo(act.id);
+      const act = await addActividad({ fk_control: control!.id, ...nuevaAct, operario_nombre: operario?.nombre_completo || "Operario" }, session?.user?.accessToken);
+      const intervalo = await iniciarIntervalo(act.id, session?.user?.accessToken);
       act.intervalos = [intervalo];
       setControl(prev => prev ? { ...prev, actividades: [...prev.actividades, act] } : prev);
       setIsModalOpen(false);
@@ -133,7 +152,7 @@ export default function DetalleControlTiempos() {
 
   const handleTerminarAccion = async (actividadId: string, intervaloId: string) => {
     try {
-      const intervaloFin = await terminarIntervalo(intervaloId);
+      const intervaloFin = await terminarIntervalo(intervaloId, session?.user?.accessToken);
       setControl(prev => {
         if (!prev) return prev;
         return { ...prev, actividades: prev.actividades.map(a => a.id === actividadId ? { ...a, intervalos: a.intervalos.map(i => i.id === intervaloId ? { ...i, hora_fin: intervaloFin.hora_fin } : i) } : a) };
@@ -148,7 +167,7 @@ export default function DetalleControlTiempos() {
     const isRunningElsewhere = control?.actividades.some(a => a.fk_operario === actividad.fk_operario && a.intervalos.some(i => i.hora_fin === null));
     if (isRunningElsewhere) return alert("Este operario ya tiene un cronómetro activo. Deténgalo primero.");
     try {
-      const nuevoIntervalo = await iniciarIntervalo(actividad.id);
+      const nuevoIntervalo = await iniciarIntervalo(actividad.id, session?.user?.accessToken);
       setControl(prev => prev ? { ...prev, actividades: prev.actividades.map(a => a.id === actividad.id ? { ...a, intervalos: [...a.intervalos, nuevoIntervalo] } : a) } : prev);
     } catch (e) {
       console.error(e);
@@ -159,7 +178,7 @@ export default function DetalleControlTiempos() {
   const handleEliminarActividad = async (actividadId: string) => {
     if (!confirm("¿Está seguro de eliminar esta actividad y todos sus tiempos registrados?")) return;
     try {
-      const ok = await deleteActividad(actividadId);
+      const ok = await deleteActividad(actividadId, session?.user?.accessToken);
       if (ok) {
         setControl(prev => prev ? { ...prev, actividades: prev.actividades.filter(a => a.id !== actividadId) } : prev);
         if (resumenActividad?.id === actividadId) setResumenActividad(null);
@@ -170,7 +189,7 @@ export default function DetalleControlTiempos() {
   const handleEliminarIntervalo = async (actividadId: string, intervaloId: string) => {
     if (!confirm("¿Está seguro de eliminar este intervalo de tiempo?")) return;
     try {
-      const ok = await deleteIntervalo(intervaloId);
+      const ok = await deleteIntervalo(intervaloId, session?.user?.accessToken);
       if (ok) {
         setControl(prev => prev ? { ...prev, actividades: prev.actividades.map(a => a.id === actividadId ? { ...a, intervalos: a.intervalos.filter(i => i.id !== intervaloId) } : a) } : prev);
         setResumenActividad(prev => (prev && prev.id === actividadId) ? { ...prev, intervalos: prev.intervalos.filter(i => i.id !== intervaloId) } : prev);
@@ -184,8 +203,7 @@ export default function DetalleControlTiempos() {
     const obs = prompt("Observaciones opcionales para este registro:", control?.observaciones || "");
     if (obs === null) return; // cancelled
     try {
-      const { updateControlTiempos } = await import("@/lib/services/produccion.service");
-      await updateControlTiempos(control!.id, obs, "FINALIZADO");
+      await updateControlTiempos(control!.id, obs, "FINALIZADO", session?.user?.accessToken);
       router.push("/page/produccion/control-tiempos");
     } catch (e) { console.error(e); alert("Error al finalizar"); }
   };
@@ -193,7 +211,7 @@ export default function DetalleControlTiempos() {
   const handleMarcarRevisado = async () => {
     if (!confirm("¿Confirma que ha revisado este control de tiempos?")) return;
     try {
-      const ok = await marcarComoRevisado(control!.id, currentUserId);
+      const ok = await marcarComoRevisado(control!.id, currentUserId, session?.user?.accessToken);
       if (ok) {
         setControl(prev => prev ? { ...prev, estado: "REVISADO", revisado_por: currentUserId, revisado_por_nombre: session?.user?.name || "Jefe de Manufactura" } : prev);
         alert("Marcado como revisado exitosamente");
@@ -319,18 +337,23 @@ export default function DetalleControlTiempos() {
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {(() => {
                     let globalMs = 0;
-                    return FORMATO_ACTIVIDADES.map((item, i) => {
+                    const renderedIds = new Set<string>();
+                    const rows: JSX.Element[] = [];
+
+                    // 1. Renderizar actividades del formato
+                    FORMATO_ACTIVIDADES.forEach((item, i) => {
                       if (item.tipo === "header") {
-                        return (
-                          <tr key={i} className="bg-slate-50 dark:bg-slate-800/40">
+                        rows.push(
+                          <tr key={`h-${i}`} className="bg-slate-50 dark:bg-slate-800/40">
                             <td className="px-4 py-2 font-bold text-slate-800 dark:text-slate-200 uppercase" colSpan={totalCols}>{item.label}</td>
                           </tr>
                         );
                       } else if (item.tipo === "actividad") {
-                        const matchedAct = control.actividades.find(a => a.actividad_nombre === item.label);
-                        if (!matchedAct) {
-                          return (
-                            <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50">
+                        const matchingActs = control.actividades.filter(a => a.actividad_nombre === item.label);
+                        
+                        if (matchingActs.length === 0) {
+                          rows.push(
+                            <tr key={`empty-${i}`} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50">
                               <td className="px-4 py-2 text-slate-600 dark:text-slate-400 border-r border-slate-100 dark:border-slate-800">{item.label}</td>
                               <td className="px-4 py-2 border-r border-slate-100 dark:border-slate-800"></td>
                               {intervalIndices.map(idx => (
@@ -342,12 +365,82 @@ export default function DetalleControlTiempos() {
                               <td className="px-4 py-2 border-l border-slate-100 dark:border-slate-800"></td>
                             </tr>
                           );
+                        } else {
+                          matchingActs.forEach((matchedAct, mIdx) => {
+                            renderedIds.add(matchedAct.id);
+                            let rowTotalMs = 0;
+                            rows.push(
+                              <tr key={`${matchedAct.id}-${i}`} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50">
+                                <td className="px-4 py-2 text-slate-700 dark:text-slate-300 font-medium border-r border-slate-100 dark:border-slate-800">{item.label}</td>
+                                <td className="px-4 py-2 text-center text-slate-700 dark:text-slate-300 border-r border-slate-100 dark:border-slate-800">{matchedAct.operario_nombre}</td>
+                                {intervalIndices.map((idx) => {
+                                  const interval = matchedAct.intervalos[idx];
+                                  if (!interval || !interval.hora_inicio) return (
+                                    <Fragment key={`empty-${idx}`}>
+                                      <td className={`px-2 py-2 ${idx > 0 ? 'border-l border-slate-100 dark:border-slate-800' : ''}`}></td>
+                                      <td className="px-2 py-2"></td>
+                                    </Fragment>
+                                  );
+                                  
+                                  const st = parseISO(interval.hora_inicio);
+                                  const ed = interval.hora_fin ? parseISO(interval.hora_fin) : null;
+                                  if (ed) {
+                                    const diffMs = ed.getTime() - st.getTime();
+                                    rowTotalMs += Math.max(0, diffMs);
+                                  }
+                                  return (
+                                    <Fragment key={`int-${idx}`}>
+                                      <td className={`px-2 py-2 text-center text-slate-600 dark:text-slate-400 ${idx > 0 ? 'border-l border-slate-100 dark:border-slate-800' : ''}`}>{st.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
+                                      <td className="px-2 py-2 text-center text-slate-600 dark:text-slate-400">
+                                        {ed ? (
+                                          ed.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+                                        ) : (
+                                          <div className="flex flex-col items-center leading-tight">
+                                            <span className="text-amber-500 animate-pulse">...</span>
+                                            {!isReadonly && (
+                                              <Button 
+                                                size="sm"
+                                                onClick={() => handleTerminarAccion(matchedAct.id, interval.id)}
+                                                className="h-6 px-2 text-[9px] bg-amber-500 hover:bg-amber-600 text-white font-bold uppercase mt-1 shadow-sm"
+                                              >
+                                                Finalizar
+                                              </Button>
+                                            )}
+                                          </div>
+                                        )}
+                                      </td>
+                                    </Fragment>
+                                  );
+                                })}
+                                <td className="px-4 py-2 text-center font-mono font-medium text-slate-800 dark:text-slate-200 border-l border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/20">
+                                  {(() => {
+                                    globalMs += rowTotalMs;
+                                    if (rowTotalMs === 0) return "";
+                                    const h = Math.floor(rowTotalMs / (1000 * 60 * 60));
+                                    const m = Math.floor((rowTotalMs % (1000 * 60 * 60)) / (1000 * 60));
+                                    return `${h}:${m.toString().padStart(2, '0')}`;
+                                  })()}
+                                </td>
+                              </tr>
+                            );
+                          });
                         }
+                      }
+                    });
 
+                    // 2. Renderizar actividades "sueltas" (que no están en el formato)
+                    const leftovers = control.actividades.filter(a => !renderedIds.has(a.id));
+                    if (leftovers.length > 0) {
+                      rows.push(
+                        <tr key="extra-h" className="bg-slate-100 dark:bg-slate-700/50">
+                          <td className="px-4 py-2 font-bold text-slate-800 dark:text-slate-200 uppercase" colSpan={totalCols}>Otras Actividades</td>
+                        </tr>
+                      );
+                      leftovers.forEach((matchedAct, lIdx) => {
                         let rowTotalMs = 0;
-                        return (
-                          <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50">
-                            <td className="px-4 py-2 text-slate-700 dark:text-slate-300 font-medium border-r border-slate-100 dark:border-slate-800">{item.label}</td>
+                        rows.push(
+                          <tr key={`extra-${matchedAct.id}`} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50">
+                            <td className="px-4 py-2 text-slate-700 dark:text-slate-300 font-medium border-r border-slate-100 dark:border-slate-800">{matchedAct.actividad_nombre}</td>
                             <td className="px-4 py-2 text-center text-slate-700 dark:text-slate-300 border-r border-slate-100 dark:border-slate-800">{matchedAct.operario_nombre}</td>
                             {intervalIndices.map((idx) => {
                               const interval = matchedAct.intervalos[idx];
@@ -358,8 +451,8 @@ export default function DetalleControlTiempos() {
                                 </Fragment>
                               );
                               
-                              const st = new Date(interval.hora_inicio);
-                              const ed = interval.hora_fin ? new Date(interval.hora_fin) : null;
+                              const st = parseISO(interval.hora_inicio);
+                              const ed = interval.hora_fin ? parseISO(interval.hora_fin) : null;
                               if (ed) {
                                 const diffMs = ed.getTime() - st.getTime();
                                 rowTotalMs += Math.max(0, diffMs);
@@ -399,9 +492,10 @@ export default function DetalleControlTiempos() {
                             </td>
                           </tr>
                         );
-                      }
-                      return null;
-                    });
+                      });
+                    }
+
+                    return rows;
                   })()}
                 </tbody>
               </table>
@@ -515,14 +609,14 @@ export default function DetalleControlTiempos() {
                       <div className="p-4 flex-1">
                         <div className="space-y-3 mb-6">
                           {act.intervalos.map((interval, idx) => (
-                            <div key={interval.id} className="flex items-center justify-between text-sm">
-                              <span className="text-slate-500 dark:text-slate-400">Int. {idx + 1}</span>
-                              <div className="flex items-center gap-2 font-mono">
-                                <span>{new Date(interval.hora_inicio).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                                <span className="text-slate-400">-</span>
-                                <span>{interval.hora_fin ? new Date(interval.hora_fin).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '...'}</span>
+                              <div key={interval.id} className="flex items-center justify-between text-sm">
+                                <span className="text-slate-500 dark:text-slate-400">Int. {idx + 1}</span>
+                                <div className="flex items-center gap-2 font-mono">
+                                  <span>{parseISO(interval.hora_inicio).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                                  <span className="text-slate-400">-</span>
+                                  <span>{interval.hora_fin ? parseISO(interval.hora_fin).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '...'}</span>
+                                </div>
                               </div>
-                            </div>
                           ))}
                         </div>
                       </div>
@@ -614,23 +708,24 @@ export default function DetalleControlTiempos() {
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label>Actividad a realizar</Label>
-              <Select onValueChange={(val) => setNuevaAct(prev => ({...prev, actividad_nombre: val}))}>
-                <SelectTrigger><SelectValue placeholder="Seleccione una actividad" /></SelectTrigger>
-                <SelectContent className="max-h-[300px]">
-                  {ACTIVIDADES.map(act => <SelectItem key={act} value={act}>{act}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <Combobox 
+                options={ACTIVIDADES.map(act => ({ value: act, label: act }))}
+                value={nuevaAct.actividad_nombre}
+                onValueChange={(val) => setNuevaAct(prev => ({...prev, actividad_nombre: val}))}
+                placeholder="Seleccione una actividad"
+                searchPlaceholder="Buscar actividad..."
+              />
             </div>
             <div className="grid gap-2">
               <Label>Operario</Label>
-              <Select onValueChange={(val) => setNuevaAct(prev => ({...prev, fk_operario: parseInt(val)}))}>
-                <SelectTrigger><SelectValue placeholder="Seleccione un empleado" /></SelectTrigger>
-                <SelectContent>
-                  {empleadosDisponibles.length > 0 ? (
-                    empleadosDisponibles.map(e => <SelectItem key={e.int_id_empleado} value={e.int_id_empleado.toString()}>{e.nombre_completo}</SelectItem>)
-                  ) : <div className="p-2 text-sm text-center text-slate-500">Todos ocupados</div>}
-                </SelectContent>
-              </Select>
+              <Combobox 
+                options={empleadosDisponibles.map(e => ({ value: e.int_id_empleado.toString(), label: e.nombre_completo }))}
+                value={nuevaAct.fk_operario ? nuevaAct.fk_operario.toString() : ""}
+                onValueChange={(val) => setNuevaAct(prev => ({...prev, fk_operario: parseInt(val)}))}
+                placeholder="Seleccione un empleado"
+                searchPlaceholder="Buscar operario..."
+                emptyMessage={empleadosDisponibles.length === 0 ? "Todos ocupados" : "No se encontraron resultados"}
+              />
             </div>
           </div>
           <DialogFooter>
@@ -666,8 +761,8 @@ export default function DetalleControlTiempos() {
                   <tbody className="divide-y">
                     {resumenActividad.intervalos.map((intervalo, index) => {
                       const hasEnded = !!intervalo.hora_fin;
-                      const d1 = new Date(intervalo.hora_inicio);
-                      const d2 = hasEnded ? new Date(intervalo.hora_fin!) : new Date();
+                      const d1 = parseISO(intervalo.hora_inicio);
+                      const d2 = hasEnded ? parseISO(intervalo.hora_fin!) : new Date();
                       const diffMs = Math.max(0, d2.getTime() - d1.getTime());
                       const hours = Math.floor(diffMs / (1000 * 60 * 60));
                       const mins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
