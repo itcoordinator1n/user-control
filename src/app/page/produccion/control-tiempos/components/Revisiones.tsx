@@ -64,12 +64,12 @@ export default function RevisionesProduccion() {
           <table className="w-full text-sm text-left">
             <thead className="text-xs text-slate-500 dark:text-slate-400 uppercase bg-slate-50 dark:bg-slate-800/50">
               <tr>
-                <th className="px-6 py-4 font-semibold">Fecha</th>
-                <th className="px-6 py-4 font-semibold">Producto</th>
-                <th className="px-6 py-4 font-semibold">Lote / OP</th>
-                <th className="px-6 py-4 font-semibold">Total Horas</th>
-                <th className="px-6 py-4 font-semibold">Estado</th>
-                <th className="px-6 py-4 font-semibold text-right">Acciones</th>
+                <th className="px-4 md:px-6 py-4 font-semibold whitespace-nowrap">Fecha</th>
+                <th className="px-4 md:px-6 py-4 font-semibold whitespace-nowrap">Producto</th>
+                <th className="px-4 md:px-6 py-4 font-semibold whitespace-nowrap">Lote / OP</th>
+                <th className="px-4 md:px-6 py-4 font-semibold whitespace-nowrap">Total Horas</th>
+                <th className="px-4 md:px-6 py-4 font-semibold whitespace-nowrap">Estado</th>
+                <th className="px-4 md:px-6 py-4 font-semibold text-right">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
@@ -91,19 +91,19 @@ export default function RevisionesProduccion() {
               ) : (
                 filteredControles.map((control) => (
                   <tr key={control.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
-                    <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">
+                    <td className="px-4 md:px-6 py-4 font-medium text-slate-900 dark:text-white whitespace-nowrap">
                       {format(new Date(control.fecha), "dd MMM yyyy", { locale: es })}
                     </td>
-                    <td className="px-6 py-4 text-slate-600 dark:text-slate-300">
+                    <td className="px-4 md:px-6 py-4 text-slate-600 dark:text-slate-300 min-w-[150px]">
                       {control.producto_nombre}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 md:px-6 py-4 whitespace-nowrap">
                       <div className="flex flex-col">
                         <span className="font-medium text-slate-900 dark:text-white">L: {control.n_lote}</span>
                         <span className="text-xs text-slate-500">OP: {control.op}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 font-mono">
+                    <td className="px-4 md:px-6 py-4 font-mono whitespace-nowrap">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
                         {(() => {
                           let totalMs = 0;
@@ -121,7 +121,7 @@ export default function RevisionesProduccion() {
                         })()} hrs
                       </span>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 md:px-6 py-4 whitespace-nowrap">
                       {control.estado === 'FINALIZADO' && (
                         <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
                           Pendiente Revisión

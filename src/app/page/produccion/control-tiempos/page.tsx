@@ -39,14 +39,14 @@ export default function ControlTiemposPage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-        <TabsList className="mb-6 grid w-full grid-cols-3 max-w-2xl">
-          <TabsTrigger value="tablero">
+        <TabsList className="mb-6 flex w-full h-auto p-1 bg-slate-100 dark:bg-slate-800 overflow-x-auto overflow-y-hidden lg:grid lg:grid-cols-3 max-w-2xl no-scrollbar whitespace-nowrap justify-start lg:justify-center">
+          <TabsTrigger value="tablero" className="px-4 py-2 text-sm lg:text-base">
             Tablero de Ocupación
           </TabsTrigger>
-          <TabsTrigger value="historial">
+          <TabsTrigger value="historial" className="px-4 py-2 text-sm lg:text-base">
             Historial de Registros
           </TabsTrigger>
-          <TabsTrigger value="revisiones">
+          <TabsTrigger value="revisiones" className="px-4 py-2 text-sm lg:text-base">
             Revisiones Pendientes
           </TabsTrigger>
         </TabsList>
