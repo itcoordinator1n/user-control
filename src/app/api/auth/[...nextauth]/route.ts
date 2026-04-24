@@ -70,21 +70,32 @@ const handler = NextAuth({
       }
 
       if (token.accessToken) {
-        const payload: Pay = jwtDecode(token.accessToken as string);
-
-        token.permissions = payload?.permissions ?? [];
-        token.area = payload?.area ?? null;
-        token.idEmployee = payload?.idEmployee ?? null;
+        try {
+          const payload: Pay = jwtDecode(token.accessToken as string);
+          token.permissions = payload?.permissions ?? [];
+          token.area = payload?.area ?? null;
+          token.idEmployee = payload?.idEmployee ?? null;
+          // Asignar nombre y email desde el token para el avatar
+          if (payload.name) token.name = payload.name;
+          if (payload.email) token.email = payload.email;
+          if (payload.id) token.id = payload.id.toString();
+        } catch (error) {
+          console.error("Error decoding JWT in callback:", error);
+        }
       }
 
       return token;
     },
     async session({ session, token }) {
-      if (session) {
+      if (session?.user) {
         session.user.accessToken = token.accessToken as string;
         session.user.permissions = (token.permissions as string[]) || [];
         session.user.area = (token.area as { name: string; color?: string } | null) ?? null;
         session.user.idEmployee = (token.idEmployee as string | number | undefined) ?? undefined;
+        // Propagar nombre y email a la sesión
+        session.user.name = token.name;
+        session.user.email = token.email;
+        session.user.id = token.id as string;
       }
       return session;
     },
