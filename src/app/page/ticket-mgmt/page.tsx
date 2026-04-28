@@ -38,29 +38,24 @@ const PRIORITY_COLORS: Record<string, string> = {
 
 const STATUS_COLORS = ['#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f43f5e'];
 
-function KpiCard({
-  icon: Icon,
-  label,
-  value,
-  sub,
-  colorClass,
-}: {
+function KpiCard(props: {
   icon: React.ElementType;
   label: string;
   value: string | number;
   sub?: string;
   colorClass: string;
 }) {
+  const Icon = props.icon;
   return (
     <Card>
       <CardContent className="p-4">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-xs text-muted-foreground">{label}</p>
-            <p className="text-2xl font-bold mt-1">{value}</p>
-            {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
+            <p className="text-xs text-muted-foreground">{props.label}</p>
+            <p className="text-2xl font-bold mt-1">{props.value}</p>
+            {props.sub && <p className="text-xs text-muted-foreground mt-0.5">{props.sub}</p>}
           </div>
-          <div className={`rounded-lg p-2 ${colorClass}`}>
+          <div className={`rounded-lg p-2 ${props.colorClass}`}>
             <Icon className="h-5 w-5 text-white" />
           </div>
         </div>
@@ -69,7 +64,7 @@ function KpiCard({
   );
 }
 
-function DateFilter({ from, to, onChange }: {
+function DateFilter(props: {
   from: string; to: string;
   onChange: (from: string, to: string) => void;
 }) {
@@ -81,7 +76,8 @@ function DateFilter({ from, to, onChange }: {
   const today = new Date();
   return (
     <div className="flex gap-2 flex-wrap">
-      {presets.map(({ label, days }) => {
+      {presets.map((preset) => {
+        const { label, days } = preset;
         const f = new Date(today);
         f.setDate(f.getDate() - days);
         const fStr = f.toISOString().split('T')[0];
@@ -90,8 +86,8 @@ function DateFilter({ from, to, onChange }: {
           <Button
             key={days}
             size="sm"
-            variant={from === fStr && to === tStr ? 'default' : 'outline'}
-            onClick={() => onChange(fStr, tStr)}
+            variant={props.from === fStr && props.to === tStr ? 'default' : 'outline'}
+            onClick={() => props.onChange(fStr, tStr)}
           >
             {label}
           </Button>
@@ -100,6 +96,11 @@ function DateFilter({ from, to, onChange }: {
     </div>
   );
 }
+
+const formatPieLabel = (props: any) => {
+  if (!props) return '';
+  return `${props.status} ${(props.percent * 100).toFixed(0)}%`;
+};
 
 export default function TicketMgmtPage() {
   const today = new Date().toISOString().split('T')[0];
@@ -124,7 +125,7 @@ export default function TicketMgmtPage() {
       {/* KPI cards */}
       {isLoading ? (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-28" />)}
+          {Array.from({ length: 6 }).map((item, i) => <Skeleton key={i} className="h-28" />)}
         </div>
       ) : data?.summary ? (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -185,10 +186,10 @@ export default function TicketMgmtPage() {
                     cx="50%"
                     cy="50%"
                     outerRadius={80}
-                    label={({ status, percent }) => `${status} ${(percent * 100).toFixed(0)}%`}
+                    label={formatPieLabel}
                     labelLine={false}
                   >
-                    {(data?.by_status ?? []).map((_, i) => (
+                    {(data?.by_status ?? []).map((entry, i) => (
                       <Cell key={i} fill={STATUS_COLORS[i % STATUS_COLORS.length]} />
                     ))}
                   </Pie>

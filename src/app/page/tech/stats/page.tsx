@@ -67,6 +67,19 @@ function KpiCard({ icon: Icon, label, value, colorClass }: {
   );
 }
 
+const formatPieLabel = (props: any) => {
+  if (!props) return '';
+  return `${props.label} ${(props.percent * 100).toFixed(0)}%`;
+};
+
+const formatBarTooltip = (v: number, n: string) => {
+  return n === 'focus_hours' ? [`${v}h`, 'Foco'] : [v, n];
+};
+
+const formatYAxisTick = (v: any) => {
+  return `${v}h`;
+};
+
 export default function TechStatsPage() {
   const { data: session } = useSession();
   const userId = (session?.user as unknown as { id?: string })?.id ?? '';
@@ -114,7 +127,8 @@ export default function TechStatsPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          {presets.map(({ label, days }) => {
+          {presets.map((preset) => {
+            const { label, days } = preset;
             const f = new Date(Date.now() - days * 86400000).toISOString().split('T')[0];
             return (
               <Button
@@ -163,12 +177,8 @@ export default function TechStatsPage() {
                 <BarChart data={dailyFormatted}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                   <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                  <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}h`} />
-                  <Tooltip
-                    formatter={(v: number, n: string) =>
-                      n === 'focus_hours' ? [`${v}h`, 'Foco'] : [v, n]
-                    }
-                  />
+                  <YAxis tick={{ fontSize: 11 }} tickFormatter={formatYAxisTick} />
+                  <Tooltip formatter={formatBarTooltip} />
                   <Bar dataKey="focus_hours" name="Foco" fill="#6366f1" radius={[2, 2, 0, 0]} />
                   <Bar dataKey="tickets_resolved" name="Resueltos" fill="#22c55e" radius={[2, 2, 0, 0]} />
                 </BarChart>
@@ -189,7 +199,7 @@ export default function TechStatsPage() {
               <ResponsiveContainer width="100%" height={200}>
                 <PieChart>
                   <Pie data={byReasonFormatted} dataKey="count" nameKey="label" cx="50%" cy="50%" outerRadius={80}
-                    label={({ label, percent }) => `${label} ${(percent * 100).toFixed(0)}%`} labelLine={false}
+                    label={formatPieLabel} labelLine={false}
                   >
                     {byReasonFormatted.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                   </Pie>
