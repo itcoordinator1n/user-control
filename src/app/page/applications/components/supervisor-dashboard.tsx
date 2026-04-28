@@ -259,11 +259,11 @@ export default function SupervisorDashboard() {
 
   const getStatusBadge = (status: string) => {
     const configs: Record<string, string> = { 
-      Pendiente: "bg-yellow-100 text-yellow-800", 
-      Aprobada: "bg-green-100 text-green-800", 
-      Rechazada: "bg-red-100 text-red-800" 
+      Pendiente: "bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300 hover:bg-amber-100", 
+      Aprobada: "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300 hover:bg-emerald-100", 
+      Rechazada: "bg-destructive/10 text-destructive dark:bg-destructive/20 dark:text-red-300 hover:bg-destructive/10" 
     };
-    return <Badge className={configs[status] || "bg-gray-100"}>{status === "Aprobada" ? "Aprobado" : status}</Badge>;
+    return <Badge variant="outline" className={`border-0 font-semibold ${configs[status] || "bg-muted text-muted-foreground"}`}>{status === "Aprobada" ? "Aprobado" : status}</Badge>;
   };
 
   const paginationPages = useMemo(() => {
@@ -274,18 +274,19 @@ export default function SupervisorDashboard() {
   }, [totalPages, currentPage]);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
+    <div className="min-h-screen bg-background transition-colors duration-300 p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <h1 className="text-2xl font-bold text-gray-900">Gestión de Solicitudes</h1>
-          <Button onClick={handleExport} disabled={isExporting} className="bg-blue-600">
+          <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">Gestión de Solicitudes</h1>
+          <Button onClick={handleExport} disabled={isExporting} className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-md transition-all hover:-translate-y-0.5">
             {isExporting ? "Generando..." : "Exportar Excel"}
           </Button>
         </div>
 
-        <Card>
-          <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2"><Filter className="h-5 w-5" /> Filtros</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
+        <Card className="relative overflow-hidden transition-all duration-300 hover:shadow-xl dark:hover:shadow-primary/5 dark:bg-slate-900/60 dark:backdrop-blur-xl dark:border-slate-800/60 border border-slate-200">
+          <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 rounded-full bg-primary/5 blur-[4rem] pointer-events-none" />
+          <CardHeader className="pb-3 relative z-10"><CardTitle className="flex items-center gap-2 text-foreground"><Filter className="h-5 w-5 text-primary" /> Filtros</CardTitle></CardHeader>
+          <CardContent className="space-y-4 relative z-10">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label>Tipo de solicitud</Label>
@@ -340,12 +341,12 @@ export default function SupervisorDashboard() {
 
               <div className="space-y-2">
                 <Label>Desde</Label>
-                <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-full h-10 px-3 rounded-md border text-sm" />
+                <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors" />
               </div>
 
               <div className="space-y-2">
                 <Label>Hasta</Label>
-                <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-full h-10 px-3 rounded-md border text-sm" />
+                <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors" />
               </div>
             </div>
 
@@ -359,9 +360,10 @@ export default function SupervisorDashboard() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader><CardTitle>Solicitudes recibidas</CardTitle></CardHeader>
-          <CardContent>
+        <Card className="relative overflow-hidden transition-all duration-300 hover:shadow-xl dark:hover:shadow-primary/5 dark:bg-slate-900/60 dark:backdrop-blur-xl dark:border-slate-800/60 border border-slate-200">
+          <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-64 h-64 rounded-full bg-primary/5 blur-[4rem] pointer-events-none" />
+          <CardHeader className="relative z-10"><CardTitle className="text-foreground">Solicitudes recibidas</CardTitle></CardHeader>
+          <CardContent className="relative z-10">
             <div className="hidden md:block overflow-x-auto">
               <Table>
                 <TableHeader>
@@ -369,10 +371,10 @@ export default function SupervisorDashboard() {
                 </TableHeader>
                 <TableBody>
                   {requests.map((r) => (
-                    <TableRow key={r.id} className="cursor-pointer hover:bg-gray-50" onClick={() => { setSelectedRequest(r); setSupervisorComments(r.comments || ""); setIsDetailOpen(true); }}>
-                      <TableCell>{r.employeeName}</TableCell>
-                      <TableCell>{TYPE_LABELS[getRequestSubtype(r)] || r.type}</TableCell>
-                      <TableCell>{r.submittedDate}</TableCell>
+                    <TableRow key={r.id} className="cursor-pointer transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted" onClick={() => { setSelectedRequest(r); setSupervisorComments(r.comments || ""); setIsDetailOpen(true); }}>
+                      <TableCell className="font-medium">{r.employeeName}</TableCell>
+                      <TableCell className="text-muted-foreground">{TYPE_LABELS[getRequestSubtype(r)] || r.type}</TableCell>
+                      <TableCell className="text-muted-foreground">{r.submittedDate}</TableCell>
                       <TableCell>{getStatusBadge(r.status)}</TableCell>
                     </TableRow>
                   ))}
@@ -381,10 +383,9 @@ export default function SupervisorDashboard() {
             </div>
             <div className="md:hidden space-y-4">
               {requests.map((r) => (
-                <div key={r.id} className="bg-white border rounded-lg p-4" onClick={() => { setSelectedRequest(r); setIsDetailOpen(true); }}>
-                  <div className="flex justify-between font-bold mb-2"><span>{r.id}</span>{getStatusBadge(r.status)}</div>
-                  <div className="text-sm font-medium">{r.employeeName}</div>
-                  <div className="text-xs text-gray-500 mt-1">{TYPE_LABELS[getRequestSubtype(r)]}</div>
+                <div key={r.id} className="bg-card text-card-foreground border border-border rounded-lg p-4 transition-all hover:shadow-md dark:hover:bg-slate-800/50 cursor-pointer" onClick={() => { setSelectedRequest(r); setIsDetailOpen(true); }}>
+                  <div className="flex justify-between items-center font-bold mb-2"><span className="text-sm truncate mr-2">{r.employeeName}</span>{getStatusBadge(r.status)}</div>
+                  <div className="text-xs text-muted-foreground mt-2 font-medium">{TYPE_LABELS[getRequestSubtype(r)]} • {r.submittedDate}</div>
                 </div>
               ))}
             </div>

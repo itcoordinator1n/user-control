@@ -122,25 +122,25 @@ export default function AttendanceManagement() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="container mx-auto p-0 sm:p-4">
-        <h1 className="mb-6 mt-4 ml-4 sm:ml-0 text-2xl font-bold text-blue-900">Gestión de Asistencia</h1>
+    <div className="min-h-screen bg-background transition-colors duration-300">
+      <div className="container mx-auto p-0 sm:p-4 lg:p-8">
+        <h1 className="mb-6 mt-4 ml-4 sm:ml-0 text-3xl font-extrabold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">Gestión de Asistencia</h1>
 
         <Tabs defaultValue="permisos" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 bg-white">
-            <TabsTrigger value="permisos" className="data-[state=active]:bg-blue-500 data-[state=active]:text-white">
+          <TabsList className="grid w-full grid-cols-2 bg-muted/50 p-1 rounded-lg">
+            <TabsTrigger value="permisos" className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm transition-all rounded-md">
               <span>Permisos</span>
             </TabsTrigger>
-            <TabsTrigger value="vacaciones" className="data-[state=active]:bg-blue-400 data-[state=active]:text-white">
+            <TabsTrigger value="vacaciones" className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm transition-all rounded-md">
               <span>Vacaciones</span>
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="permisos" className="mt-6">
             <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
-              <Card className="border-0 sm:border shadow-none sm:shadow-sm">
-                <CardHeader className="bg-blue-50 border-b">
-                  <CardTitle className="text-blue-900">Solicitud de Permiso</CardTitle>
+              <Card className="border-0 sm:border border-border/50 shadow-none sm:shadow-sm overflow-hidden bg-card text-card-foreground transition-all duration-300 hover:shadow-md dark:hover:shadow-primary/5">
+                <CardHeader className="bg-muted/50 border-b border-border/50 pb-4">
+                  <CardTitle className="text-foreground">Solicitud de Permiso</CardTitle>
                   <CardDescription>Completa el formulario para solicitar un permiso laboral</CardDescription>
                 </CardHeader>
                 <CardContent className="p-4 sm:p-6 space-y-6">
@@ -153,8 +153,8 @@ export default function AttendanceManagement() {
                         onClick={() => handlePermitTypeChange("permiso")}
                         className={`flex-1 py-2 px-3 text-sm font-medium rounded-md border transition-colors ${
                           permitType === "permiso"
-                            ? "bg-blue-600 text-white border-blue-600"
-                            : "bg-white text-gray-600 border-gray-300 hover:border-blue-400"
+                            ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                            : "bg-background text-muted-foreground border-border hover:border-primary/50 hover:bg-muted/50"
                         }`}
                       >
                         Permiso laboral
@@ -164,8 +164,8 @@ export default function AttendanceManagement() {
                         onClick={() => handlePermitTypeChange("incapacidad")}
                         className={`flex-1 py-2 px-3 text-sm font-medium rounded-md border transition-colors ${
                           permitType === "incapacidad"
-                            ? "bg-orange-500 text-white border-orange-500"
-                            : "bg-white text-gray-600 border-gray-300 hover:border-orange-400"
+                            ? "bg-amber-600 text-white border-amber-600 shadow-sm dark:bg-amber-700 dark:border-amber-700"
+                            : "bg-background text-muted-foreground border-border hover:border-amber-500/50 hover:bg-muted/50"
                         }`}
                       >
                         Incapacidad médica
@@ -175,8 +175,8 @@ export default function AttendanceManagement() {
                         onClick={() => handlePermitTypeChange("duelo")}
                         className={`flex-1 py-2 px-3 text-sm font-medium rounded-md border transition-colors ${
                           permitType === "duelo"
-                            ? "bg-gray-700 text-white border-gray-700"
-                            : "bg-white text-gray-600 border-gray-300 hover:border-gray-500"
+                            ? "bg-slate-700 text-white border-slate-700 shadow-sm dark:bg-slate-600 dark:border-slate-600"
+                            : "bg-background text-muted-foreground border-border hover:border-slate-500/50 hover:bg-muted/50"
                         }`}
                       >
                         Permiso por duelo
@@ -204,22 +204,22 @@ export default function AttendanceManagement() {
                       </div>
 
                       {startTime && endTime && !isTimeRangeValid() && (
-                        <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 p-2 rounded-md">
+                        <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 p-3 rounded-md border border-destructive/20 font-medium">
                           <AlertCircle className="h-4 w-4" />
                           La hora de finalización debe ser posterior a la de inicio.
                         </div>
                       )}
 
-                      <label className="flex items-center gap-3 cursor-pointer select-none w-fit">
+                      <label className="flex items-center gap-3 cursor-pointer select-none w-fit group">
                         <input
                           type="checkbox"
                           checked={esCompensatorio}
                           onChange={(e) => setEsCompensatorio(e.target.checked)}
-                          className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          className="w-4 h-4 rounded border-border text-primary focus:ring-primary bg-background"
                         />
-                        <span className="text-sm text-gray-700">
+                        <span className="text-sm text-foreground group-hover:text-primary transition-colors">
                           Tiempo compensatorio
-                          <span className="ml-1 text-xs text-gray-400">(trabajé fuera de horario)</span>
+                          <span className="ml-1 text-xs text-muted-foreground">(trabajé fuera de horario)</span>
                         </span>
                       </label>
                     </>
@@ -228,8 +228,8 @@ export default function AttendanceManagement() {
                   {/* Campos para Permiso por duelo */}
                   {permitType === "duelo" && (
                     <>
-                      <div className="flex items-start gap-2 bg-gray-50 border border-gray-200 rounded-md px-3 py-2 text-sm text-gray-600">
-                        <span>🕊️</span>
+                      <div className="flex items-start gap-3 bg-muted/50 border border-border/50 rounded-md px-4 py-3 text-sm text-muted-foreground">
+                        <span className="text-xl leading-none">🕊️</span>
                         <span>Lamentamos tu pérdida. Completa el período de ausencia y el motivo para procesar tu solicitud.</span>
                       </div>
 
@@ -245,7 +245,7 @@ export default function AttendanceManagement() {
                       </div>
 
                       {incapacidadStartDate && incapacidadEndDate && incapacidadEndDate < incapacidadStartDate && (
-                        <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 p-2 rounded-md">
+                        <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 p-3 rounded-md border border-destructive/20 font-medium">
                           <AlertCircle className="h-4 w-4" />
                           La fecha de fin debe ser igual o posterior a la fecha de inicio.
                         </div>
@@ -254,7 +254,7 @@ export default function AttendanceManagement() {
                       <div className="space-y-2">
                         <Label className="text-sm font-medium">
                           Documento de respaldo
-                          <span className="ml-1 text-xs text-gray-400">(opcional — acta o esquela)</span>
+                          <span className="ml-1 text-xs text-muted-foreground">(opcional — acta o esquela)</span>
                         </Label>
                         <FileUpload onFilesChange={setFiles} maxFiles={1} />
                       </div>
@@ -276,7 +276,7 @@ export default function AttendanceManagement() {
                       </div>
 
                       {incapacidadStartDate && incapacidadEndDate && incapacidadEndDate < incapacidadStartDate && (
-                        <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 p-2 rounded-md">
+                        <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 p-3 rounded-md border border-destructive/20 font-medium">
                           <AlertCircle className="h-4 w-4" />
                           La fecha de fin debe ser igual o posterior a la fecha de inicio.
                         </div>
@@ -284,11 +284,11 @@ export default function AttendanceManagement() {
 
                       <div className="space-y-2">
                         <Label className="text-sm font-medium">
-                          Comprobante médico <span className="text-red-500">*</span>
+                          Comprobante médico <span className="text-destructive">*</span>
                         </Label>
                         <FileUpload onFilesChange={setFiles} maxFiles={1} />
                         {files.length === 0 && (
-                          <p className="text-xs text-orange-600">Adjunta el documento de incapacidad para continuar.</p>
+                          <p className="text-xs text-amber-600 dark:text-amber-500">Adjunta el documento de incapacidad para continuar.</p>
                         )}
                       </div>
                     </>
@@ -301,7 +301,7 @@ export default function AttendanceManagement() {
                       placeholder="Título breve del motivo"
                       value={reason}
                       onChange={(e) => setReason(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
                     />
                   </div>
 
@@ -311,11 +311,11 @@ export default function AttendanceManagement() {
                   </div>
 
                   <div className="flex gap-3 pt-4">
-                    <Button variant="outline" className="flex-1">Cancelar</Button>
+                    <Button variant="outline" className="flex-1 transition-all">Cancelar</Button>
                     <Button 
                       onClick={() => setShowPermitPreview(true)} 
                       disabled={!canShowPermitPreview}
-                      className={`flex-1 ${canShowPermitPreview ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-300'}`}
+                      className={`flex-1 transition-all shadow-sm ${canShowPermitPreview ? 'bg-primary hover:bg-primary/90 text-primary-foreground' : ''}`}
                     >
                       Vista previa
                     </Button>
@@ -324,24 +324,24 @@ export default function AttendanceManagement() {
               </Card>
 
               {/* Panel de Información */}
-              <Card>
-                <CardHeader className="bg-blue-50 border-b">
-                  <CardTitle className="text-blue-900 flex items-center">
-                    <Info className="mr-2 h-5 w-5" /> Información
+              <Card className="border-0 sm:border border-border/50 shadow-none sm:shadow-sm overflow-hidden bg-card text-card-foreground">
+                <CardHeader className="bg-muted/50 border-b border-border/50 pb-4">
+                  <CardTitle className="text-foreground flex items-center">
+                    <Info className="mr-2 h-5 w-5 text-primary" /> Información
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-6 space-y-4">
                   <div>
-                    <h4 className="text-sm font-medium text-gray-900 mb-2">Tipos de permisos:</h4>
-                    <ul className="text-xs text-gray-600 space-y-1">
+                    <h4 className="text-sm font-medium text-foreground mb-2">Tipos de permisos:</h4>
+                    <ul className="text-xs text-muted-foreground space-y-1">
                       <li>• Médicos (Adjuntar cita o incapacidad)</li>
                       <li>• Personales / Académicos / Familiares</li>
                       <li>• Tiempo compensatorio</li>
                     </ul>
                   </div>
                   <div>
-                    <h4 className="text-sm font-medium text-gray-900 mb-2">Proceso:</h4>
-                    <p className="text-xs text-gray-600">Sujeto a aprobación por parte de su jefe inmediato.</p>
+                    <h4 className="text-sm font-medium text-foreground mb-2">Proceso:</h4>
+                    <p className="text-xs text-muted-foreground">Sujeto a aprobación por parte de su jefe inmediato.</p>
                   </div>
                 </CardContent>
               </Card>
@@ -351,25 +351,25 @@ export default function AttendanceManagement() {
             </div>
           </TabsContent>
 
-          {/* Tab de Vacaciones - Mantenido similar pero con validación de botón */}
+          {/* Tab de Vacaciones */}
           <TabsContent value="vacaciones" className="mt-6">
             <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
-              <Card className="border-0 sm:border shadow-none sm:shadow-sm">
-                <CardHeader className="bg-blue-50 border-b">
-                  <CardTitle className="text-blue-900">Solicitud de Vacaciones</CardTitle>
+              <Card className="border-0 sm:border border-border/50 shadow-none sm:shadow-sm overflow-hidden bg-card text-card-foreground transition-all duration-300 hover:shadow-md dark:hover:shadow-primary/5">
+                <CardHeader className="bg-muted/50 border-b border-border/50 pb-4">
+                  <CardTitle className="text-foreground">Solicitud de Vacaciones</CardTitle>
                 </CardHeader>
                 <CardContent className="p-4 sm:p-6 space-y-6">
-                  <div className="bg-blue-50 p-4 rounded-lg">
+                  <div className="bg-primary/5 border border-primary/10 p-5 rounded-lg">
                     <div className="flex justify-between items-center">
                       <div>
-                        <h3 className="font-medium text-blue-900">Días disponibles</h3>
-                        <p className="text-sm text-blue-700">Período 2025-2026</p>
+                        <h3 className="font-semibold text-foreground">Días disponibles</h3>
+                        <p className="text-sm text-primary">Período 2025-2026</p>
                       </div>
                       <div className="text-right">
-                        <div className="text-3xl font-bold text-blue-900">
+                        <div className="text-3xl font-extrabold text-foreground tracking-tight">
                           {Number(vacationDays) % 1 === 0 ? Number(vacationDays) : Number(vacationDays).toFixed(2)}
                         </div>
-                        <div className="text-sm text-blue-700">días</div>
+                        <div className="text-sm font-medium text-primary">días</div>
                       </div>
                     </div>
                   </div>
@@ -389,11 +389,11 @@ export default function AttendanceManagement() {
                   </div>
 
                   <div className="flex gap-3 pt-4">
-                    <Button variant="outline" className="flex-1">Cancelar</Button>
+                    <Button variant="outline" className="flex-1 transition-all">Cancelar</Button>
                     <Button
                       onClick={() => setShowVacationPreview(true)}
                       disabled={!vacationStartDate}
-                      className={`flex-1 ${vacationStartDate ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-300'}`}
+                      className={`flex-1 transition-all shadow-sm ${vacationStartDate ? 'bg-primary hover:bg-primary/90 text-primary-foreground' : ''}`}
                     >
                       Vista previa
                     </Button>
@@ -401,14 +401,14 @@ export default function AttendanceManagement() {
                 </CardContent>
               </Card>
               
-              <Card>
-                <CardHeader className="bg-blue-50 border-b">
-                  <CardTitle className="text-blue-900 flex items-center">
-                    <Info className="mr-2 h-5 w-5" /> Importante
+              <Card className="border-0 sm:border border-border/50 shadow-none sm:shadow-sm overflow-hidden bg-card text-card-foreground">
+                <CardHeader className="bg-muted/50 border-b border-border/50 pb-4">
+                  <CardTitle className="text-foreground flex items-center">
+                    <Info className="mr-2 h-5 w-5 text-primary" /> Importante
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-6">
-                  <p className="text-xs text-gray-600">
+                  <p className="text-xs text-muted-foreground leading-relaxed">
                     Los días solicitados serán descontados de su saldo tras la aprobación de la jefatura y Recursos Humanos.
                   </p>
                 </CardContent>

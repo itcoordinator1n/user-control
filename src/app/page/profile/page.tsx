@@ -217,24 +217,27 @@ useEffect(() => {
     1
   )}%)`;
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="container mx-auto p-4">
-        <h1 className="mb-6 text-2xl font-bold text-center sm:text-left">
+    <div className="min-h-screen bg-background transition-colors duration-300">
+      <div className="container mx-auto p-4 lg:p-8">
+        <h1 className="mb-6 text-3xl font-extrabold tracking-tight text-center sm:text-left bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
           Sistema de Asistencia Laboral
         </h1>
 
         <div className="grid gap-6 md:grid-cols-[1fr_2fr]">
           {/* Perfil del Usuario */}
-          <Card className="p-6">
-            <div className="flex flex-col items-center space-y-4">
-              <Avatar className="h-24 w-24">
+          <Card className="p-6 relative overflow-hidden transition-all duration-300 hover:shadow-xl dark:hover:shadow-primary/5 dark:bg-slate-900/60 dark:backdrop-blur-xl dark:border-slate-800/60 border border-slate-200">
+            {/* Ambient Glow */}
+            <div className="absolute -top-20 -left-20 w-40 h-40 rounded-full bg-primary/20 blur-[3rem] pointer-events-none" />
+            
+            <div className="flex flex-col items-center space-y-4 relative z-10">
+              <Avatar className="h-28 w-28 ring-4 ring-primary/20 ring-offset-2 ring-offset-background transition-transform duration-300 hover:scale-105">
                 <AvatarImage
                   src={undefined}
                   alt="Foto de perfil"
                 />
-                <AvatarFallback>{userName}</AvatarFallback>
+                <AvatarFallback className="text-2xl font-bold bg-primary/10 text-primary">{userName}</AvatarFallback>
               </Avatar>
-              <div className="text-center">
+              <div className="text-center space-y-1">
                 <h2 className="text-xl font-bold">{profile?.name}</h2>
                 <p className="text-muted-foreground">{profile?.position}</p>
               </div>
@@ -254,8 +257,8 @@ useEffect(() => {
                 </div>
               </div>
 
-              <div className="w-full pt-4">
-                <Button variant="outline" className="w-full" size="sm">
+              <div className="w-full pt-6">
+                <Button variant="outline" className="w-full transition-all duration-300 hover:bg-primary hover:text-primary-foreground hover:shadow-md hover:-translate-y-0.5 border-primary/20" size="sm">
                   <HelpCircle className="mr-2 h-4 w-4" />
                   Ayuda y Soporte
                 </Button>
@@ -264,63 +267,77 @@ useEffect(() => {
           </Card>
 
           {/* Pantalla de Marcaje */}
-          <Card className="p-6">
-            <Tabs defaultValue="marcaje" className="w-full">
+          <Card className="p-6 relative overflow-hidden transition-all duration-300 hover:shadow-xl dark:hover:shadow-primary/5 dark:bg-slate-900/60 dark:backdrop-blur-xl dark:border-slate-800/60 border border-slate-200">
+            {/* Ambient Glow */}
+            <div className="absolute top-1/2 right-0 -mr-20 -mt-20 w-64 h-64 rounded-full bg-primary/10 blur-[4rem] pointer-events-none" />
+            
+            <Tabs defaultValue="marcaje" className="w-full relative z-10">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="marcaje">Marcaje</TabsTrigger>
                 <TabsTrigger value="historial">Historial</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="marcaje" className="space-y-6 pt-4">
-                <div className="flex flex-col items-center space-y-2 ">
+              <TabsContent value="marcaje" className="space-y-8 pt-6">
+                <div className="flex flex-col items-center space-y-4">
                   <div className="text-center">
-                    <h3 className="text-lg font-medium">
+                    <h3 className="text-lg font-medium text-muted-foreground uppercase tracking-wider text-sm">
                       Tiempo Acumulado Hoy
                     </h3>
-                    <div className="mt-2 text-4xl font-bold">
+                    <div className="mt-4">
                       {loading ? (
-                        <div className="animate-pulse">Cargando...</div>
+                        <div className="animate-pulse text-4xl font-mono text-muted">--:--:--</div>
                       ) : error ? (
-                        <div className="text-red-500 text-base">{error}</div>
+                        <div className="text-destructive text-base font-medium">{error}</div>
                       ) : (
                         <TimeDisplay time={formatTime(accumulatedTime)} />
                       )}
                     </div>
                   </div>
 
-                  <div className="w-full pt-2">
-                    <div className="flex justify-between text-sm mb-1">
+                  <div className="w-full pt-6 px-2">
+                    <div className="flex justify-between text-xs font-medium text-muted-foreground mb-2 px-1">
                       <span>0h</span>
                       <span>4:30h</span>
                       <span>9h</span>
                     </div>
-                    <Progress value={progressPercentage} className="h-3" />
-                    <p className="mt-1 text-xs text-center text-muted-foreground">
+                    <div className="relative">
+                      <Progress value={progressPercentage} className="h-3 bg-secondary overflow-hidden shadow-inner" />
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent w-full h-full animate-[shimmer_2s_infinite] pointer-events-none opacity-50" style={{ transform: 'translateX(-100%)' }} />
+                    </div>
+                    <p className="mt-3 text-xs text-center font-medium text-muted-foreground">
                       {loading ? "Calculando..." : progressText}
                     </p>
                   </div>
                 </div>
 
-                <div className="flex flex-col space-y-4 pt-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium">Entrada</p>
-                      <p className="text-lg">
+                <div className="flex flex-col space-y-6 pt-6">
+                  <div className="grid grid-cols-2 gap-6 bg-slate-100 dark:bg-slate-800/50 p-6 rounded-2xl border border-slate-200 dark:border-slate-700/50">
+                    <div className="space-y-2 flex flex-col items-center justify-center text-center">
+                      <div className="p-2 bg-background rounded-full shadow-sm mb-1">
+                        <Clock className="w-5 h-5 text-primary" />
+                      </div>
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Entrada</p>
+                      <p className="text-xl font-bold tracking-tight">
                         {entryDate?.toLocaleTimeString("en-US", {
                           hour: "numeric",
                           minute: "numeric",
                           hour12: true,
-                        }) || "00:00 AM"}
+                        }) || "--:--"}
                       </p>
                     </div>
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium">Hora de Salida</p>
-                      <p className="text-lg">
+                    <div className="space-y-2 flex flex-col items-center justify-center text-center relative">
+                      {/* Separator Line */}
+                      <div className="absolute left-0 top-1/4 bottom-1/4 w-px bg-slate-300 dark:bg-slate-700"></div>
+                      <div className="p-2 bg-background rounded-full shadow-sm mb-1">
+                        <Clock className="w-5 h-5 text-muted-foreground" />
+                      </div>
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Hora de Salida</p>
+                      <p className="text-xl font-bold tracking-tight">
                         {exitDate?.toLocaleTimeString("en-US", {
                           hour: "numeric",
                           minute: "numeric",
                           hour12: true,
-                        }) || "00:00 PM"}
+                        }) || "--:--"}
                       </p>
                     </div>
                   </div>
@@ -352,19 +369,19 @@ useEffect(() => {
                   */}
                 </div>
 
-                <div className="pt-4">
-                  <h3 className="text-sm font-medium mb-2">Acceso Rápido</h3>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button variant="ghost" className="justify-start" size="sm">
+                <div className="pt-6">
+                  <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4 px-1">Acceso Rápido</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Button variant="ghost" className="justify-start transition-all duration-200 hover:translate-x-1 hover:bg-primary/10 hover:text-primary rounded-xl h-12" size="sm">
                       Manual de Usuario
                     </Button>
-                    <Button variant="ghost" className="justify-start" size="sm">
+                    <Button variant="ghost" className="justify-start transition-all duration-200 hover:translate-x-1 hover:bg-primary/10 hover:text-primary rounded-xl h-12" size="sm">
                       Preguntas Frecuentes
                     </Button>
-                    <Button variant="ghost" className="justify-start" size="sm">
+                    <Button variant="ghost" className="justify-start transition-all duration-200 hover:translate-x-1 hover:bg-primary/10 hover:text-primary rounded-xl h-12" size="sm">
                       Reportar Problema
                     </Button>
-                    <Button variant="ghost" className="justify-start" size="sm">
+                    <Button variant="ghost" className="justify-start transition-all duration-200 hover:translate-x-1 hover:bg-primary/10 hover:text-primary rounded-xl h-12" size="sm">
                       Solicitar Permiso
                     </Button>
                   </div>
@@ -391,9 +408,11 @@ interface TimeDisplayProps {
 
 function TimeDisplay({ time = "00:00:00" }: TimeDisplayProps) {
   return (
-    <div className="flex items-center justify-center">
-      <Clock className="mr-2 h-6 w-6 text-muted-foreground" />
-      <span>{time}</span>
+    <div className="flex items-center justify-center space-x-3">
+      <Clock className="h-8 w-8 text-primary/80 animate-pulse drop-shadow-sm" />
+      <span className="font-mono text-5xl tracking-tight font-black bg-gradient-to-br from-foreground to-foreground/60 dark:from-white dark:to-white/60 bg-clip-text text-transparent drop-shadow-sm">
+        {time}
+      </span>
     </div>
   );
 }

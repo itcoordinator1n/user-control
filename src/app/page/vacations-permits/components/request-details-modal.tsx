@@ -373,8 +373,8 @@ export function RequestDetailsModal({
           <>
             <DialogHeader className="border-b pb-4">
               <div className="flex items-center justify-between pr-8">
-                <DialogTitle className="text-2xl font-bold text-blue-900 flex items-center gap-2">
-                  <Building className="h-6 w-6 text-blue-600" />
+                <DialogTitle className="text-2xl font-bold text-foreground flex items-center gap-2">
+                  <Building className="h-6 w-6 text-primary" />
                   Detalle de Solicitud {request.id}
                 </DialogTitle>
                 <RequestStatusBadge status={request.status} />
@@ -383,32 +383,32 @@ export function RequestDetailsModal({
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 py-6">
               <div className="md:col-span-2 space-y-6">
-                <Card>
-                  <CardHeader className="bg-gray-50 pb-3">
-                    <CardTitle className="text-sm font-semibold uppercase text-gray-500">Información General</CardTitle>
+                <Card className="border-border/50 shadow-sm overflow-hidden bg-card text-card-foreground">
+                  <CardHeader className="bg-muted/50 pb-3 border-b border-border/50">
+                    <CardTitle className="text-sm font-semibold uppercase text-muted-foreground">Información General</CardTitle>
                   </CardHeader>
                   <CardContent className="pt-4 space-y-4">
                     {/* Fecha de solicitud — siempre visible */}
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <p className="text-xs text-gray-500">Fecha Solicitud</p>
-                        <p className="font-medium">{request.submittedDate}</p>
+                        <p className="text-xs text-muted-foreground mb-1">Fecha Solicitud</p>
+                        <p className="font-medium text-foreground">{request.submittedDate}</p>
                       </div>
 
                       {/* Tipo con badges — solo permisos */}
                       {type === "permits" && (
                         <div>
-                          <p className="text-xs text-gray-500">Tipo</p>
-                          <div className="flex flex-wrap gap-1 mt-1">
+                          <p className="text-xs text-muted-foreground mb-1">Tipo</p>
+                          <div className="flex flex-wrap gap-1">
                             {request.tipo === "incapacidad" ? (
-                              <Badge className="bg-orange-100 text-orange-700 border-orange-200 hover:bg-orange-100">Incapacidad</Badge>
+                              <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/20 hover:bg-amber-500/20 text-xs w-fit dark:text-amber-500 font-medium">Incapacidad</Badge>
                             ) : request.tipo === "duelo" ? (
-                              <Badge className="bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-100">Duelo</Badge>
+                              <Badge variant="outline" className="bg-slate-500/10 text-slate-700 border-slate-500/20 hover:bg-slate-500/20 text-xs w-fit dark:text-slate-300 font-medium">Duelo</Badge>
                             ) : (
-                              <Badge className="bg-blue-100 text-blue-700 border-blue-200 hover:bg-blue-100">Permiso</Badge>
+                              <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 text-xs w-fit font-medium">Permiso</Badge>
                             )}
                             {request.compensatorio && (
-                              <Badge className="bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-100">Compensatorio</Badge>
+                              <Badge variant="outline" className="bg-purple-500/10 text-purple-700 border-purple-500/20 hover:bg-purple-500/20 text-xs w-fit dark:text-purple-400 font-medium">Compensatorio</Badge>
                             )}
                           </div>
                         </div>
@@ -419,8 +419,8 @@ export function RequestDetailsModal({
                     {type === "permits" && request.tipo === "permiso" && (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                          <p className="text-xs text-gray-500">Fecha del permiso</p>
-                          <div className="flex items-center gap-2 text-blue-700 font-medium mt-1">
+                          <p className="text-xs text-muted-foreground mb-1">Fecha del permiso</p>
+                          <div className="flex items-center gap-2 text-primary font-medium">
                             <Calendar className="h-4 w-4 shrink-0" />
                             {request.startDateTime
                               ? formatDatePart(request.startDateTime)
@@ -428,8 +428,8 @@ export function RequestDetailsModal({
                           </div>
                         </div>
                         <div>
-                          <p className="text-xs text-gray-500">Horario</p>
-                          <div className="flex items-center gap-2 text-blue-700 font-medium mt-1">
+                          <p className="text-xs text-muted-foreground mb-1">Horario</p>
+                          <div className="flex items-center gap-2 text-primary font-medium">
                             <Clock className="h-4 w-4 shrink-0" />
                             {request.startDateTime && request.endDateTime
                               ? `${formatTimePart(request.startDateTime)} - ${formatTimePart(request.endDateTime)}`
@@ -438,10 +438,10 @@ export function RequestDetailsModal({
                         </div>
                         {request.compensatorio && (
                           <div className="sm:col-span-2">
-                            <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-md px-3 py-2 text-sm text-amber-800">
+                            <div className="flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 rounded-md px-3 py-2 text-sm text-purple-700 dark:text-purple-400">
                               <span>⏱</span>
                               <span className="font-medium">Tiempo compensatorio</span>
-                              <span className="text-amber-600 text-xs">— horas trabajadas fuera de horario</span>
+                              <span className="text-purple-600/80 dark:text-purple-400/80 text-xs">— horas trabajadas fuera de horario</span>
                             </div>
                           </div>
                         )}
@@ -451,9 +451,9 @@ export function RequestDetailsModal({
                     {/* ── INCAPACIDAD: rango de fechas ── */}
                     {type === "permits" && request.tipo === "incapacidad" && (
                       <div>
-                        <p className="text-xs text-gray-500">Período de incapacidad</p>
-                        <div className="flex items-center gap-2 text-orange-700 font-medium mt-1">
-                          <Calendar className="h-4 w-4 shrink-0 text-orange-500" />
+                        <p className="text-xs text-muted-foreground mb-1">Período de incapacidad</p>
+                        <div className="flex items-center gap-2 text-amber-600 dark:text-amber-500 font-medium">
+                          <Calendar className="h-4 w-4 shrink-0 text-amber-500" />
                           {request.startDateTime && request.endDateTime
                             ? `${formatDatePart(request.startDateTime)} → ${formatDatePart(request.endDateTime)}`
                             : request.date}
@@ -465,15 +465,15 @@ export function RequestDetailsModal({
                     {type === "permits" && request.tipo === "duelo" && (
                       <div className="space-y-3">
                         <div>
-                          <p className="text-xs text-gray-500">Período de ausencia</p>
-                          <div className="flex items-center gap-2 text-gray-700 font-medium mt-1">
-                            <Calendar className="h-4 w-4 shrink-0 text-gray-500" />
+                          <p className="text-xs text-muted-foreground mb-1">Período de ausencia</p>
+                          <div className="flex items-center gap-2 text-foreground font-medium">
+                            <Calendar className="h-4 w-4 shrink-0 text-muted-foreground" />
                             {request.startDateTime && request.endDateTime
                               ? `${formatDatePart(request.startDateTime)} → ${formatDatePart(request.endDateTime)}`
                               : request.date}
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-md px-3 py-2 text-sm text-gray-600">
+                        <div className="flex items-center gap-2 bg-muted/50 border border-border/50 rounded-md px-3 py-2 text-sm text-muted-foreground">
                           <span>🕊️</span>
                           <span>Permiso por duelo familiar</span>
                         </div>
@@ -485,15 +485,15 @@ export function RequestDetailsModal({
                       <div className="space-y-4">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div>
-                            <p className="text-xs text-gray-500">Período</p>
-                            <div className="flex items-center gap-2 text-blue-700 font-medium mt-1">
+                            <p className="text-xs text-muted-foreground mb-1">Período</p>
+                            <div className="flex items-center gap-2 text-primary font-medium">
                               <Calendar className="h-4 w-4 shrink-0" />
                               {request.period}
                             </div>
                           </div>
                           <div>
-                            <p className="text-xs text-gray-500">Días</p>
-                            <div className="mt-1 flex flex-wrap items-center gap-2">
+                            <p className="text-xs text-muted-foreground mb-1">Días</p>
+                            <div className="flex flex-wrap items-center gap-2">
                             {(() => {
                               const startStr: string | undefined =
                                 request.startDateTime ?? request.start_datetime ??
@@ -513,14 +513,14 @@ export function RequestDetailsModal({
                               return (
                                 <>
                                   {request.halfDay && isSingleDay && (
-                                    <span className="bg-purple-100 text-purple-700 border border-purple-200 px-2 py-0.5 rounded text-xs font-medium">
+                                    <span className="bg-purple-500/10 text-purple-700 dark:text-purple-400 border border-purple-500/20 px-2 py-0.5 rounded text-xs font-medium">
                                       ½ día
                                     </span>
                                   )}
                                   {!(request.halfDay && isSingleDay) && (
-                                    <span className="font-medium">{total} totales</span>
+                                    <span className="font-medium text-foreground">{total} totales</span>
                                   )}
-                                  <span className="bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-medium">
+                                  <span className="bg-primary text-primary-foreground px-2 py-0.5 rounded text-xs font-medium">
                                     {work} laborables
                                   </span>
                                 </>
@@ -534,26 +534,26 @@ export function RequestDetailsModal({
                   </CardContent>
                 </Card>
 
-                <Card>
-                  <CardHeader className="bg-gray-50 pb-3">
-                    <CardTitle className="text-sm font-semibold uppercase text-gray-500">
+                <Card className="border-border/50 shadow-sm overflow-hidden bg-card text-card-foreground">
+                  <CardHeader className="bg-muted/50 pb-3 border-b border-border/50">
+                    <CardTitle className="text-sm font-semibold uppercase text-muted-foreground">
                       {type === "permits" ? "Motivo y Comentarios" : "Comentarios"}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="pt-4 space-y-4">
                     {type === "permits" && request.reason && (
                       <div>
-                        <p className="text-xs text-gray-500">Motivo</p>
-                        <p className="font-medium">{request.reason}</p>
+                        <p className="text-xs text-muted-foreground mb-1">Motivo</p>
+                        <p className="font-medium text-foreground">{request.reason}</p>
                       </div>
                     )}
                     <div>
-                      <p className="text-xs text-gray-500">Comentarios del empleado</p>
-                      <div className="formatted-content bg-blue-50/50 p-4 rounded-lg border border-blue-100 min-h-[60px] mt-1">
+                      <p className="text-xs text-muted-foreground mb-1">Comentarios del empleado</p>
+                      <div className="formatted-content bg-muted/30 p-4 rounded-lg border border-border/50 min-h-[60px] text-foreground">
                         {request.employeeComments ? (
                           <div dangerouslySetInnerHTML={{ __html: request.employeeComments }} />
                         ) : (
-                          <p className="text-gray-400 italic">Sin comentarios</p>
+                          <p className="text-muted-foreground italic">Sin comentarios</p>
                         )}
                       </div>
                     </div>
@@ -561,7 +561,7 @@ export function RequestDetailsModal({
                     {/* Adjuntos para incapacidad / duelo */}
                     {type === "permits" && (request.tipo === "incapacidad" || request.tipo === "duelo") && request.attachments?.length > 0 && (
                       <div>
-                        <p className="text-xs text-gray-500 mb-2">
+                        <p className="text-xs text-muted-foreground mb-2">
                           {request.tipo === "incapacidad" ? "Comprobante médico" : "Documento de respaldo"}
                         </p>
                         <div className="flex flex-wrap gap-3">
@@ -571,7 +571,7 @@ export function RequestDetailsModal({
                               href={att.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="flex items-center gap-2 border rounded-md px-3 py-2 text-sm text-blue-700 hover:bg-blue-50 transition-colors"
+                              className="flex items-center gap-2 border border-border/50 rounded-md px-3 py-2 text-sm text-primary hover:bg-primary/5 transition-colors"
                             >
                               {att.type?.startsWith("image/") ? (
                                 <ImageIcon className="h-4 w-4 shrink-0" />
@@ -579,7 +579,7 @@ export function RequestDetailsModal({
                                 <FileText className="h-4 w-4 shrink-0" />
                               )}
                               <span className="truncate max-w-[180px]">{att.name}</span>
-                              <Download className="h-3 w-3 shrink-0 text-gray-400" />
+                              <Download className="h-3 w-3 shrink-0 text-muted-foreground" />
                             </a>
                           ))}
                         </div>
@@ -590,24 +590,24 @@ export function RequestDetailsModal({
               </div>
 
               <div className="space-y-6">
-                <Card>
-                  <CardHeader className="bg-blue-50 pb-3">
-                    <CardTitle className="text-sm font-semibold uppercase text-gray-500">Estado y Aprobación</CardTitle>
+                <Card className="border-border/50 shadow-sm overflow-hidden bg-card text-card-foreground">
+                  <CardHeader className="bg-muted/50 pb-3 border-b border-border/50">
+                    <CardTitle className="text-sm font-semibold uppercase text-muted-foreground">Estado y Aprobación</CardTitle>
                   </CardHeader>
                   <CardContent className="pt-4 space-y-4">
                     <div>
-                      <p className="text-xs text-gray-500">Supervisor</p>
-                      <p className="font-medium">{request.approver}</p>
+                      <p className="text-xs text-muted-foreground mb-1">Supervisor</p>
+                      <p className="font-medium text-foreground">{request.approver}</p>
                     </div>
                     {request.responseDate && (
                       <div>
-                        <p className="text-xs text-gray-500">Fecha Respuesta</p>
-                        <p className="font-medium">{request.responseDate}</p>
+                        <p className="text-xs text-muted-foreground mb-1">Fecha Respuesta</p>
+                        <p className="font-medium text-foreground">{request.responseDate}</p>
                       </div>
                     )}
                     <div>
-                      <p className="text-xs text-gray-500">Comentarios Supervisor</p>
-                      <p className="text-sm italic">{request.comments || "Pendiente"}</p>
+                      <p className="text-xs text-muted-foreground mb-1">Comentarios Supervisor</p>
+                      <p className="text-sm italic text-foreground/80">{request.comments || "Pendiente"}</p>
                     </div>
                   </CardContent>
                 </Card>

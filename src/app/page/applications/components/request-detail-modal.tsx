@@ -86,19 +86,19 @@ export function RequestDetailModal({
         <DialogHeader className="border-b pb-4">
           <div className="flex items-start justify-between pr-8">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-blue-100 flex items-center justify-center shrink-0">
+              <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
                 {selectedRequest.type === "vacation" ? (
-                  <Calendar className="h-5 w-5 text-blue-600" />
+                  <Calendar className="h-5 w-5 text-primary" />
                 ) : (
-                  <Clock className="h-5 w-5 text-blue-600" />
+                  <Clock className="h-5 w-5 text-primary" />
                 )}
               </div>
               <div>
-                <DialogTitle className="text-xl font-bold text-blue-900">
+                <DialogTitle className="text-xl font-bold text-foreground">
                   Detalle de Solicitud — {selectedRequest.id}
                 </DialogTitle>
                 <div className="flex flex-wrap items-center gap-2 mt-1">
-                  <Badge className="bg-blue-100 text-blue-700 border-blue-200">
+                  <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 font-medium">
                     {TYPE_LABELS[subtype] || selectedRequest.type}
                   </Badge>
                   {getStatusBadge(selectedRequest.status)}
@@ -119,90 +119,90 @@ export function RequestDetailModal({
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 py-4">
           <div className="md:col-span-2 space-y-4">
-            <Card>
-              <CardHeader className="bg-gray-50 pb-3">
-                <CardTitle className="text-xs font-semibold uppercase text-gray-500 tracking-wider">
+            <Card className="overflow-hidden border-border/50 shadow-sm">
+              <CardHeader className="bg-muted/50 pb-3 border-b border-border/50">
+                <CardTitle className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">
                   Información del Solicitante
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-4">
                 <div className="flex items-center gap-4 mb-6">
-                  <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
-                    <User className="h-6 w-6 text-blue-600" />
+                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                    <User className="h-6 w-6 text-primary" />
                   </div>
                   <div>
-                    <p className="text-lg font-bold text-gray-900">{selectedRequest.employeeName}</p>
-                    <p className="text-sm text-gray-500">{selectedRequest.position}</p>
+                    <p className="text-lg font-bold text-foreground">{selectedRequest.employeeName}</p>
+                    <p className="text-sm text-muted-foreground">{selectedRequest.position}</p>
                   </div>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-border/50">
                   <div className="flex items-center gap-3">
-                    <Building2 className="h-5 w-5 text-gray-400" />
+                    <Building2 className="h-5 w-5 text-muted-foreground" />
                     <div>
-                      <p className="text-xs text-gray-400">Departamento</p>
-                      <p className="text-sm font-semibold">{selectedRequest.department}</p>
+                      <p className="text-xs text-muted-foreground">Departamento</p>
+                      <p className="text-sm font-semibold text-foreground">{selectedRequest.department}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <Calendar className="h-5 w-5 text-gray-400" />
+                    <Calendar className="h-5 w-5 text-muted-foreground" />
                     <div>
-                      <p className="text-xs text-gray-400">Fecha de Solicitud</p>
-                      <p className="text-sm font-semibold">{selectedRequest.submittedDate}</p>
+                      <p className="text-xs text-muted-foreground">Fecha de Solicitud</p>
+                      <p className="text-sm font-semibold text-foreground">{selectedRequest.submittedDate}</p>
                     </div>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader className="bg-gray-50 pb-3">
-                <CardTitle className="text-xs font-semibold uppercase text-gray-500 tracking-wider">
+            <Card className="overflow-hidden border-border/50 shadow-sm">
+              <CardHeader className="bg-muted/50 pb-3 border-b border-border/50">
+                <CardTitle className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">
                   Detalles de la Ausencia
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-4">
                 {isVacationRequest(selectedRequest) ? (
                   <div className="space-y-4">
-                    <div className="p-4 bg-green-50 border border-green-100 rounded-lg flex items-center gap-3">
-                      <Calendar className="h-6 w-6 text-green-600" />
+                    <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-center gap-3">
+                      <Calendar className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
                       <div>
-                        <p className="text-xs text-green-600 font-medium">Período Seleccionado</p>
-                        <p className="text-sm font-bold text-green-900">{selectedRequest.period}</p>
+                        <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">Período Seleccionado</p>
+                        <p className="text-sm font-bold text-emerald-700 dark:text-emerald-300">{selectedRequest.period}</p>
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="p-3 bg-gray-50 rounded-lg">
-                        <p className="text-xs text-gray-400 mb-1">Desde</p>
-                        <p className="text-sm font-semibold">{selectedRequest.startDate}</p>
+                      <div className="p-3 bg-muted/50 rounded-lg border border-border/50">
+                        <p className="text-xs text-muted-foreground mb-1">Desde</p>
+                        <p className="text-sm font-semibold text-foreground">{selectedRequest.startDate}</p>
                       </div>
-                      <div className="p-3 bg-gray-50 rounded-lg">
-                        <p className="text-xs text-gray-400 mb-1">Hasta</p>
-                        <p className="text-sm font-semibold">{selectedRequest.endDate}</p>
+                      <div className="p-3 bg-muted/50 rounded-lg border border-border/50">
+                        <p className="text-xs text-muted-foreground mb-1">Hasta</p>
+                        <p className="text-sm font-semibold text-foreground">{selectedRequest.endDate}</p>
                       </div>
                     </div>
                   </div>
                 ) : (
                   <div className="space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="p-4 bg-blue-50 border border-blue-100 rounded-lg flex items-center gap-3">
-                        <Calendar className="h-6 w-6 text-blue-600" />
+                      <div className="p-4 bg-primary/5 border border-primary/10 rounded-lg flex items-center gap-3">
+                        <Calendar className="h-6 w-6 text-primary" />
                         <div>
-                          <p className="text-xs text-blue-600 font-medium">Fecha</p>
-                          <p className="text-sm font-bold text-blue-900">{(selectedRequest as any).date}</p>
+                          <p className="text-xs text-primary font-medium">Fecha</p>
+                          <p className="text-sm font-bold text-foreground">{(selectedRequest as any).date}</p>
                         </div>
                       </div>
-                      <div className="p-4 bg-blue-50 border border-blue-100 rounded-lg flex items-center gap-3">
-                        <Clock className="h-6 w-6 text-blue-600" />
+                      <div className="p-4 bg-primary/5 border border-primary/10 rounded-lg flex items-center gap-3">
+                        <Clock className="h-6 w-6 text-primary" />
                         <div>
-                          <p className="text-xs text-blue-600 font-medium">Horario</p>
-                          <p className="text-sm font-bold text-blue-900">{(selectedRequest as any).timeRange}</p>
+                          <p className="text-xs text-primary font-medium">Horario</p>
+                          <p className="text-sm font-bold text-foreground">{(selectedRequest as any).timeRange}</p>
                         </div>
                       </div>
                     </div>
                     {(selectedRequest as any).reason && (
-                      <div className="p-4 bg-gray-50 border rounded-lg">
-                        <p className="text-xs text-gray-400 mb-1">Motivo / Justificación</p>
-                        <p className="text-sm font-medium">{(selectedRequest as any).reason}</p>
+                      <div className="p-4 bg-muted/30 border border-border/50 rounded-lg">
+                        <p className="text-xs text-muted-foreground mb-1">Motivo / Justificación</p>
+                        <p className="text-sm font-medium text-foreground">{(selectedRequest as any).reason}</p>
                       </div>
                     )}
                   </div>
@@ -211,15 +211,15 @@ export function RequestDetailModal({
             </Card>
 
             {selectedRequest.employeeComments && (
-              <Card>
-                <CardHeader className="bg-gray-50 pb-3">
-                  <CardTitle className="text-xs font-semibold uppercase text-gray-500 tracking-wider flex items-center gap-2">
+              <Card className="overflow-hidden border-border/50 shadow-sm">
+                <CardHeader className="bg-muted/50 pb-3 border-b border-border/50">
+                  <CardTitle className="text-xs font-semibold uppercase text-muted-foreground tracking-wider flex items-center gap-2">
                     <MessageSquare className="h-4 w-4" /> Comentarios Adicionales
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-4">
                   <div 
-                    className="text-sm text-gray-700 bg-amber-50/30 p-4 border border-amber-100 rounded-lg"
+                    className="text-sm text-foreground bg-amber-500/10 p-4 border border-amber-500/20 rounded-lg"
                     dangerouslySetInnerHTML={{ __html: selectedRequest.employeeComments }}
                   />
                 </CardContent>
@@ -228,58 +228,57 @@ export function RequestDetailModal({
           </div>
 
           <div className="space-y-4">
-            <Card>
-              <CardHeader className="bg-gray-50 pb-3">
-                <CardTitle className="text-xs font-semibold uppercase text-gray-500 tracking-wider">Estado de Gestión</CardTitle>
+            <Card className="overflow-hidden border-border/50 shadow-sm">
+              <CardHeader className="bg-muted/50 pb-3 border-b border-border/50">
+                <CardTitle className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">Estado de Gestión</CardTitle>
               </CardHeader>
               <CardContent className="pt-4 space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-500">Estado</span>
+                  <span className="text-sm text-muted-foreground">Estado</span>
                   {getStatusBadge(selectedRequest.status)}
                 </div>
                 {selectedRequest.responseDate && (
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-500">Procesado el</span>
-                    <span className="text-sm font-medium">{selectedRequest.responseDate}</span>
+                    <span className="text-sm text-muted-foreground">Procesado el</span>
+                    <span className="text-sm font-medium text-foreground">{selectedRequest.responseDate}</span>
                   </div>
                 )}
               </CardContent>
             </Card>
 
             {selectedRequest.status === "Pendiente" && (
-              <Card className="border-blue-200">
-                <CardHeader className="bg-blue-50/50 pb-3">
-                  <CardTitle className="text-xs font-semibold uppercase text-blue-700 tracking-wider">Resolver Solicitud</CardTitle>
+              <Card className="border-primary/20 overflow-hidden shadow-sm">
+                <CardHeader className="bg-primary/5 pb-3 border-b border-primary/10">
+                  <CardTitle className="text-xs font-semibold uppercase text-primary tracking-wider">Resolver Solicitud</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-4 space-y-4">
                   <div>
-                    <Label className="text-xs text-gray-500 mb-1.5 block">Comentarios del Supervisor</Label>
+                    <Label className="text-xs text-muted-foreground mb-1.5 block">Comentarios del Supervisor</Label>
                     <Textarea
                       value={supervisorComments}
                       onChange={(e) => onCommentsChange(e.target.value)}
                       placeholder="Escribe aquí tus observaciones..."
                       rows={4}
-                      className="text-sm resize-none"
+                      className="text-sm resize-none bg-background"
                     />
                   </div>
                   <div className="space-y-2 pt-2">
                     <Button
                       onClick={() => onApprove("Aprobada")}
-                      className="w-full bg-green-600 hover:bg-green-700 text-white"
+                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-600/90 dark:hover:bg-emerald-600 shadow-sm"
                       disabled={waitStatus === "loading"}
                     >
                       <CheckCircle2 className="h-4 w-4 mr-2" /> Aprobar
                     </Button>
                     <Button
                       onClick={() => onApprove("Rechazada")}
-                      variant="destructive"
-                      className="w-full"
+                      className="w-full bg-destructive hover:bg-destructive/90 text-destructive-foreground shadow-sm"
                       disabled={waitStatus === "loading" || !supervisorComments.trim()}
                     >
                       <XCircle className="h-4 w-4 mr-2" /> Rechazar
                     </Button>
                     {!supervisorComments.trim() && (
-                      <p className="text-[10px] text-center text-gray-400 italic">Requerido para rechazar</p>
+                      <p className="text-[10px] text-center text-muted-foreground italic">Requerido para rechazar</p>
                     )}
                   </div>
                 </CardContent>

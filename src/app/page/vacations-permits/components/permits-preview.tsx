@@ -99,8 +99,8 @@ export function PermitPreview({
       );
     }
     return (
-      <div className="w-16 h-16 bg-gray-100 rounded border flex items-center justify-center">
-        <FileText className="h-8 w-8 text-gray-400" />
+      <div className="w-16 h-16 bg-muted rounded-md border border-border/50 flex items-center justify-center">
+        <FileText className="h-8 w-8 text-muted-foreground" />
       </div>
     );
   };
@@ -197,8 +197,8 @@ export function PermitPreview({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-blue-900">
-            Vista Previa —{" "}
+          <DialogTitle className="text-xl font-bold text-foreground flex items-center gap-2">
+            <span className="text-primary">Vista Previa —</span>{" "}
             {data.tipo === "incapacidad"
               ? "Incapacidad Médica"
               : data.tipo === "duelo"
@@ -209,20 +209,20 @@ export function PermitPreview({
 
         <div className="space-y-6">
           {/* Información del Solicitante */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center">
-                <User className="mr-2 h-5 w-5" />
+          <Card className="border-border/50 shadow-sm overflow-hidden bg-card text-card-foreground">
+            <CardHeader className="pb-3 bg-muted/50 border-b border-border/50">
+              <CardTitle className="text-lg flex items-center text-foreground">
+                <User className="mr-2 h-5 w-5 text-primary" />
                 Información de la Solicitud
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 pt-4">
               {data.tipo === "permiso" ? (
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Fecha del Permiso</p>
-                    <div className="flex items-center mt-1">
-                      <Calendar className="mr-2 h-4 w-4 text-blue-600" />
+                    <p className="text-sm font-medium text-muted-foreground">Fecha del Permiso</p>
+                    <div className="flex items-center mt-1 text-foreground">
+                      <Calendar className="mr-2 h-4 w-4 text-primary" />
                       <span className="font-medium">
                         {data.date
                           ? data.date.toLocaleDateString("es-ES", {
@@ -236,9 +236,9 @@ export function PermitPreview({
                     </div>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Horario</p>
-                    <div className="flex items-center mt-1">
-                      <Clock className="mr-2 h-4 w-4 text-blue-600" />
+                    <p className="text-sm font-medium text-muted-foreground">Horario</p>
+                    <div className="flex items-center mt-1 text-foreground">
+                      <Clock className="mr-2 h-4 w-4 text-primary" />
                       <span className="font-medium">
                         {data.startTime || "00:00"} - {data.endTime || "00:00"}
                       </span>
@@ -247,11 +247,11 @@ export function PermitPreview({
                 </div>
               ) : (
                 <div>
-                  <p className="text-sm font-medium text-gray-600">
+                  <p className="text-sm font-medium text-muted-foreground">
                     {data.tipo === "duelo" ? "Período de ausencia" : "Período de incapacidad"}
                   </p>
-                  <div className="flex items-center mt-1 gap-2">
-                    <Calendar className={`h-4 w-4 shrink-0 ${data.tipo === "duelo" ? "text-gray-500" : "text-orange-500"}`} />
+                  <div className="flex items-center mt-1 gap-2 text-foreground">
+                    <Calendar className={`h-4 w-4 shrink-0 ${data.tipo === "duelo" ? "text-muted-foreground" : "text-amber-500"}`} />
                     <span className="font-medium">
                       {data.incapacidadStartDate?.toLocaleDateString("es-ES", {
                         day: "2-digit", month: "long", year: "numeric",
@@ -263,7 +263,7 @@ export function PermitPreview({
                     </span>
                   </div>
                   {data.tipo === "duelo" && (
-                    <div className="flex items-center gap-2 mt-3 bg-gray-50 border border-gray-200 rounded-md px-3 py-2 text-sm text-gray-600">
+                    <div className="flex items-center gap-2 mt-3 bg-muted/50 border border-border/50 rounded-md px-3 py-2 text-sm text-muted-foreground">
                       <span>🕊️</span>
                       <span>Permiso por duelo familiar</span>
                     </div>
@@ -272,29 +272,30 @@ export function PermitPreview({
               )}
 
               {data.tipo === "permiso" && data.esCompensatorio && (
-                <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
-                  <span className="text-sm font-medium text-amber-800">⏱ Tiempo compensatorio</span>
-                  <span className="text-xs text-amber-600">— horas trabajadas fuera de horario</span>
+                <div className="flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 rounded-md px-3 py-2 text-sm text-purple-700 dark:text-purple-400">
+                  <span>⏱</span>
+                  <span className="font-medium">Tiempo compensatorio</span>
+                  <span className="text-purple-600/80 dark:text-purple-400/80 text-xs">— horas trabajadas fuera de horario</span>
                 </div>
               )}
 
               {data.reason && (
                 <div>
-                  <p className="text-sm font-medium text-gray-600 mb-2">
+                  <p className="text-sm font-medium text-muted-foreground mb-2">
                     Motivo del Permiso
                   </p>
-                  <div className="bg-gray-50 p-3 rounded border">
-                    <p className="text-sm font-medium">{data.reason}</p>
+                  <div className="bg-muted/30 p-3 rounded-md border border-border/50">
+                    <p className="text-sm font-medium text-foreground">{data.reason}</p>
                   </div>
                 </div>
               )}
 
               {data.comments && data.comments.trim() !== "" && (
                 <div>
-                  <p className="text-sm font-medium text-gray-600 mb-2">
+                  <p className="text-sm font-medium text-muted-foreground mb-2">
                     Comentarios Detallados
                   </p>
-                  <div className="bg-gray-50 p-3 rounded border">
+                  <div className="bg-muted/30 p-3 rounded-md border border-border/50 text-foreground">
                     {renderFormattedContent(data.comments)}
                   </div>
                 </div>
@@ -302,7 +303,7 @@ export function PermitPreview({
 
               {data.files.length > 0 && (
                 <div>
-                  <p className="text-sm font-medium text-gray-600 mb-3">
+                  <p className="text-sm font-medium text-muted-foreground mb-3">
                     {data.tipo === "incapacidad"
                       ? "Comprobante médico"
                       : data.tipo === "duelo"
@@ -313,7 +314,7 @@ export function PermitPreview({
                     {data.files.map((file, index) => (
                       <div key={index} className="text-center">
                         {getFileThumbnail(file)}
-                        <p className="text-xs mt-1 truncate" title={file.name}>
+                        <p className="text-xs mt-1 truncate text-muted-foreground" title={file.name}>
                           {file.name}
                         </p>
                       </div>
@@ -325,23 +326,23 @@ export function PermitPreview({
           </Card>
 
           {/* Información del Supervisor */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center">
-                <Send className="mr-2 h-5 w-5" />
+          <Card className="border-border/50 shadow-sm overflow-hidden bg-card text-card-foreground">
+            <CardHeader className="pb-3 bg-muted/50 border-b border-border/50">
+              <CardTitle className="text-lg flex items-center text-foreground">
+                <Send className="mr-2 h-5 w-5 text-primary" />
                 Será Enviado a
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-4">
               <div className="flex items-start space-x-4">
-                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                  <User className="h-6 w-6 text-blue-600" />
+                <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                  <User className="h-6 w-6 text-primary" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900">
+                  <h3 className="font-semibold text-foreground">
                     {profile?.supervisorName}
                   </h3>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-muted-foreground">
                     {profile?.supervisorPosition}
                   </p>
                   <Badge variant="secondary" className="mt-1">
@@ -353,15 +354,15 @@ export function PermitPreview({
           </Card>
 
           {/* Estado de la Solicitud */}
-          <Card className="border-yellow-200 bg-yellow-50">
+          <Card className="border-amber-500/20 bg-amber-500/10 shadow-sm">
             <CardContent className="pt-6">
               <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                <span className="text-sm font-medium text-yellow-800">
+                <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
+                <span className="text-sm font-medium text-amber-700 dark:text-amber-500">
                   Esta solicitud será enviada para aprobación
                 </span>
               </div>
-              <p className="text-xs text-yellow-700 mt-1">
+              <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
                 Recibirás una notificación cuando sea revisada por tu
                 supervisor.
               </p>
@@ -380,7 +381,7 @@ export function PermitPreview({
             <Button
               onClick={handleSubmit}
               disabled={modalStatus === "loading"}
-              className="flex-1 bg-blue-600 hover:bg-blue-700"
+              className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm"
             >
               <Send className="mr-2 h-4 w-4" />
               Enviar Solicitud
@@ -399,14 +400,14 @@ export function PermitPreview({
             font-weight: 600;
             margin: 0.5rem 0;
             line-height: 1.4;
-            color: #1f2937;
+            color: inherit;
           }
           .formatted-content h3 {
             font-size: 1.125rem;
             font-weight: 600;
             margin: 0.5rem 0;
             line-height: 1.4;
-            color: #1f2937;
+            color: inherit;
           }
           .formatted-content ul,
           .formatted-content ol {
@@ -415,16 +416,18 @@ export function PermitPreview({
           }
           .formatted-content li {
             margin: 0.25rem 0;
-            color: #374151;
+            color: inherit;
+            opacity: 0.9;
           }
           .formatted-content p {
             margin: 0.5rem 0;
-            color: #374151;
+            color: inherit;
+            opacity: 0.9;
             line-height: 1.5;
           }
           .formatted-content strong {
             font-weight: 600;
-            color: #1f2937;
+            color: inherit;
           }
           .formatted-content em {
             font-style: italic;

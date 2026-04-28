@@ -81,14 +81,14 @@ export function RichTextEditor({ value, onChange, placeholder = "", minHeight = 
   }
 
   return (
-    <div className="border rounded-md overflow-hidden bg-white">
-      <div className="bg-gray-50 border-b p-2 flex flex-wrap gap-1">
+    <div className="border border-input rounded-md overflow-hidden bg-background text-foreground transition-colors focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background">
+      <div className="bg-muted/50 border-b border-border p-2 flex flex-wrap gap-1">
         <Button
           type="button"
           variant="ghost"
           size="sm"
           onClick={() => handleFormat("bold")}
-          className="h-8 w-8 p-0 hover:bg-gray-200"
+          className="h-8 w-8 p-0 hover:bg-muted text-muted-foreground hover:text-foreground"
           title="Negrita (Ctrl+B)"
         >
           <Bold className="h-4 w-4" />
@@ -98,7 +98,7 @@ export function RichTextEditor({ value, onChange, placeholder = "", minHeight = 
           variant="ghost"
           size="sm"
           onClick={() => handleFormat("italic")}
-          className="h-8 w-8 p-0 hover:bg-gray-200"
+          className="h-8 w-8 p-0 hover:bg-muted text-muted-foreground hover:text-foreground"
           title="Cursiva (Ctrl+I)"
         >
           <Italic className="h-4 w-4" />
@@ -108,18 +108,18 @@ export function RichTextEditor({ value, onChange, placeholder = "", minHeight = 
           variant="ghost"
           size="sm"
           onClick={() => handleFormat("underline")}
-          className="h-8 w-8 p-0 hover:bg-gray-200"
+          className="h-8 w-8 p-0 hover:bg-muted text-muted-foreground hover:text-foreground"
           title="Subrayado (Ctrl+U)"
         >
           <Underline className="h-4 w-4" />
         </Button>
-        <div className="w-px h-6 bg-gray-300 mx-1"></div>
+        <div className="w-px h-6 bg-border mx-1"></div>
         <Button
           type="button"
           variant="ghost"
           size="sm"
           onClick={() => handleFormat("formatBlock", "<h2>")}
-          className="h-8 w-8 p-0 hover:bg-gray-200"
+          className="h-8 w-8 p-0 hover:bg-muted text-muted-foreground hover:text-foreground"
           title="Título"
         >
           <Heading2 className="h-4 w-4" />
@@ -129,12 +129,12 @@ export function RichTextEditor({ value, onChange, placeholder = "", minHeight = 
           variant="ghost"
           size="sm"
           onClick={() => handleFormat("formatBlock", "<h3>")}
-          className="h-8 w-8 p-0 hover:bg-gray-200"
+          className="h-8 w-8 p-0 hover:bg-muted text-muted-foreground hover:text-foreground"
           title="Subtítulo"
         >
           <Heading3 className="h-4 w-4" />
         </Button>
-        <div className="w-px h-6 bg-gray-300 mx-1"></div>
+        <div className="w-px h-6 bg-border mx-1"></div>
         <Button
           type="button"
           variant="ghost"
@@ -153,7 +153,7 @@ export function RichTextEditor({ value, onChange, placeholder = "", minHeight = 
               }, 10)
             }
           }}
-          className="h-8 w-8 p-0 hover:bg-gray-200"
+          className="h-8 w-8 p-0 hover:bg-muted text-muted-foreground hover:text-foreground"
           title="Lista con viñetas"
         >
           <List className="h-4 w-4" />
@@ -176,18 +176,18 @@ export function RichTextEditor({ value, onChange, placeholder = "", minHeight = 
               }, 10)
             }
           }}
-          className="h-8 w-8 p-0 hover:bg-gray-200"
+          className="h-8 w-8 p-0 hover:bg-muted text-muted-foreground hover:text-foreground"
           title="Lista numerada"
         >
           <ListOrdered className="h-4 w-4" />
         </Button>
-        <div className="w-px h-6 bg-gray-300 mx-1"></div>
+        <div className="w-px h-6 bg-border mx-1"></div>
         <Button
           type="button"
           variant="ghost"
           size="sm"
           onClick={() => handleFormat("justifyLeft")}
-          className="h-8 w-8 p-0 hover:bg-gray-200"
+          className="h-8 w-8 p-0 hover:bg-muted text-muted-foreground hover:text-foreground"
           title="Alinear a la izquierda"
         >
           <AlignLeft className="h-4 w-4" />
@@ -197,7 +197,7 @@ export function RichTextEditor({ value, onChange, placeholder = "", minHeight = 
           variant="ghost"
           size="sm"
           onClick={() => handleFormat("justifyCenter")}
-          className="h-8 w-8 p-0 hover:bg-gray-200"
+          className="h-8 w-8 p-0 hover:bg-muted text-muted-foreground hover:text-foreground"
           title="Centrar"
         >
           <AlignCenter className="h-4 w-4" />
@@ -207,7 +207,7 @@ export function RichTextEditor({ value, onChange, placeholder = "", minHeight = 
           variant="ghost"
           size="sm"
           onClick={() => handleFormat("justifyRight")}
-          className="h-8 w-8 p-0 hover:bg-gray-200"
+          className="h-8 w-8 p-0 hover:bg-muted text-muted-foreground hover:text-foreground"
           title="Alinear a la derecha"
         >
           <AlignRight className="h-4 w-4" />
@@ -218,7 +218,7 @@ export function RichTextEditor({ value, onChange, placeholder = "", minHeight = 
           ref={(ref) => setEditorRef(ref)}
           contentEditable
           dir="ltr"
-          className="p-3 focus:outline-none text-left"
+          className="p-3 focus:outline-none text-left text-sm"
           style={{
             minHeight,
             direction: "ltr",
@@ -232,7 +232,7 @@ export function RichTextEditor({ value, onChange, placeholder = "", minHeight = 
         />
         {isEmpty && (
           <div
-            className="absolute top-3 left-3 text-gray-400 pointer-events-none select-none"
+            className="absolute top-3 left-3 text-muted-foreground text-sm pointer-events-none select-none"
             style={{ direction: "ltr", textAlign: "left" }}
           >
             {placeholder}

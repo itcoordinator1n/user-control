@@ -97,9 +97,9 @@ function VacationDaysInfo({ request }: { request: VacationRequest }) {
         </span>
       )}
       {!request.halfDay && (
-        <span className="text-sm font-medium text-gray-900">{total} días</span>
+        <span className="text-sm font-medium text-foreground">{total} días</span>
       )}
-      <span className="bg-blue-100 text-blue-700 text-xs px-1.5 py-0.5 rounded font-medium">
+      <span className="bg-primary/10 text-primary text-xs px-1.5 py-0.5 rounded font-medium border border-primary/20">
         {work} lab.
       </span>
     </div>
@@ -111,14 +111,14 @@ function VacationDaysInfoMobile({ request }: { request: VacationRequest }) {
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between text-sm">
-        <span className="text-gray-600">Días:</span>
+        <span className="text-muted-foreground">Días:</span>
         <div className="flex items-center gap-1.5">
           {request.halfDay && (
-            <span className="bg-purple-100 text-purple-700 border border-purple-200 text-[10px] px-1.5 py-0.5 rounded font-medium">
+            <span className="bg-purple-500/10 text-purple-700 dark:text-purple-400 border border-purple-500/20 text-[10px] px-1.5 py-0.5 rounded font-medium">
               ½ día
             </span>
           )}
-          <span className="font-medium">{total} total / {work} laborables</span>
+          <span className="font-medium text-foreground">{total} total / {work} laborables</span>
         </div>
       </div>
     </div>
@@ -269,9 +269,9 @@ export function RequestsTable({ type, onRequestDeleted, canApprove = false, mode
 
   return (
     <>
-      <Card>
-        <CardHeader className="bg-blue-50 border-b">
-          <CardTitle className="text-blue-900">
+      <Card className="border-0 sm:border border-border/50 shadow-none sm:shadow-sm overflow-hidden bg-card text-card-foreground">
+        <CardHeader className="bg-muted/50 border-b border-border/50 pb-4">
+          <CardTitle className="text-foreground">
             {isSupervisor
               ? (type === "permits" ? "Solicitudes de Permisos Recibidas" : "Solicitudes de Vacaciones Recibidas")
               : totalCount === 0
@@ -283,8 +283,8 @@ export function RequestsTable({ type, onRequestDeleted, canApprove = false, mode
         <CardContent className="p-6 space-y-4">
           {totalCount === 0 && currentRequests.length === 0 && !hasActiveFilters ? (
             <div className="p-8 text-center">
-              <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-              <p className="text-gray-500">No hay solicitudes registradas</p>
+              <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+              <p className="text-muted-foreground">No hay solicitudes registradas</p>
             </div>
           ) : (
             <>
@@ -292,12 +292,12 @@ export function RequestsTable({ type, onRequestDeleted, canApprove = false, mode
               <TableFilters onFiltersChange={handleFiltersChange} type={type} />
 
               {/* Información de resultados */}
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-sm text-gray-600">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-sm text-muted-foreground">
                 <span>{totalCount} solicitudes</span>
                 <div className="flex items-center gap-2">
                   <span>Mostrar:</span>
                   <Select value={itemsPerPage.toString()} onValueChange={handleItemsPerPageChange}>
-                    <SelectTrigger className="w-20">
+                    <SelectTrigger className="w-20 bg-background border-border">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -313,8 +313,8 @@ export function RequestsTable({ type, onRequestDeleted, canApprove = false, mode
               {/* Contenido */}
               {currentRequests.length === 0 ? (
                 <div className="text-center py-8">
-                  <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                  <p className="text-gray-500">No se encontraron solicitudes con los filtros aplicados</p>
+                  <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground">No se encontraron solicitudes con los filtros aplicados</p>
                 </div>
               ) : (
                 <>
@@ -343,45 +343,45 @@ export function RequestsTable({ type, onRequestDeleted, canApprove = false, mode
                             <col key={idx} style={{ width }} />
                           ))}
                         </colgroup>
-                        <thead className="bg-gray-50 border-b">
+                        <thead className="bg-muted/50 border-b border-border/50">
                           <tr>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
                               {type === "permits" ? "Fecha / Horario" : "Período"}
                             </th>
                             {type === "permits" && (
-                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                                 Tipo
                               </th>
                             )}
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
                               {type === "permits" ? "Motivo / Comentarios" : "Días / Comentarios"}
                             </th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                               Estado
                             </th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                               {isSupervisor ? "Empleado" : "Aprobador"}
                             </th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
                               Fecha Solicitud
                             </th>
                           </tr>
                         </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
+                        <tbody className="bg-card divide-y divide-border/50">
                           {currentRequests.map((request) => (
                             <tr
                               key={request.id}
-                              className="hover:bg-gray-50 cursor-pointer transition-colors"
+                              className="hover:bg-muted/50 cursor-pointer transition-colors"
                               onClick={() => handleRowClick(request)}
                             >
                               <td className="px-4 py-4">
-                                <div className="text-sm font-medium text-gray-900 truncate">
+                                <div className="text-sm font-bold text-foreground truncate">
                                   {type === "permits"
                                     ? (request as PermitRequest).date
                                     : (request as VacationRequest).period}
                                 </div>
                                 {type === "permits" && (
-                                  <div className="text-sm text-gray-500 truncate">
+                                  <div className="text-sm text-muted-foreground truncate">
                                     {(request as PermitRequest).timeRange}
                                   </div>
                                 )}
@@ -391,20 +391,20 @@ export function RequestsTable({ type, onRequestDeleted, canApprove = false, mode
                                 <td className="px-4 py-4">
                                   <div className="flex flex-col gap-1">
                                     {(request as PermitRequest).tipo === "incapacidad" ? (
-                                      <Badge className="bg-orange-100 text-orange-700 border-orange-200 hover:bg-orange-100 text-xs w-fit">
+                                      <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/20 hover:bg-amber-500/20 text-xs w-fit dark:text-amber-500 font-medium">
                                         Incapacidad
                                       </Badge>
                                     ) : (request as PermitRequest).tipo === "duelo" ? (
-                                      <Badge className="bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-100 text-xs w-fit">
+                                      <Badge variant="outline" className="bg-slate-500/10 text-slate-700 border-slate-500/20 hover:bg-slate-500/20 text-xs w-fit dark:text-slate-300 font-medium">
                                         Duelo
                                       </Badge>
                                     ) : (
-                                      <Badge className="bg-blue-100 text-blue-700 border-blue-200 hover:bg-blue-100 text-xs w-fit">
+                                      <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 text-xs w-fit font-medium">
                                         Permiso
                                       </Badge>
                                     )}
                                     {(request as PermitRequest).compensatorio && (
-                                      <Badge className="bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-100 text-xs w-fit">
+                                      <Badge variant="outline" className="bg-purple-500/10 text-purple-700 border-purple-500/20 hover:bg-purple-500/20 text-xs w-fit dark:text-purple-400 font-medium">
                                         Compensatorio
                                       </Badge>
                                     )}
@@ -415,7 +415,7 @@ export function RequestsTable({ type, onRequestDeleted, canApprove = false, mode
                               <td className="px-4 py-3">
                                 <div className="flex flex-col gap-1.5 min-w-0">
                                   {type === "permits" && (
-                                    <p className="text-sm font-medium text-gray-900 truncate leading-tight">
+                                    <p className="text-sm font-medium text-foreground truncate leading-tight">
                                       {(request as PermitRequest).reason}
                                     </p>
                                   )}
@@ -425,7 +425,7 @@ export function RequestsTable({ type, onRequestDeleted, canApprove = false, mode
                                   )}
 
                                   {request.employeeComments && (
-                                    <div className="comment-container rounded bg-gray-50 px-2 py-1 border border-gray-100">
+                                    <div className="comment-container rounded-md bg-muted/30 px-3 py-2 border border-border/50 text-foreground">
                                       <div className="comment-content">
                                         {renderFormattedContent(request.employeeComments)}
                                       </div>
@@ -438,7 +438,7 @@ export function RequestsTable({ type, onRequestDeleted, canApprove = false, mode
                               <td className="px-4 py-4">
                                 <RequestStatusBadge status={request.status} />
                                 {request.responseDate && (
-                                  <div className="text-xs text-gray-500 mt-1 truncate">
+                                  <div className="text-xs text-muted-foreground mt-1 truncate">
                                     Respondido: {request.responseDate}
                                   </div>
                                 )}
@@ -446,18 +446,18 @@ export function RequestsTable({ type, onRequestDeleted, canApprove = false, mode
 
                               <td className="px-4 py-4">
                                 {isSupervisor ? (
-                                  <div className="text-sm text-gray-900 truncate">
+                                  <div className="text-sm text-foreground truncate font-medium">
                                     {(request as PermitRequest).employeeName ?? "—"}
                                   </div>
                                 ) : (
                                   <>
-                                    <div className="text-sm text-gray-900 truncate">{request.approver}</div>
-                                    <div className="text-sm text-gray-500">Supervisor</div>
+                                    <div className="text-sm text-foreground truncate font-medium">{request.approver}</div>
+                                    <div className="text-sm text-muted-foreground">Supervisor</div>
                                   </>
                                 )}
                               </td>
 
-                              <td className="px-4 py-4 text-sm text-gray-500 truncate">{request.submittedDate}</td>
+                              <td className="px-4 py-4 text-sm text-muted-foreground truncate">{request.submittedDate}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -465,12 +465,11 @@ export function RequestsTable({ type, onRequestDeleted, canApprove = false, mode
                     </div>
                   </div>
 
-                  {/* Vista Mobile - Tarjetas */}
                   <div className="lg:hidden space-y-4">
                     {currentRequests.map((request) => (
                       <Card
                         key={request.id}
-                        className="cursor-pointer hover:shadow-md transition-shadow border-l-4 border-l-blue-500"
+                        className="cursor-pointer hover:bg-muted/30 transition-colors border-l-4 border-l-primary bg-card text-card-foreground border-border/50"
                         onClick={() => handleRowClick(request)}
                       >
                         <CardContent className="p-4">
@@ -478,24 +477,24 @@ export function RequestsTable({ type, onRequestDeleted, canApprove = false, mode
                             {/* Header con ID y Estado */}
                             <div className="flex justify-between items-start">
                               <div className="flex items-center gap-2">
-                                <span className="text-sm font-bold text-blue-900">{request.id}</span>
+                                <span className="text-sm font-bold text-primary">{request.id}</span>
                                 {type === "permits" && (
                                   <>
                                     {(request as PermitRequest).tipo === "incapacidad" ? (
-                                      <Badge className="bg-orange-100 text-orange-700 border-orange-200 hover:bg-orange-100 text-[10px] px-1.5">
+                                      <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/20 hover:bg-amber-500/20 text-[10px] px-1.5 dark:text-amber-500 font-medium">
                                         Incapacidad
                                       </Badge>
                                     ) : (request as PermitRequest).tipo === "duelo" ? (
-                                      <Badge className="bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-100 text-[10px] px-1.5">
+                                      <Badge variant="outline" className="bg-slate-500/10 text-slate-700 border-slate-500/20 hover:bg-slate-500/20 text-[10px] px-1.5 dark:text-slate-300 font-medium">
                                         Duelo
                                       </Badge>
                                     ) : (
-                                      <Badge className="bg-blue-100 text-blue-700 border-blue-200 hover:bg-blue-100 text-[10px] px-1.5">
+                                      <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 text-[10px] px-1.5 font-medium">
                                         Permiso
                                       </Badge>
                                     )}
                                     {(request as PermitRequest).compensatorio && (
-                                      <Badge className="bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-100 text-[10px] px-1.5">
+                                      <Badge variant="outline" className="bg-purple-500/10 text-purple-700 border-purple-500/20 hover:bg-purple-500/20 text-[10px] px-1.5 dark:text-purple-400 font-medium">
                                         Compensatorio
                                       </Badge>
                                     )}
@@ -508,26 +507,26 @@ export function RequestsTable({ type, onRequestDeleted, canApprove = false, mode
                             {/* Información Principal */}
                             <div className="space-y-2">
                               <div className="flex items-center space-x-2">
-                                <Calendar className="h-4 w-4 text-blue-600 flex-shrink-0" />
+                                <Calendar className="h-4 w-4 text-primary flex-shrink-0" />
                                 <div className="min-w-0 flex-1">
-                                  <div className="text-sm font-medium text-gray-900">
+                                  <div className="text-sm font-medium text-foreground">
                                     {type === "permits"
                                       ? (request as PermitRequest).date
                                       : (request as VacationRequest).period}
                                   </div>
                                   {type === "permits" && (
-                                    <div className="text-xs text-gray-500">{(request as PermitRequest).timeRange}</div>
+                                    <div className="text-xs text-muted-foreground">{(request as PermitRequest).timeRange}</div>
                                   )}
                                 </div>
                               </div>
 
                               {type === "permits" && (
                                 <div className="space-y-1">
-                                  <div className="text-sm font-medium text-gray-900">
+                                  <div className="text-sm font-medium text-foreground">
                                     {(request as PermitRequest).reason}
                                   </div>
                                   {request.employeeComments && (
-                                    <div className="bg-gray-50 p-2 rounded text-xs">
+                                    <div className="bg-muted/30 border border-border/50 p-2 rounded text-xs text-foreground">
                                       {renderFormattedContent(request.employeeComments)}
                                     </div>
                                   )}
@@ -540,7 +539,7 @@ export function RequestsTable({ type, onRequestDeleted, canApprove = false, mode
                             </div>
 
                             {/* Supervisor / Empleado y Fecha */}
-                            <div className="flex items-center justify-between text-xs text-gray-500 pt-2 border-t">
+                            <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-border/50">
                               <div className="flex items-center space-x-1">
                                 <User className="h-3 w-3" />
                                 <span>
@@ -557,8 +556,8 @@ export function RequestsTable({ type, onRequestDeleted, canApprove = false, mode
 
                             {/* Fecha de Respuesta */}
                             {request.responseDate && (
-                              <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
-                                <strong>Respondido:</strong> {request.responseDate}
+                              <div className="text-xs text-foreground bg-muted/50 p-2 rounded border border-border/50">
+                                <strong className="text-muted-foreground font-medium">Respondido:</strong> {request.responseDate}
                               </div>
                             )}
                           </div>
@@ -571,8 +570,8 @@ export function RequestsTable({ type, onRequestDeleted, canApprove = false, mode
 
               {/* Paginación */}
               {totalPages > 1 && (
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t bg-gray-50 px-4 py-3 rounded-b-lg">
-                  <div className="text-sm text-gray-700 order-2 sm:order-1">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-border/50 bg-muted/30 px-4 py-3 rounded-b-lg mt-0">
+                  <div className="text-sm text-muted-foreground order-2 sm:order-1 font-medium">
                     Mostrando {(currentPage - 1) * itemsPerPage + 1} a{" "}
                     {Math.min(currentPage * itemsPerPage, totalCount)} de {totalCount} solicitudes
                   </div>
@@ -582,7 +581,7 @@ export function RequestsTable({ type, onRequestDeleted, canApprove = false, mode
                       size="sm"
                       onClick={goToPreviousPage}
                       disabled={currentPage === 1}
-                      className="p-2"
+                      className="p-2 transition-all bg-background border-border"
                     >
                       <ChevronLeft className="h-4 w-4" />
                     </Button>
@@ -649,14 +648,14 @@ export function RequestsTable({ type, onRequestDeleted, canApprove = false, mode
           font-weight: 600;
           margin: 0.25rem 0;
           line-height: 1.3;
-          color: #1f2937;
+          color: inherit;
         }
         .formatted-content h3 {
           font-size: 0.8125rem;
           font-weight: 600;
           margin: 0.25rem 0;
           line-height: 1.3;
-          color: #1f2937;
+          color: inherit;
         }
         .formatted-content ul, .formatted-content ol {
           margin: 0.25rem 0;
@@ -664,18 +663,20 @@ export function RequestsTable({ type, onRequestDeleted, canApprove = false, mode
         }
         .formatted-content li {
           margin: 0.125rem 0;
-          color: #374151;
+          color: inherit;
+          opacity: 0.9;
           font-size: 0.75rem;
         }
         .formatted-content p {
           margin: 0.25rem 0;
-          color: #374151;
+          color: inherit;
+          opacity: 0.9;
           line-height: 1.4;
           font-size: 0.75rem;
         }
         .formatted-content strong {
           font-weight: 600;
-          color: #1f2937;
+          color: inherit;
         }
         .formatted-content em {
           font-style: italic;
@@ -688,7 +689,7 @@ export function RequestsTable({ type, onRequestDeleted, canApprove = false, mode
           unicode-bidi: normal !important;
         }
 
-        /* Contenedor de comentarios con degradado */
+        /* Contenedor de comentarios con degradado inteligente para modo claro y oscuro */
         .comment-container {
           position: relative;
           max-height: 3.5rem; /* ~56px para aproximadamente 3 líneas */
@@ -706,21 +707,27 @@ export function RequestsTable({ type, onRequestDeleted, canApprove = false, mode
           left: 0;
           right: 0;
           height: 1.25rem; /* 20px */
-          background: linear-gradient(to bottom, transparent 0%, rgba(255, 255, 255, 0.8) 50%, rgba(255, 255, 255, 1) 100%);
+          background: linear-gradient(to bottom, transparent 0%, var(--card, hsl(0,0%,100%)) 100%);
           pointer-events: none;
           z-index: 2;
         }
 
+        :global(.dark) .comment-gradient {
+          background: linear-gradient(to bottom, transparent 0%, rgba(15, 23, 42, 0.9) 100%);
+        }
+
         /* Efecto hover en la fila */
         tr:hover .comment-container {
-          background-color: rgba(59, 130, 246, 0.02);
+          background-color: var(--muted, rgba(255, 255, 255, 0.05));
           border-radius: 4px;
-          padding: 2px 4px;
-          margin: -2px -4px;
         }
 
         tr:hover .comment-gradient {
-          background: linear-gradient(to bottom, transparent 0%, rgba(239, 246, 255, 0.8) 50%, rgba(239, 246, 255, 1) 100%);
+          background: linear-gradient(to bottom, transparent 0%, var(--muted, rgba(255, 255, 255, 0.05)) 100%);
+        }
+
+        :global(.dark) tr:hover .comment-gradient {
+          background: linear-gradient(to bottom, transparent 0%, rgba(30, 41, 59, 0.9) 100%);
         }
 
         /* Tabla con layout fijo para evitar scroll horizontal */
