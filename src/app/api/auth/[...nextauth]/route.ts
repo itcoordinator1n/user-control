@@ -36,7 +36,9 @@ interface Pay  {
       // ... cualquier otro claim que venga en tu token
     } 
 
-const handler = NextAuth({
+import { NextAuthOptions } from "next-auth";
+
+export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
       name: 'Credentials',
@@ -45,18 +47,51 @@ const handler = NextAuth({
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`, {
+        const url = `${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`;
+        const options = {
           method: 'POST',
           body: JSON.stringify({ credentials }),
           headers: { "Content-Type": "application/json" }
-        });
-        const data = await res.json();
-        console.log("Acceso en el servidor data:", data)
-        if (res.ok && data) {
-          return {
-            id: data.user.id_usuario,
-            token: data.token
-          };
+        };
+
+        const maxRetries = 2; // Intenta hasta 3 veces en total (1 original + 2 reintentos)
+        let attempt = 0;
+
+        while (attempt <= maxRetries) {
+          try {
+            const res = await fetch(url, options);
+            
+            // Si la respuesta es un error de servidor (5xx) o timeout, podríamos reintentar. 
+            // Si es un error 4xx (credenciales inválidas), no reintentamos.
+            if (!res.ok && res.status >= 500 && attempt < maxRetries) {
+               attempt++;
+               await new Promise(resolve => setTimeout(resolve, 2000)); // Esperar 2 segundos antes de reintentar
+               continue;
+            }
+
+            const data = await res.json();
+            console.log("Acceso en el servidor data:", data);
+            
+            if (res.ok && data) {
+              return {
+                id: data.user.id_usuario,
+                token: data.token
+              };
+            }
+            
+            return null; // Credenciales inválidas u otro error controlado
+            
+          } catch (error) {
+            console.error(`Error connecting to login API (Attempt ${attempt + 1}):`, error);
+            if (attempt < maxRetries) {
+              attempt++;
+              await new Promise(resolve => setTimeout(resolve, 2000)); // Esperar 2 segundos si hay error de red
+            } else {
+              // Si ya superamos los reintentos, devolvemos null para que NextAuth rechace el login
+              // En un futuro podrías lanzar un error personalizado para mostrar un mensaje específico en el frontend.
+              return null; 
+            }
+          }
         }
         return null;
       }
@@ -109,6 +144,8 @@ const handler = NextAuth({
     signOut: '/page/landing',
     // error: '/auth/error',
   }
-});
+};
+
+const handler = NextAuth(authOptions);
 
 export { handler as GET, handler as POST };
