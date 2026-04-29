@@ -224,6 +224,7 @@ export default function SupervisorDashboard() {
   const handleApprove = async (actionStatus: string) => {
     if (!selectedRequest) return;
     const isApproving = actionStatus === "Aprobada";
+    setIsDetailOpen(false);
     setWaitAction(isApproving ? "approve" : "reject");
     setWaitStatus("loading");
     try {
