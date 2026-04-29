@@ -254,7 +254,7 @@ export default function DetalleControlTiempos() {
     if (!stopModal) return;
     const { actividadId, intervaloId } = stopModal;
 
-    if (action === "TRABAJO_TERMINADO" || action === "PAUSA") {
+    if (action === "TRABAJO_TERMINADO") {
       const intervaloFin = await terminarIntervalo(
         intervaloId,
         { motivo_pausa: action, observaciones },
