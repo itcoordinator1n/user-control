@@ -195,7 +195,7 @@ export async function exportControlToExcel(control: ProduccionControl) {
       row.getCell(2).font = { bold: true };
       currentRow++;
     } else if (item.tipo === "actividad") {
-      const matchingActs = control.actividades.filter(a => a.actividad_nombre === item.label);
+      const matchingActs = control.actividades.filter(a => a.actividad_nombre === item.label && !renderedIds.has(a.id));
       
       if (matchingActs.length > 0) {
         matchingActs.forEach(matchedAct => {

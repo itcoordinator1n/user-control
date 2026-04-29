@@ -34,38 +34,24 @@ import {
   addActividad,
   iniciarIntervalo,
   terminarIntervalo,
+  crearInterrupcion,
   updateControlTiempos,
   deleteActividad,
   deleteIntervalo,
+  getAreas,
+  getAreasByProducto,
+  getGruposPorArea,
+  getActividadesPorGrupo,
+  deleteControl,
   ProduccionControl,
   ProduccionActividad,
   ProduccionEmpleado,
-  ProductoBasico
+  ProductoBasico,
+  ProduccionArea,
+  ProduccionGrupo,
+  ActividadCatalogo
 } from "@/lib/services/produccion.service";
-
-const ACTIVIDADES = [
-  "Acomodar Etiqueta",
-  "Armar caja",
-  "Codificar",
-  "Codificar frasco",
-  "Colocar frascos",
-  "Empacar",
-  "Envasar",
-  "Envasar/Taponar",
-  "Etiquetar",
-  "Fabricar",
-  "Filtrar",
-  "Lavar Frascos",
-  "Limpiar Area",
-  "Limpiar Filtros",
-  "Limpiar Maquinas",
-  "Limpiar Tanques",
-  "Limpiar Utensilios",
-  "Limpiar frasco",
-  "Revisar y Apartar",
-  "Sellar Corrugado y Estibar",
-  "Tapar"
-];
+import { StopTimerModal, StopAction } from "@/components/produccion/stop-timer-modal";
 
 
 
@@ -101,6 +87,8 @@ export default function NuevoControlTiempos() {
   // State: Maestros
   const [empleados, setEmpleados] = useState<ProduccionEmpleado[]>([]);
   const [productos, setProductos] = useState<ProductoBasico[]>([]);
+  const [areasCatalog, setAreasCatalog] = useState<ProduccionArea[]>([]);
+  const [areasProducto, setAreasProducto] = useState<ProduccionArea[]>([]);
   
   // State: Control (Cabecera)
   const [control, setControl] = useState<ProduccionControl | null>(null);
@@ -113,13 +101,25 @@ export default function NuevoControlTiempos() {
   });
   const [isCreating, setIsCreating] = useState(false);
 
-  // State: Modal Nueva Actividad
+  // State: Modal Nueva Actividad (paso a paso)
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalStep, setModalStep] = useState<1 | 2 | 3 | 4>(1);
+  const [modalGrupos, setModalGrupos] = useState<ProduccionGrupo[]>([]);
+  const [modalActividades, setModalActividades] = useState<ActividadCatalogo[]>([]);
+  const [modalLoadingGrupos, setModalLoadingGrupos] = useState(false);
+  const [modalLoadingActs, setModalLoadingActs] = useState(false);
+  const [selectedGrupo, setSelectedGrupo] = useState<ProduccionGrupo | null>(null);
   const [nuevaAct, setNuevaAct] = useState({
-    categoria: "General", // Keeping field for backend compatibility if needed
+    categoria: "General",
     actividad_nombre: "",
     fk_operario: 0
   });
+  const [pendingQueue, setPendingQueue] = useState<Array<{
+    categoria: string;
+    actividad_nombre: string;
+    fk_operario: number;
+    operario_nombre: string;
+  }>>([]);
   const [isAddingAct, setIsAddingAct] = useState(false);
 
   // State: Modal Resumen
@@ -127,22 +127,78 @@ export default function NuevoControlTiempos() {
 
   // State: Búsqueda
   const [searchTerm, setSearchTerm] = useState("");
-  const [viewMode, setViewMode] = useState<"cards" | "table" | "list">("list"); // Default to list for current view type
+  const [viewMode, setViewMode] = useState<"cards" | "table" | "list">("list");
+
+  // State: Stop-timer modal
+  const [stopModal, setStopModal] = useState<{
+    actividadId: string;
+    actividadNombre: string;
+    intervaloId: string;
+  } | null>(null);
 
   // Load masters
   useEffect(() => {
     const load = async () => {
-      const [emp, prod] = await Promise.all([
-        getEmpleadosProduccion(session?.user?.accessToken),
-        getProductos(session?.user?.accessToken)
-      ]);
-      setEmpleados(emp);
-      setProductos(prod);
+      try {
+        const [emp, prod, areas] = await Promise.all([
+          getEmpleadosProduccion(session?.user?.accessToken),
+          getProductos(session?.user?.accessToken),
+          getAreas(session?.user?.accessToken)
+        ]);
+        setEmpleados(emp);
+        setProductos(prod);
+        setAreasCatalog(areas);
+      } catch (error) {
+        console.error("Error loading masters:", error);
+      }
     };
     if (session?.user?.accessToken) {
       load();
     }
   }, [session?.user?.accessToken]);
+
+  // Abre el modal y carga los grupos segun el area seleccionada
+  const handleOpenModal = async () => {
+    setModalStep(1);
+    setSelectedGrupo(null);
+    setNuevaAct({ categoria: "General", actividad_nombre: "", fk_operario: 0 });
+    setModalGrupos([]);
+    setModalActividades([]);
+    setIsModalOpen(true);
+
+    const areaObj =
+      areasCatalog.find(a => a.nombre === formCabecera.area) ??
+      areasProducto.find(a => a.nombre === formCabecera.area);
+
+    if (areaObj) {
+      setModalLoadingGrupos(true);
+      try {
+        const grupos = await getGruposPorArea(areaObj.id, session?.user?.accessToken);
+        setModalGrupos(grupos);
+      } catch (e) {
+        console.error("Error cargando grupos:", e);
+      } finally {
+        setModalLoadingGrupos(false);
+      }
+    }
+  };
+
+  // Paso 1 -> 2: seleccionar grupo y cargar sus actividades
+  const handleSelectGrupo = async (grupo: ProduccionGrupo) => {
+    setSelectedGrupo(grupo);
+    setNuevaAct(prev => ({ ...prev, actividad_nombre: "", categoria: grupo.nombre }));
+    setModalActividades([]);
+    setModalLoadingActs(true);
+    setModalStep(2);
+    try {
+      const acts = await getActividadesPorGrupo(grupo.id, session?.user?.accessToken);
+      setModalActividades(acts);
+    } catch (e) {
+      console.error("Error cargando actividades:", e);
+    } finally {
+      setModalLoadingActs(false);
+    }
+  };
 
   const handleCrearCabecera = async () => {
     if (!formCabecera.n_lote || !formCabecera.op || !formCabecera.fk_producto || !formCabecera.area) {
@@ -165,79 +221,105 @@ export default function NuevoControlTiempos() {
     }
   };
 
-  const handleAgregarActividad = async () => {
-    if (!nuevaAct.actividad_nombre || !nuevaAct.fk_operario) {
-      alert("Seleccione una actividad y un operario.");
-      return;
-    }
+  // Añade la actividad a la cola y pasa al paso 4
+  const handleAddToQueue = () => {
+    if (!nuevaAct.actividad_nombre || !nuevaAct.fk_operario) return;
+    const operario = empleados.find(e => e.int_id_empleado === nuevaAct.fk_operario);
+    setPendingQueue(prev => [
+      ...prev,
+      {
+        categoria: nuevaAct.categoria,
+        actividad_nombre: nuevaAct.actividad_nombre,
+        fk_operario: nuevaAct.fk_operario,
+        operario_nombre: operario?.nombre_completo || "Operario",
+      },
+    ]);
+    setModalStep(4);
+    setNuevaAct({ categoria: "General", actividad_nombre: "", fk_operario: 0 });
+  };
 
-    // Validación: Verificar si el operario ya tiene un cronómetro corriendo en OTRA actividad
-    if (control) {
-      const isRunningElsewhere = control.actividades.some(a => 
-        a.fk_operario === nuevaAct.fk_operario && 
-        a.intervalos.some(i => i.hora_fin === null)
-      );
-
-      if (isRunningElsewhere) {
-        alert("Este operario ya tiene un cronómetro activo en otra actividad. Deténgalo primero.");
-        return;
-      }
-    }
-
+  // Inicia todas las actividades de la cola en paralelo
+  const handleIniciarTodas = async () => {
+    if (pendingQueue.length === 0 || !control) return;
     setIsAddingAct(true);
     try {
-      // 1. Agregar actividad
-      const operario = empleados.find(e => e.int_id_empleado === nuevaAct.fk_operario);
-      const act = await addActividad({
-        fk_control: control!.id,
-        ...nuevaAct,
-        operario_nombre: operario?.nombre_completo || "Operario Desconocido"
-      }, session?.user?.accessToken);
-      
-      // 2. Iniciar el primer intervalo automáticamente
-      const intervalo = await iniciarIntervalo(act.id, session?.user?.accessToken);
-      act.intervalos = [intervalo];
-
-      // 3. Actualizar estado local
-      setControl(prev => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          actividades: [...prev.actividades, act]
-        };
-      });
-      
+      const results = await Promise.all(
+        pendingQueue.map(async (item) => {
+          const act = await addActividad(
+            { fk_control: control.id, ...item },
+            session?.user?.accessToken
+          );
+          const intervalo = await iniciarIntervalo(act.id, session?.user?.accessToken);
+          act.intervalos = [intervalo];
+          return act;
+        })
+      );
+      setControl(prev =>
+        prev ? { ...prev, actividades: [...prev.actividades, ...results] } : prev
+      );
       setIsModalOpen(false);
+      setModalStep(1);
+      setSelectedGrupo(null);
+      setPendingQueue([]);
       setNuevaAct({ categoria: "General", actividad_nombre: "", fk_operario: 0 });
     } catch (e) {
       console.error(e);
-      alert("Error al iniciar actividad");
+      alert("Error al iniciar actividades");
     } finally {
       setIsAddingAct(false);
     }
   };
 
-  const handleTerminarAccion = async (actividadId: string, intervaloId: string) => {
-    try {
-      const intervaloFin = await terminarIntervalo(intervaloId, session?.user?.accessToken);
-      
+  const handleTerminarAccion = (actividadId: string, intervaloId: string) => {
+    const act = control?.actividades.find(a => a.id === actividadId);
+    setStopModal({
+      actividadId,
+      actividadNombre: act?.actividad_nombre ?? "Actividad",
+      intervaloId,
+    });
+  };
+
+  const handleStopConfirm = async (action: StopAction, observaciones: string) => {
+    if (!stopModal) return;
+    const { actividadId, intervaloId } = stopModal;
+
+    if (action === "TRABAJO_TERMINADO" || action === "PAUSA") {
+      const intervaloFin = await terminarIntervalo(
+        intervaloId,
+        { motivo_pausa: action, observaciones },
+        session?.user?.accessToken
+      );
       setControl(prev => {
         if (!prev) return prev;
-        const newActividades = prev.actividades.map(a => {
-          if (a.id === actividadId) {
-            return {
-              ...a,
-              intervalos: a.intervalos.map(i => i.id === intervaloId ? { ...i, hora_fin: intervaloFin.hora_fin } : i)
-            };
-          }
-          return a;
-        });
-        return { ...prev, actividades: newActividades };
+        return {
+          ...prev,
+          actividades: prev.actividades.map(a =>
+            a.id === actividadId
+              ? { ...a, intervalos: a.intervalos.map(i => i.id === intervaloId ? { ...i, hora_fin: intervaloFin.hora_fin, motivo_pausa: intervaloFin.motivo_pausa, observaciones: intervaloFin.observaciones } : i) }
+              : a
+          ),
+        };
       });
-    } catch (e) {
-      console.error(e);
-      alert("Error al detener el cronómetro");
+    } else if (action === "INTERRUPCION") {
+      const intervaloFin = await terminarIntervalo(
+        intervaloId,
+        { motivo_pausa: "INTERRUPCION", observaciones },
+        session?.user?.accessToken
+      );
+      const interrupcion = await crearInterrupcion(intervaloId, observaciones, session?.user?.accessToken);
+      setControl(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          actividades: prev.actividades.map(a =>
+            a.id === actividadId
+              ? { ...a, intervalos: a.intervalos.map(i => i.id === intervaloId ? { ...i, hora_fin: intervaloFin.hora_fin, motivo_pausa: "INTERRUPCION", observaciones, interrupciones: [interrupcion] } : i) }
+              : a
+          ),
+        };
+      });
     }
+    setStopModal(null);
   };
 
   const handleNuevoIntervalo = async (actividad: ProduccionActividad) => {
@@ -349,6 +431,20 @@ export default function NuevoControlTiempos() {
     }
   };
 
+  const handleEliminarControl = async () => {
+    if (!control) return;
+    if (!confirm("¿Está seguro de eliminar TODO el registro de control de tiempos y todas sus actividades? Esta acción no se puede deshacer.")) return;
+    try {
+      const ok = await deleteControl(control.id, session?.user?.accessToken);
+      if (ok) {
+        alert("Registro eliminado exitosamente");
+        router.push("/page/produccion/control-tiempos");
+      } else {
+        alert("No se pudo eliminar el registro. Verifique si tiene actividades en progreso.");
+      }
+    } catch (e) { console.error(e); alert("Error al eliminar el registro"); }
+  };
+
   const operariosOcupadosIds = control?.actividades
     .filter(a => a.intervalos.some(i => i.hora_fin === null))
     .map(a => a.fk_operario) || [];
@@ -366,6 +462,16 @@ export default function NuevoControlTiempos() {
             {control ? "Registro en Progreso" : "Nuevo Control de Tiempos"}
           </h1>
         </div>
+        {control && (
+          <Button 
+            variant="ghost" 
+            onClick={handleEliminarControl}
+            className="ml-auto text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 gap-2"
+          >
+            <Trash2 className="h-4 w-4" />
+            <span className="hidden sm:inline">Eliminar Registro</span>
+          </Button>
+        )}
       </div>
 
       {/* CABECERA */}
@@ -389,13 +495,29 @@ export default function NuevoControlTiempos() {
             {control ? (
               <input type="text" className="w-full px-3 py-2 border rounded-md bg-slate-100" disabled value={control.producto_nombre} />
             ) : (
-              <Select onValueChange={(val) => {
-                const prod = productos.find(p => p.int_id_producto === parseInt(val));
+              <Select onValueChange={async (val) => {
+                const productId = parseInt(val);
+                const prod = productos.find(p => p.int_id_producto === productId);
+                
                 setFormCabecera({
                   ...formCabecera, 
-                  fk_producto: parseInt(val),
-                  area: prod?.area_default || ""
+                  fk_producto: productId,
+                  area: "" // Reset para forzar selección válida
                 });
+
+                // Cargar áreas específicas del producto
+                try {
+                  const pAreas = await getAreasByProducto(productId, session?.user?.accessToken);
+                  setAreasProducto(pAreas);
+                  
+                  // Si solo hay una área, seleccionarla automáticamente
+                  if (pAreas.length === 1) {
+                    setFormCabecera(prev => ({ ...prev, area: pAreas[0].nombre }));
+                  }
+                } catch (e) {
+                  console.error("Error al cargar áreas del producto:", e);
+                  setAreasProducto([]);
+                }
               }}>
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccionar producto..." />
@@ -418,12 +540,14 @@ export default function NuevoControlTiempos() {
             ) : (
               <Select value={formCabecera.area} onValueChange={(val) => setFormCabecera({...formCabecera, area: val})}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar área..." />
+                  <SelectValue placeholder={areasProducto.length > 0 ? "Seleccionar área..." : "Todas las áreas..."} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Líquidos">Líquidos</SelectItem>
-                  <SelectItem value="Sólidos">Sólidos</SelectItem>
-                  <SelectItem value="Semisólidos">Semisólidos</SelectItem>
+                  {(areasProducto.length > 0 ? areasProducto : areasCatalog).map(area => (
+                    <SelectItem key={area.id} value={area.nombre}>
+                      {area.nombre}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             )}
@@ -514,7 +638,7 @@ export default function NuevoControlTiempos() {
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
               />
-              <Button onClick={() => setIsModalOpen(true)} className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shrink-0">
+              <Button onClick={handleOpenModal} className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shrink-0">
                 <PlusCircle className="h-4 w-4" />
                 Nueva Actividad
               </Button>
@@ -910,48 +1034,200 @@ export default function NuevoControlTiempos() {
         </div>
       )}
 
-      {/* DIALOG NUEVA ACTIVIDAD */}
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+      {/* DIALOG NUEVA ACTIVIDAD - Paso a Paso + Cola */}
+      <Dialog open={isModalOpen} onOpenChange={(open) => { if (!open) { setIsModalOpen(false); setModalStep(1); setPendingQueue([]); } }}>
+        <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Nueva Actividad</DialogTitle>
+            {modalStep !== 4 && (
+              <div className="flex items-center gap-2 mb-1">
+                {["Grupo", "Actividad", "Operario"].map((label, idx) => {
+                  const step = (idx + 1) as 1 | 2 | 3;
+                  const isActive = modalStep === step;
+                  const isDone = (modalStep as number) > step;
+                  return (
+                    <div key={step} className="flex items-center gap-1.5">
+                      <div className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold transition-colors ${
+                        isDone ? "bg-emerald-500 text-white" :
+                        isActive ? "bg-blue-600 text-white" :
+                        "bg-slate-200 dark:bg-slate-700 text-slate-400"
+                      }`}>
+                        {isDone ? "✓" : step}
+                      </div>
+                      <span className={`text-xs font-medium ${ isActive ? "text-slate-800 dark:text-white" : "text-slate-400" }`}>{label}</span>
+                      {idx < 2 && <div className="h-px w-6 bg-slate-200 dark:bg-slate-700" />}
+                    </div>
+                  );
+                })}
+                {pendingQueue.length > 0 && (
+                  <span className="ml-auto text-xs font-semibold bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-full">
+                    {pendingQueue.length} en cola
+                  </span>
+                )}
+              </div>
+            )}
+            <DialogTitle className="text-base">
+              {modalStep === 1 && "Seleccionar Grupo"}
+              {modalStep === 2 && `${selectedGrupo ? selectedGrupo.nombre : ""} — Seleccionar Actividad`}
+              {modalStep === 3 && "Asignar Operario"}
+              {modalStep === 4 && `Actividades a iniciar (${pendingQueue.length})`}
+            </DialogTitle>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            
-            <div className="grid gap-2">
-              <Label>Actividad a realizar</Label>
-              <Combobox 
-                options={ACTIVIDADES.map(act => ({ value: act, label: act }))}
-                value={nuevaAct.actividad_nombre}
-                onValueChange={(val) => setNuevaAct(prev => ({...prev, actividad_nombre: val}))}
-                placeholder="Seleccione una actividad"
-                searchPlaceholder="Buscar actividad..."
-              />
-            </div>
 
-            <div className="grid gap-2">
-              <Label>Operario</Label>
-              <Combobox 
-                options={empleadosDisponibles.map(e => ({ value: e.int_id_empleado.toString(), label: e.nombre_completo }))}
-                value={nuevaAct.fk_operario ? nuevaAct.fk_operario.toString() : ""}
-                onValueChange={(val) => setNuevaAct(prev => ({...prev, fk_operario: parseInt(val)}))}
-                placeholder="Seleccione un empleado"
-                searchPlaceholder="Buscar operario..."
-                emptyMessage={empleadosDisponibles.length === 0 ? "Todos los operarios están ocupados" : "No se encontraron resultados"}
-              />
-            </div>
+          <div className="py-4 min-h-[200px]">
+            {/* PASO 1: Grupos */}
+            {modalStep === 1 && (
+              <div className="space-y-2">
+                {modalLoadingGrupos ? (
+                  <div className="flex items-center justify-center py-10 text-slate-400">
+                    <Loader2 className="h-6 w-6 animate-spin mr-2" /> Cargando grupos...
+                  </div>
+                ) : modalGrupos.length === 0 ? (
+                  <div className="text-center py-8 text-slate-400 text-sm">
+                    No hay grupos disponibles para el área seleccionada.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-3">
+                    {modalGrupos.map((grupo) => (
+                      <button
+                        key={grupo.id}
+                        onClick={() => handleSelectGrupo(grupo)}
+                        className="flex flex-col items-center justify-center gap-2 p-5 rounded-xl border-2 border-slate-200 dark:border-slate-700 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all text-center group"
+                      >
+                        <span className="text-2xl">
+                          {grupo.nombre === "Fabricar" ? "🔬" :
+                           grupo.nombre === "Filtrar" ? "🌀" :
+                           grupo.nombre === "Envasar" ? "🧴" :
+                           grupo.nombre === "Etiquetar" ? "🏷️" :
+                           grupo.nombre === "Empacar" ? "📦" :
+                           grupo.nombre === "Codificar" ? "🔢" : "⚙️"}
+                        </span>
+                        <span className="text-sm font-semibold text-slate-700 dark:text-slate-200 group-hover:text-blue-600">{grupo.nombre}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
+            {/* PASO 2: Actividades del grupo */}
+            {modalStep === 2 && (
+              <div className="space-y-3">
+                {modalLoadingActs ? (
+                  <div className="flex items-center justify-center py-10 text-slate-400">
+                    <Loader2 className="h-6 w-6 animate-spin mr-2" /> Cargando actividades...
+                  </div>
+                ) : (
+                  <Combobox
+                    options={modalActividades.map(a => ({ value: a.nombre, label: a.nombre }))}
+                    value={nuevaAct.actividad_nombre}
+                    onValueChange={(val) => {
+                      setNuevaAct(prev => ({ ...prev, actividad_nombre: val }));
+                      if (val) setModalStep(3);
+                    }}
+                    placeholder="Buscar actividad..."
+                    searchPlaceholder="Escriba para filtrar..."
+                    emptyMessage="No se encontraron actividades"
+                  />
+                )}
+                {nuevaAct.actividad_nombre && (
+                  <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 text-sm px-3 py-2 rounded-md">
+                    <span className="font-medium">Seleccionado:</span> {nuevaAct.actividad_nombre}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* PASO 3: Operario */}
+            {modalStep === 3 && (() => {
+              const operariosEnCola = new Set(pendingQueue.map(q => q.fk_operario));
+              const disponibles = empleadosDisponibles.filter(e => !operariosEnCola.has(e.int_id_empleado));
+              return (
+                <div className="space-y-3">
+                  <div className="bg-slate-50 dark:bg-slate-800/50 border rounded-lg p-3 text-sm space-y-1">
+                    <div className="flex gap-2">
+                      <span className="text-slate-500">Grupo:</span>
+                      <span className="font-medium text-slate-700 dark:text-slate-200">{selectedGrupo ? selectedGrupo.nombre : ""}</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <span className="text-slate-500">Actividad:</span>
+                      <span className="font-medium text-slate-700 dark:text-slate-200">{nuevaAct.actividad_nombre}</span>
+                    </div>
+                  </div>
+                  <Label>Asignar a operario</Label>
+                  <Combobox
+                    options={disponibles.map(e => ({ value: e.int_id_empleado.toString(), label: e.nombre_completo }))}
+                    value={nuevaAct.fk_operario ? nuevaAct.fk_operario.toString() : ""}
+                    onValueChange={(val) => setNuevaAct(prev => ({ ...prev, fk_operario: parseInt(val) }))}
+                    placeholder="Seleccione un operario"
+                    searchPlaceholder="Buscar operario..."
+                    emptyMessage={disponibles.length === 0 ? "Todos los operarios están ocupados o asignados" : "No se encontraron resultados"}
+                  />
+                </div>
+              );
+            })()}
+
+            {/* PASO 4: Cola de actividades */}
+            {modalStep === 4 && (
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">Las siguientes actividades iniciarán al mismo tiempo:</p>
+                <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
+                  {pendingQueue.map((item, idx) => (
+                    <div key={idx} className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 border rounded-lg px-3 py-2.5 text-sm">
+                      <div>
+                        <span className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase">{item.categoria}</span>
+                        <p className="font-medium text-slate-800 dark:text-white">{item.actividad_nombre}</p>
+                        <p className="text-xs text-slate-500">{item.operario_nombre}</p>
+                      </div>
+                      <button
+                        onClick={() => setPendingQueue(prev => prev.filter((_, i) => i !== idx))}
+                        className="text-red-400 hover:text-red-600 transition-colors p-1"
+                        title="Eliminar de la cola"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsModalOpen(false)}>Cancelar</Button>
-            <Button 
-              onClick={handleAgregarActividad} 
-              disabled={isAddingAct || !nuevaAct.actividad_nombre || !nuevaAct.fk_operario}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
-            >
-              {isAddingAct ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-              Comenzar
-            </Button>
+
+          <DialogFooter className="gap-2 flex-wrap">
+            {(modalStep === 2 || modalStep === 3) && (
+              <Button variant="outline" onClick={() => setModalStep((s) => (s > 1 ? ((s - 1) as 1 | 2 | 3 | 4) : s))}>
+                Atrás
+              </Button>
+            )}
+            <Button variant="outline" onClick={() => { setIsModalOpen(false); setModalStep(1); setPendingQueue([]); }}>Cancelar</Button>
+            {modalStep === 3 && (
+              <Button
+                onClick={handleAddToQueue}
+                disabled={!nuevaAct.actividad_nombre || !nuevaAct.fk_operario}
+                className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
+              >
+                <PlusCircle className="h-4 w-4" />
+                Añadir a lista
+              </Button>
+            )}
+            {modalStep === 4 && (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => { setModalStep(1); setNuevaAct({ categoria: "General", actividad_nombre: "", fk_operario: 0 }); }}
+                  className="gap-2"
+                >
+                  <PlusCircle className="h-4 w-4" /> Agregar otra
+                </Button>
+                <Button
+                  onClick={handleIniciarTodas}
+                  disabled={isAddingAct || pendingQueue.length === 0}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
+                >
+                  {isAddingAct ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+                  Iniciar {pendingQueue.length > 1 ? `${pendingQueue.length} actividades` : "actividad"}
+                </Button>
+              </>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1038,6 +1314,14 @@ export default function NuevoControlTiempos() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* MODAL DETENER CRONÓMETRO */}
+      <StopTimerModal
+        open={!!stopModal}
+        actividadNombre={stopModal ? stopModal.actividadNombre : ""}
+        onClose={() => setStopModal(null)}
+        onConfirm={handleStopConfirm}
+      />
     </div>
   );
 }

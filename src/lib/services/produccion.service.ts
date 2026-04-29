@@ -9,10 +9,39 @@ export interface ProductoBasico {
   area_default?: string; // Ej: "Líquidos", "Sólidos", "Semisólidos"
 }
 
+export interface ProduccionArea {
+  id: number;
+  nombre: string;
+}
+
+export interface ProduccionGrupo {
+  id: number;
+  nombre: string;
+}
+
+export interface ActividadCatalogo {
+  id: number;
+  nombre: string;
+  fk_grupo: number;
+}
+
+export type MotivoPausa = "TRABAJO_TERMINADO" | "INTERRUPCION" | "PAUSA";
+
+export interface ProduccionInterrupcion {
+  id: string;
+  fk_intervalo: string;
+  motivo: string;
+  hora_inicio: string;
+  hora_fin: string | null;
+}
+
 export interface ProduccionIntervalo {
   id: string;
   hora_inicio: string;
   hora_fin: string | null;
+  motivo_pausa?: MotivoPausa | null;
+  observaciones?: string | null;
+  interrupciones?: ProduccionInterrupcion[];
 }
 
 export interface ProduccionActividad {
@@ -78,6 +107,30 @@ export async function getEmpleadosProduccion(token?: string): Promise<Produccion
 export async function getProductos(token?: string): Promise<ProductoBasico[]> {
   const res = await fetch(`${API_URL}/api/productos`, { headers: getHeaders(token) });
   if (!res.ok) { const txt = await res.text().catch(()=>""); console.error("API ERROR", res.status, txt); throw new Error("Error fetching productos" + ": " + res.status + " " + txt); }
+  return res.json();
+}
+
+export async function getAreas(token?: string): Promise<ProduccionArea[]> {
+  const res = await fetch(`${API_URL}/api/areas`, { headers: getHeaders(token) });
+  if (!res.ok) { const txt = await res.text().catch(()=>""); console.error("API ERROR", res.status, txt); throw new Error("Error fetching areas" + ": " + res.status + " " + txt); }
+  return res.json();
+}
+
+export async function getAreasByProducto(productoId: number, token?: string): Promise<ProduccionArea[]> {
+  const res = await fetch(`${API_URL}/api/areas/producto/${productoId}`, { headers: getHeaders(token) });
+  if (!res.ok) { const txt = await res.text().catch(()=>""); console.error("API ERROR", res.status, txt); throw new Error("Error fetching product areas" + ": " + res.status + " " + txt); }
+  return res.json();
+}
+
+export async function getGruposPorArea(idArea: number, token?: string): Promise<ProduccionGrupo[]> {
+  const res = await fetch(`${API_URL}/api/produccion/grupos/area/${idArea}`, { headers: getHeaders(token) });
+  if (!res.ok) { const txt = await res.text().catch(()=>""); console.error("API ERROR", res.status, txt); throw new Error("Error fetching grupos" + ": " + res.status + " " + txt); }
+  return res.json();
+}
+
+export async function getActividadesPorGrupo(idGrupo: number, token?: string): Promise<ActividadCatalogo[]> {
+  const res = await fetch(`${API_URL}/api/produccion/actividades-catalogo/grupo/${idGrupo}`, { headers: getHeaders(token) });
+  if (!res.ok) { const txt = await res.text().catch(()=>""); console.error("API ERROR", res.status, txt); throw new Error("Error fetching actividades" + ": " + res.status + " " + txt); }
   return res.json();
 }
 
@@ -178,12 +231,43 @@ export async function iniciarIntervalo(fk_actividad: string, token?: string): Pr
   return res.json();
 }
 
-export async function terminarIntervalo(id_intervalo: string, token?: string): Promise<ProduccionIntervalo> {
+export async function terminarIntervalo(
+  id_intervalo: string,
+  options: { motivo_pausa: MotivoPausa; observaciones?: string },
+  token?: string
+): Promise<ProduccionIntervalo> {
   const res = await fetch(`${API_URL}/api/produccion/intervalos/${id_intervalo}/terminar`, {
     method: "PUT",
     headers: getHeaders(token),
+    body: JSON.stringify(options),
   });
   if (!res.ok) { const txt = await res.text().catch(()=>""); console.error("API ERROR", res.status, txt); throw new Error("Error finishing interval" + ": " + res.status + " " + txt); }
+  return res.json();
+}
+
+export async function crearInterrupcion(
+  fk_intervalo: string,
+  motivo: string,
+  token?: string
+): Promise<ProduccionInterrupcion> {
+  const res = await fetch(`${API_URL}/api/produccion/interrupciones`, {
+    method: "POST",
+    headers: getHeaders(token),
+    body: JSON.stringify({ fk_intervalo, motivo }),
+  });
+  if (!res.ok) { const txt = await res.text().catch(()=>""); console.error("API ERROR", res.status, txt); throw new Error("Error creating interrupcion" + ": " + res.status + " " + txt); }
+  return res.json();
+}
+
+export async function terminarInterrupcion(
+  id_interrupcion: string,
+  token?: string
+): Promise<ProduccionInterrupcion> {
+  const res = await fetch(`${API_URL}/api/produccion/interrupciones/${id_interrupcion}/terminar`, {
+    method: "PUT",
+    headers: getHeaders(token),
+  });
+  if (!res.ok) { const txt = await res.text().catch(()=>""); console.error("API ERROR", res.status, txt); throw new Error("Error finishing interrupcion" + ": " + res.status + " " + txt); }
   return res.json();
 }
 
@@ -197,6 +281,14 @@ export async function deleteActividad(id_actividad: string, token?: string): Pro
 
 export async function deleteIntervalo(id_intervalo: string, token?: string): Promise<boolean> {
   const res = await fetch(`${API_URL}/api/produccion/intervalos/${id_intervalo}`, {
+    method: "DELETE",
+    headers: getHeaders(token),
+  });
+  return res.ok;
+}
+
+export async function deleteControl(id_control: string, token?: string): Promise<boolean> {
+  const res = await fetch(`${API_URL}/api/produccion/controles/${id_control}`, {
     method: "DELETE",
     headers: getHeaders(token),
   });
