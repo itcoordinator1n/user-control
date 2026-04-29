@@ -227,10 +227,11 @@ export default function SupervisorDashboard() {
     setWaitAction(isApproving ? "approve" : "reject");
     setWaitStatus("loading");
     try {
+      const statusPayload = actionStatus === "Aprobada" ? "Aprovada" : actionStatus;
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/permissions/handle-request`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.user?.accessToken}` },
-        body: JSON.stringify({ id: selectedRequest.id, status: actionStatus, comments: supervisorComments }),
+        body: JSON.stringify({ id: selectedRequest.id, status: statusPayload, comments: supervisorComments }),
       });
       if (!res.ok) throw new Error("Error");
       setRequests((prev) => prev.map((r) => r.id === selectedRequest.id ? { ...r, status: actionStatus as any, comments: supervisorComments } : r));
