@@ -142,6 +142,27 @@ function periodToDates(period: string): { dateFrom: string; dateTo: string } {
   }
 }
 
+function formatDateTime(isoString: string) {
+  if (!isoString) return { date: "-", time: "-" };
+  const d = new Date(isoString);
+  if (isNaN(d.getTime())) return { date: isoString, time: "" }; // fallback
+  
+  const day = d.getDate().toString().padStart(2, '0');
+  const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+  const month = monthNames[d.getMonth()];
+  const year = d.getFullYear();
+  const dateStr = `${day} ${month} ${year}`;
+  
+  let hours = d.getHours();
+  const minutes = d.getMinutes().toString().padStart(2, '0');
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12;
+  hours = hours ? hours : 12; 
+  const timeStr = `${hours}:${minutes} ${ampm}`;
+  
+  return { date: dateStr, time: timeStr };
+}
+
 export default function PermissionsDashboard({ showPermissionDetail, setShowPermissionDetail }: PermissionsDashboardProps) {
   const [showFilters, setShowFilters] = useState(false)
   const [showAreaCards, setShowAreaCards] = useState(true)
@@ -267,11 +288,11 @@ const exportToExcel = async (
     summarySheet.addRow([
       area.area,
       area.supervisor,
-      area.totalPermissions,
-      area.totalHours.toFixed(2),
-      area.totalEmployees,
-      area.averageHoursPerPermission.toFixed(2),
-      area.averagePermissionsPerEmployee.toFixed(2),
+      Number(area.totalPermissions),
+      Number(area.totalHours).toFixed(2),
+      Number(area.totalEmployees),
+      Number(area.averageHoursPerPermission).toFixed(2),
+      Number(area.averagePermissionsPerEmployee).toFixed(2),
     ]);
   });
 
@@ -299,12 +320,12 @@ const exportToExcel = async (
       detailSheet.addRow([
         area.area,
         emp.name,
-        emp.totalPermissions,
-        emp.totalHours.toFixed(2),
-        emp.averageHours.toFixed(2),
-        emp.areaAverage.toFixed(2),
-        emp.comparisonWithArea.toFixed(2),
-        emp.pendingPermissions,
+        Number(emp.totalPermissions),
+        Number(emp.totalHours).toFixed(2),
+        Number(emp.averageHours).toFixed(2),
+        Number(emp.areaAverage).toFixed(2),
+        Number(emp.comparisonWithArea).toFixed(2),
+        Number(emp.pendingPermissions),
         emp.lastPermission,
         emp.weeklyPattern.monday,
         emp.weeklyPattern.tuesday,
@@ -529,13 +550,13 @@ const exportToExcel = async (
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold text-blue-900">
-                      {permissionsData && permissionsData.reduce((acc, area) => acc + area.totalPermissions, 0)}
+                      {permissionsData && permissionsData.reduce((acc, area) => acc + Number(area.totalPermissions), 0)}
                     </div>
                     <p className="text-sm text-blue-700">Permisos solicitados</p>
                     <div className="text-xs text-blue-600 mt-1">
                       {Math.round(
-                        permissionsData.reduce((acc, area) => acc + area.totalPermissions, 0) /
-                        permissionsData.reduce((acc, area) => acc + area.totalEmployees, 0),
+                        permissionsData.reduce((acc, area) => acc + Number(area.totalPermissions), 0) /
+                        (permissionsData.reduce((acc, area) => acc + Number(area.totalEmployees), 0) || 1),
                       )}{" "}
                       promedio por empleado
                     </div>
@@ -551,13 +572,13 @@ const exportToExcel = async (
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold text-green-900">
-                      {permissionsData.reduce((acc, area) => acc + area.totalHours, 0)}
+                      {permissionsData.reduce((acc, area) => acc + Number(area.totalHours), 0)}
                     </div>
                     <p className="text-sm text-green-700">Horas de permisos</p>
                     <div className="text-xs text-green-600 mt-1">
                       {(
-                        permissionsData.reduce((acc, area) => acc + area.totalHours, 0) /
-                        permissionsData.reduce((acc, area) => acc + area.totalPermissions, 0)
+                        permissionsData.reduce((acc, area) => acc + Number(area.totalHours), 0) /
+                        (permissionsData.reduce((acc, area) => acc + Number(area.totalPermissions), 0) || 1)
                       ).toFixed(1)}{" "}
                       horas promedio
                     </div>
@@ -1238,27 +1259,74 @@ const exportToExcel = async (
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {getPaginatedPermissionRequests().map((request) => (
-                              <TableRow key={request.id}>
-                                <TableCell className="font-medium">{request.requestDate}</TableCell>
-                                <TableCell>
-                                  {request.startDate === request.endDate
-                                    ? request.startDate
-                                    : `${request.startDate} - ${request.endDate}`}
-                                </TableCell>
-                                <TableCell className="text-center">{request.hours}h</TableCell>
-                                <TableCell>
-                                  <div className="flex items-center gap-2">
-                                    {getStatusIcon(request.status)}
-                                    <span className={getStatusColor(request.status)}>
-                                      {getStatusText(request.status)}
-                                    </span>
-                                  </div>
-                                </TableCell>
-                                <TableCell className="text-sm">{request.reason}</TableCell>
-                                <TableCell className="text-sm">{request.approvedBy || "-"}</TableCell>
-                              </TableRow>
-                            ))}
+                            {getPaginatedPermissionRequests().map((request) => {
+                              const reqDate = formatDateTime(request.requestDate);
+                              const startDate = formatDateTime(request.startDate);
+                              const endDate = formatDateTime(request.endDate);
+                              
+                              return (
+                                <TableRow key={request.id}>
+                                  <TableCell>
+                                    <div className="flex flex-col gap-0.5">
+                                      <span className="font-semibold text-gray-900 text-sm leading-tight">
+                                        {reqDate.date}
+                                      </span>
+                                      <span className="inline-flex w-fit items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-500">
+                                        {reqDate.time}
+                                      </span>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    {request.startDate === request.endDate ? (
+                                      <div className="flex flex-col gap-0.5">
+                                        <span className="font-semibold text-gray-900 text-sm leading-tight">
+                                          {startDate.date}
+                                        </span>
+                                        <span className="inline-flex w-fit items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-500">
+                                          {startDate.time}
+                                        </span>
+                                      </div>
+                                    ) : (
+                                      <div className="flex flex-col gap-1">
+                                        <div className="flex items-center gap-1.5">
+                                          <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider w-8">Inicio</span>
+                                          <div className="flex items-center gap-1.5 bg-blue-50/50 px-2 py-0.5 rounded border border-blue-100/50">
+                                            <span className="font-semibold text-gray-900 text-xs">
+                                              {startDate.date}
+                                            </span>
+                                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-white text-gray-500 shadow-sm border border-gray-100">
+                                              {startDate.time}
+                                            </span>
+                                          </div>
+                                        </div>
+                                        <div className="flex items-center gap-1.5">
+                                          <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider w-8">Fin</span>
+                                          <div className="flex items-center gap-1.5 bg-blue-50/50 px-2 py-0.5 rounded border border-blue-100/50">
+                                            <span className="font-semibold text-gray-900 text-xs">
+                                              {endDate.date}
+                                            </span>
+                                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-white text-gray-500 shadow-sm border border-gray-100">
+                                              {endDate.time}
+                                            </span>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </TableCell>
+                                  <TableCell className="text-center">{request.hours}h</TableCell>
+                                  <TableCell>
+                                    <div className="flex items-center gap-2">
+                                      {getStatusIcon(request.status)}
+                                      <span className={getStatusColor(request.status)}>
+                                        {getStatusText(request.status)}
+                                      </span>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-sm">{request.reason}</TableCell>
+                                  <TableCell className="text-sm">{request.approvedBy || "-"}</TableCell>
+                                </TableRow>
+                              );
+                            })}
                             {getPaginatedPermissionRequests().length === 0 && (
                               <TableRow>
                                 <TableCell colSpan={6} className="text-center py-8 text-gray-500">
