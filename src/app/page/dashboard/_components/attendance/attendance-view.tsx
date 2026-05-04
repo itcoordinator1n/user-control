@@ -246,7 +246,7 @@ export function AttendanceView({ onBack, allowedArea, onNavigateToPermission }: 
   const { fetchProfile, loading: profileLoading, isCached } = useEmployeeProfile();
 
   // ── Dynamic areas ─────────────────────────────────────────────────────────
-  const availableAreas = useMemo(() => attendanceData.map((a) => a.area), [attendanceData]);
+  const availableAreas = useMemo(() => Array.from(new Set(attendanceData.map((a) => a.area))), [attendanceData]);
 
   // ── "Todas las Áreas" aggregate ───────────────────────────────────────────
   const allAreasPercentage = useMemo(() => {

@@ -21,7 +21,7 @@ export function Navbar({ isLoggedIn, onLogin }: NavbarProps) {
         {!isLoggedIn && (
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="mr-2 md:hidden text-infarma-blue dark:text-white">
+              <Button variant="ghost" size="icon" className="mr-2 md:hidden text-primary dark:text-white">
                 <Menu className="h-5 w-5" />
                 <span className="sr-only">Toggle menu</span>
               </Button>
@@ -29,10 +29,10 @@ export function Navbar({ isLoggedIn, onLogin }: NavbarProps) {
             <SheetContent side="left" className="w-[300px] sm:w-[400px] bg-white dark:bg-gray-950">
               <nav className="flex flex-col gap-4">
                 <div className="flex items-center gap-2 px-2">
-                  <span className="font-bold text-infarma-blue dark:text-white text-2xl">infarma</span>
+                  <span className="font-bold text-primary dark:text-white text-2xl">infarma</span>
                 </div>
                 <div className="mt-4 px-2">
-                  <Button onClick={onLogin} className="w-full bg-infarma-button-blue hover:bg-infarma-button-blue/90">
+                  <Button onClick={onLogin} className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
                     Iniciar sesión
                   </Button>
                 </div>
@@ -42,11 +42,11 @@ export function Navbar({ isLoggedIn, onLogin }: NavbarProps) {
         )}
 
         {/* Sidebar trigger for logged-in users */}
-        {isLoggedIn && <SidebarTrigger className="mr-2 text-infarma-blue dark:text-white" />}
+        {isLoggedIn && <SidebarTrigger className="mr-2 text-primary dark:text-white" />}
 
         {/* Logo */}
         <div className="flex items-center gap-2">
-          <span className="font-bold text-infarma-blue dark:text-white text-2xl transition-colors duration-300">
+          <span className="font-bold text-primary dark:text-white text-2xl transition-colors duration-300">
             infarma
           </span>
         </div>
@@ -54,7 +54,7 @@ export function Navbar({ isLoggedIn, onLogin }: NavbarProps) {
         {/* Right side content */}
         <div className="ml-auto flex items-center gap-2">
           {!isLoggedIn ? (
-            <Button onClick={onLogin} className="bg-infarma-button-blue hover:bg-infarma-button-blue/90">
+            <Button onClick={onLogin} className="bg-primary text-primary-foreground hover:bg-primary/90">
               Iniciar sesión
             </Button>
           ) : (

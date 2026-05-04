@@ -134,6 +134,71 @@ export async function getActividadesPorGrupo(idGrupo: number, token?: string): P
   return res.json();
 }
 
+// --- Endpoints CRUD Catálogo ---
+
+export async function getTodosLosGrupos(token?: string) {
+  const res = await fetch(`${API_URL}/api/produccion/grupos`, { headers: getHeaders(token) });
+  if (!res.ok) { const txt = await res.text().catch(()=>""); throw new Error("Error fetching todos los grupos: " + txt); }
+  return res.json();
+}
+
+export async function createGrupo(nombre: string, token?: string) {
+  const res = await fetch(`${API_URL}/api/produccion/grupos`, { method: "POST", headers: getHeaders(token), body: JSON.stringify({ nombre }) });
+  if (!res.ok) { const txt = await res.text().catch(()=>""); throw new Error("Error creating grupo: " + txt); }
+  return res.json();
+}
+
+export async function updateGrupo(id: number, nombre: string, token?: string) {
+  const res = await fetch(`${API_URL}/api/produccion/grupos/${id}`, { method: "PUT", headers: getHeaders(token), body: JSON.stringify({ nombre }) });
+  if (!res.ok) { const txt = await res.text().catch(()=>""); throw new Error("Error updating grupo: " + txt); }
+  return res.json();
+}
+
+export async function deleteGrupo(id: number, token?: string) {
+  const res = await fetch(`${API_URL}/api/produccion/grupos/${id}`, { method: "DELETE", headers: getHeaders(token) });
+  if (!res.ok) { const txt = await res.text().catch(()=>""); throw new Error("Error deleting grupo: " + txt); }
+  return res.json();
+}
+
+export async function getTodasLasActividades(token?: string, fk_producto?: number) {
+  const url = fk_producto 
+    ? `${API_URL}/api/produccion/actividades-catalogo?fk_producto=${fk_producto}` 
+    : `${API_URL}/api/produccion/actividades-catalogo`;
+  const res = await fetch(url, { headers: getHeaders(token) });
+  if (!res.ok) { const txt = await res.text().catch(()=>""); throw new Error("Error fetching actividades: " + txt); }
+  return res.json();
+}
+
+export async function createActividadCatalogo(data: { nombre: string, fk_grupo: number }, token?: string) {
+  const res = await fetch(`${API_URL}/api/produccion/actividades-catalogo`, { method: "POST", headers: getHeaders(token), body: JSON.stringify(data) });
+  if (!res.ok) { const txt = await res.text().catch(()=>""); throw new Error("Error creating actividad: " + txt); }
+  return res.json();
+}
+
+export async function updateActividadCatalogo(id: number, data: { nombre?: string, fk_grupo?: number }, token?: string) {
+  const res = await fetch(`${API_URL}/api/produccion/actividades-catalogo/${id}`, { method: "PUT", headers: getHeaders(token), body: JSON.stringify(data) });
+  if (!res.ok) { const txt = await res.text().catch(()=>""); throw new Error("Error updating actividad: " + txt); }
+  return res.json();
+}
+
+export async function deleteActividadCatalogo(id: number, token?: string) {
+  const res = await fetch(`${API_URL}/api/produccion/actividades-catalogo/${id}`, { method: "DELETE", headers: getHeaders(token) });
+  if (!res.ok) { const txt = await res.text().catch(()=>""); throw new Error("Error deleting actividad: " + txt); }
+  return res.json();
+}
+
+export async function getProductosDeActividad(id: number, token?: string): Promise<number[]> {
+  const res = await fetch(`${API_URL}/api/produccion/actividades-catalogo/${id}/productos`, { headers: getHeaders(token) });
+  if (!res.ok) { const txt = await res.text().catch(()=>""); throw new Error("Error fetching productos de actividad: " + txt); }
+  return res.json();
+}
+
+export async function updateProductosDeActividad(id: number, productIds: number[], token?: string) {
+  const res = await fetch(`${API_URL}/api/produccion/actividades-catalogo/${id}/productos`, { method: "PUT", headers: getHeaders(token), body: JSON.stringify({ productIds }) });
+  if (!res.ok) { const txt = await res.text().catch(()=>""); throw new Error("Error updating productos de actividad: " + txt); }
+  return res.json();
+}
+
 // --- Endpoints CRUD Control ---
 
 export async function getControlesTiempos(token?: string): Promise<ProduccionControl[]> {

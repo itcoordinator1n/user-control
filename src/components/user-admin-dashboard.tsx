@@ -13,6 +13,7 @@ export function UserAdminDashboard() {
   return (
     <div className="container mx-auto py-6 space-y-6">
       <DashboardHeader />
+      <div>Holañ</div>
       <Tabs defaultValue="users" value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="users">Gestión de Usuarios</TabsTrigger>

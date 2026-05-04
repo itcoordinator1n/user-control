@@ -23,6 +23,7 @@ import {
   getAreas,
   getGruposPorArea,
   getActividadesPorGrupo,
+  getTodasLasActividades,
   addActividad,
   iniciarIntervalo,
   terminarIntervalo,
@@ -97,6 +98,7 @@ export default function DetalleControlTiempos() {
   const [modalLoadingGrupos, setModalLoadingGrupos] = useState(false);
   const [modalLoadingActs, setModalLoadingActs] = useState(false);
   const [selectedGrupo, setSelectedGrupo] = useState<ProduccionGrupo | null>(null);
+  const [allProductActivities, setAllProductActivities] = useState<ActividadCatalogo[]>([]);
   const [nuevaAct, setNuevaAct] = useState({ categoria: "General", actividad_nombre: "", fk_operario: 0 });
   const [pendingQueue, setPendingQueue] = useState<Array<{
     categoria: string;
@@ -209,34 +211,31 @@ export default function DetalleControlTiempos() {
     setModalActividades([]);
     setIsModalOpen(true);
 
-    const areaObj = areasCatalog.find(a => a.nombre === control?.area);
-    if (areaObj) {
+    if (control?.fk_producto) {
       setModalLoadingGrupos(true);
       try {
-        const grupos = await getGruposPorArea(areaObj.id, session?.user?.accessToken);
+        const activities = await getTodasLasActividades(session?.user?.accessToken, control.fk_producto);
+        setAllProductActivities(activities);
+        
+        // Extraer grupos únicos basados en las actividades asociadas al producto
+        const uniqueGroupsMap = new Map<number, string>();
+        activities.forEach((a: any) => uniqueGroupsMap.set(a.fk_grupo, a.grupo_nombre));
+        
+        const grupos = Array.from(uniqueGroupsMap.entries()).map(([id, nombre]) => ({ id, nombre }));
         setModalGrupos(grupos);
       } catch (e) {
-        console.error("Error cargando grupos:", e);
+        console.error("Error cargando actividades del producto:", e);
       } finally {
         setModalLoadingGrupos(false);
       }
     }
   };
 
-  const handleSelectGrupo = async (grupo: ProduccionGrupo) => {
+  const handleSelectGrupo = (grupo: ProduccionGrupo) => {
     setSelectedGrupo(grupo);
     setNuevaAct(prev => ({ ...prev, actividad_nombre: "", categoria: grupo.nombre }));
-    setModalActividades([]);
-    setModalLoadingActs(true);
+    setModalActividades(allProductActivities.filter(a => a.fk_grupo === grupo.id));
     setModalStep(2);
-    try {
-      const acts = await getActividadesPorGrupo(grupo.id, session?.user?.accessToken);
-      setModalActividades(acts);
-    } catch (e) {
-      console.error("Error cargando actividades:", e);
-    } finally {
-      setModalLoadingActs(false);
-    }
   };
 
   // Abre el modal de pausa en lugar de detener directo

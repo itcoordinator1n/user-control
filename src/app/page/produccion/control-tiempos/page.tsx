@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TableroOcupacion from "./components/TableroOcupacion";
 import Historial from "./components/Historial";
 import Revisiones from "./components/Revisiones";
+import ActividadesCatalogoTab from "./components/actividades-catalogo-tab";
 
 export default function ControlTiemposPage() {
   const router = useRouter();
@@ -39,7 +40,7 @@ export default function ControlTiemposPage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-        <TabsList className="mb-6 flex w-full h-auto p-1 bg-slate-100 dark:bg-slate-800 overflow-x-auto overflow-y-hidden lg:grid lg:grid-cols-3 max-w-2xl no-scrollbar whitespace-nowrap justify-start lg:justify-center">
+        <TabsList className="mb-6 flex w-full h-auto p-1 bg-slate-100 dark:bg-slate-800 overflow-x-auto overflow-y-hidden lg:grid lg:grid-cols-4 max-w-4xl no-scrollbar whitespace-nowrap justify-start lg:justify-center">
           <TabsTrigger value="tablero" className="px-4 py-2 text-sm lg:text-base">
             Tablero de Ocupación
           </TabsTrigger>
@@ -48,6 +49,9 @@ export default function ControlTiemposPage() {
           </TabsTrigger>
           <TabsTrigger value="revisiones" className="px-4 py-2 text-sm lg:text-base">
             Revisiones Pendientes
+          </TabsTrigger>
+          <TabsTrigger value="actividades" className="px-4 py-2 text-sm lg:text-base">
+            Gestión de Actividades
           </TabsTrigger>
         </TabsList>
         
@@ -61,6 +65,10 @@ export default function ControlTiemposPage() {
         
         <TabsContent value="revisiones" className="mt-0 outline-none">
           <Revisiones />
+        </TabsContent>
+
+        <TabsContent value="actividades" className="mt-0 outline-none">
+          <ActividadesCatalogoTab />
         </TabsContent>
       </Tabs>
     </div>

@@ -19,7 +19,7 @@ export function Navbar({ isLoggedIn }: NavbarProps) {
         {!isLoggedIn && (
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="mr-2 md:hidden text-infarma-blue dark:text-white">
+              <Button variant="ghost" size="icon" className="mr-2 md:hidden text-primary dark:text-white">
                 <Menu className="h-5 w-5" />
                 <span className="sr-only">Toggle menu</span>
               </Button>
@@ -27,10 +27,10 @@ export function Navbar({ isLoggedIn }: NavbarProps) {
             <SheetContent side="left" className="w-[300px] sm:w-[400px] bg-white dark:bg-background">
               <nav className="flex flex-col gap-4">
                 <div className="flex items-center gap-2 px-2">
-                  <span className="font-bold text-infarma-blue dark:text-white text-2xl">infarma</span>
+                  <span className="font-bold text-primary dark:text-white text-2xl">infarma</span>
                 </div>
                 <div className="mt-4 px-2">
-                  <Link href={"/page/login"} className="w-full block text-center py-2 rounded-md bg-infarma-button-blue text-white hover:bg-infarma-button-blue/90 transition-colors">
+                  <Link href={"/page/login"} className="w-full block text-center py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">
                     Iniciar sesión 
                   </Link>
                 </div>
@@ -42,13 +42,13 @@ export function Navbar({ isLoggedIn }: NavbarProps) {
         {/* Sidebar trigger for logged-in users */}
         {isLoggedIn && (
           <SidebarTrigger 
-            className="mr-3 h-10 w-10 flex items-center justify-center rounded-lg bg-blue-50 text-infarma-blue shadow-sm border border-blue-100 hover:bg-blue-100 dark:bg-gray-800 dark:border-gray-700 dark:text-white transition-all duration-200 active:scale-95" 
+            className="mr-3 h-10 w-10 flex items-center justify-center rounded-lg bg-blue-50 text-primary shadow-sm border border-blue-100 hover:bg-blue-100 dark:bg-gray-800 dark:border-gray-700 dark:text-white transition-all duration-200 active:scale-95" 
           />
         )}
 
         {/* Logo */}
         <div className="flex items-center gap-2">
-          <span className="font-bold text-infarma-blue dark:text-white text-2xl transition-colors duration-300">
+          <span className="font-bold text-primary dark:text-white text-2xl transition-colors duration-300">
             infarma
           </span>
         </div>
@@ -56,7 +56,7 @@ export function Navbar({ isLoggedIn }: NavbarProps) {
         {/* Right side content */}
         <div className="ml-auto flex items-center gap-2">
           {!isLoggedIn ? (
-            <Link href="/page/login" className="px-4 py-2 rounded-md bg-infarma-button-blue text-white hover:bg-infarma-button-blue/90 transition-colors">
+            <Link href="/page/login" className="px-4 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">
               Iniciar sesión
             </Link>
           ) : (

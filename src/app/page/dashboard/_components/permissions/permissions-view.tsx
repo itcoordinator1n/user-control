@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { usePermissionsData } from "../../_hooks/use-permissions"
 import { AreaFilter } from "../shared/area-filter"
 import { PeriodFilter } from "../shared/period-filter"
@@ -120,11 +120,29 @@ type permissionsDataType = {
   totalPermissions: number
 }
 
+function periodToDates(period: string): { dateFrom: string; dateTo: string } {
+  const today = new Date();
+  const fmt = (d: Date) => d.toISOString().split("T")[0];
+  switch (period) {
+    case "Hoy": { const s = fmt(today); return { dateFrom: s, dateTo: s }; }
+    case "Esta Semana": {
+      const day = today.getDay();
+      const start = new Date(today);
+      start.setDate(today.getDate() + (day === 0 ? -6 : 1 - day));
+      return { dateFrom: fmt(start), dateTo: fmt(today) };
+    }
+    case "Este Mes": return { dateFrom: fmt(new Date(today.getFullYear(), today.getMonth(), 1)), dateTo: fmt(today) };
+    case "Último Trimestre": {
+      const start = new Date(today);
+      start.setMonth(today.getMonth() - 3);
+      return { dateFrom: fmt(start), dateTo: fmt(today) };
+    }
+    case "Este Año": return { dateFrom: fmt(new Date(today.getFullYear(), 0, 1)), dateTo: fmt(today) };
+    default: return { dateFrom: "", dateTo: "" };
+  }
+}
+
 export default function PermissionsDashboard({ showPermissionDetail, setShowPermissionDetail }: PermissionsDashboardProps) {
-  const { data: statistics, loading, error: fetchError } = usePermissionsData(true);
-  const permissionRequests = statistics?.permissionRequests as permissionRequestsType[] | undefined;
-  const permissionsData = statistics?.permissionsData as permissionsDataType[] | undefined;
-  const error = fetchError ?? "";
   const [showFilters, setShowFilters] = useState(false)
   const [showAreaCards, setShowAreaCards] = useState(true)
   const [selectedArea, setSelectedArea] = useState("Todas")
@@ -139,6 +157,29 @@ export default function PermissionsDashboard({ showPermissionDetail, setShowPerm
   const [permissionRecordsFilter, setPermissionRecordsFilter] = useState("all")
   const [permissionRecordsPerPage, setPermissionRecordsPerPage] = useState(10)
   const [currentPermissionPage, setCurrentPermissionPage] = useState(1)
+
+  const [customDateFrom, setCustomDateFrom] = useState("")
+  const [customDateTo, setCustomDateTo] = useState("")
+  const isCustomRange = selectedPeriod === "Rango Personalizado"
+
+  const { dateFrom: computedFrom, dateTo: computedTo } = useMemo(() => {
+    if (isCustomRange) {
+      if (customDateFrom && customDateTo) return { dateFrom: customDateFrom, dateTo: customDateTo };
+      return { dateFrom: "", dateTo: "" };
+    }
+    return periodToDates(selectedPeriod);
+  }, [selectedPeriod, isCustomRange, customDateFrom, customDateTo]);
+
+  const apiArea = selectedArea === "Todas" ? null : selectedArea;
+  const { data: statistics, loading, error: fetchError } = usePermissionsData(true, apiArea, computedFrom, computedTo);
+  const permissionRequests = statistics?.permissionRequests as permissionRequestsType[] | undefined;
+  const permissionsData = statistics?.permissionsData as permissionsDataType[] | undefined;
+  const error = fetchError ?? "";
+
+  const availableAreas = useMemo(() => {
+    if (!permissionsData) return [];
+    return Array.from(new Set(permissionsData.map((a) => a.area)));
+  }, [permissionsData]);
 
   const handleEmployeeClick = (employeeName: any) => {
     const employee = permissionsData?.flatMap((area) => area.employees.map((emp :any) => ({ ...emp, area: area.area })))
@@ -411,16 +452,38 @@ const exportToExcel = async (
 
           {/* Filters */}
           {showFilters && (
-            <div className="flex items-center gap-4 mb-6 p-4 bg-white rounded-lg border shadow-sm transition-all duration-300 ease-in-out">
-              <AreaFilter value={selectedArea} onChange={setSelectedArea} />
-              <PeriodFilter value={selectedPeriod} onChange={setSelectedPeriod} />
+            <div className="flex flex-wrap items-center gap-4 mb-6 p-4 bg-white rounded-lg border shadow-sm transition-all duration-300 ease-in-out">
+              <AreaFilter
+                value={selectedArea}
+                onChange={(v) => { setSelectedArea(v); setCurrentEmployeePage(1); }}
+                areas={availableAreas}
+              />
+              <PeriodFilter
+                value={selectedPeriod}
+                onChange={(v) => {
+                  setSelectedPeriod(v);
+                  if (v !== "Rango Personalizado") {
+                    setCustomDateFrom("");
+                    setCustomDateTo("");
+                  }
+                }}
+                variant="attendance"
+              />
+              {isCustomRange && (
+                <div className="flex items-center gap-2">
+                  <CalendarDays className="h-4 w-4 text-gray-500 shrink-0" />
+                  <Input type="date" value={customDateFrom} onChange={(e) => setCustomDateFrom(e.target.value)} className="w-40" />
+                  <span className="text-gray-500 text-sm shrink-0">—</span>
+                  <Input type="date" value={customDateTo} onChange={(e) => setCustomDateTo(e.target.value)} className="w-40" />
+                </div>
+              )}
 
               <div className="relative flex-1 max-w-md">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
                   placeholder="Buscar empleado..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => { setSearchTerm(e.target.value); setCurrentEmployeePage(1); }}
                   className="pl-10"
                 />
               </div>
@@ -438,7 +501,8 @@ const exportToExcel = async (
                   </span>
                   <span className="flex items-center gap-1">
                     <Calendar className="h-4 w-4" />
-                    <strong>Período:</strong> {selectedPeriod}
+                    <strong>Período:</strong>{" "}
+                    {isCustomRange && customDateFrom && customDateTo ? `${customDateFrom} — ${customDateTo}` : selectedPeriod}
                   </span>
                   {searchTerm && (
                     <span className="flex items-center gap-1">
@@ -565,9 +629,9 @@ const exportToExcel = async (
                   Análisis por Área
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  {permissionsData.map((area) => (
+                  {permissionsData.map((area, index) => (
                     <Card
-                      key={area.area}
+                      key={`${area.area}-${index}`}
                       className={`hover:shadow-lg transition-all duration-200 cursor-pointer transform hover:scale-105 ${selectedArea === area.area ? "ring-2 ring-blue-500 bg-blue-50 shadow-md" : "hover:bg-gray-50"
                         }`}
                       onClick={() => {
@@ -628,7 +692,7 @@ const exportToExcel = async (
                         .sort((a, b) => b.totalPermissions - a.totalPermissions)
                         .slice(0, 3)
                         .map((area, index) => (
-                          <div key={area.area} className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                          <div key={`${area.area}-${index}`} className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
                             <div className="flex items-center gap-3">
                               <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center text-sm font-bold text-red-800">
                                 {index + 1}
@@ -662,7 +726,7 @@ const exportToExcel = async (
                         .slice(0, 3)
                         .map((area, index) => (
                           <div
-                            key={area.supervisor}
+                            key={`${area.supervisor}-${index}`}
                             className="flex items-center justify-between p-3 bg-green-50 rounded-lg"
                           >
                             <div className="flex items-center gap-3">
