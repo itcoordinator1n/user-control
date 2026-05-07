@@ -172,7 +172,17 @@ export function VacationView({ onBack, allowedArea }: VacationViewProps) {
   const getFilteredVacationRecords = () => {
     if (!selectedVacationEmployee) return [];
     let filtered = selectedVacationEmployee.requests;
-    if (vacationRecordsFilter !== "all") filtered = filtered.filter((r) => r.status === vacationRecordsFilter);
+    if (vacationRecordsFilter !== "all") {
+      filtered = filtered.filter((r) => {
+        // Soporta tanto los valores viejos (en) como los nuevos (es)
+        const s = r.status?.toLowerCase();
+        const f = vacationRecordsFilter.toLowerCase();
+        if (f === "aprobada") return s === "aprobada" || s === "approved";
+        if (f === "pendiente") return s === "pendiente" || s === "pending";
+        if (f === "rechazada") return s === "rechazada" || s === "rejected";
+        return s === f;
+      });
+    }
     return filtered.sort((a, b) => new Date(b.requestDate).getTime() - new Date(a.requestDate).getTime());
   };
 
@@ -186,34 +196,39 @@ export function VacationView({ onBack, allowedArea }: VacationViewProps) {
   const getVacationFilterCount = (filterType: string) => {
     if (!selectedVacationEmployee) return 0;
     if (filterType === "all") return selectedVacationEmployee.requests.length;
-    return selectedVacationEmployee.requests.filter((r) => r.status === filterType).length;
+    
+    return selectedVacationEmployee.requests.filter((r) => {
+      const s = r.status?.toLowerCase();
+      const f = filterType.toLowerCase();
+      if (f === "aprobada") return s === "aprobada" || s === "approved";
+      if (f === "pendiente") return s === "pendiente" || s === "pending";
+      if (f === "rechazada") return s === "rechazada" || s === "rejected";
+      return s === f;
+    }).length;
   };
 
   const getVacationStatusColor = (status: string) => {
-    switch (status) {
-      case "approved": return "text-green-600";
-      case "rejected": return "text-red-600";
-      case "pending":  return "text-yellow-600";
-      default:         return "text-gray-600";
-    }
+    const s = status?.toLowerCase();
+    if (s === "approved" || s === "aprobada") return "text-green-600";
+    if (s === "rejected" || s === "rechazada") return "text-red-600";
+    if (s === "pending" || s === "pendiente") return "text-yellow-600";
+    return "text-gray-600";
   };
 
   const getVacationStatusText = (status: string) => {
-    switch (status) {
-      case "approved": return "Aprobada";
-      case "rejected": return "Rechazada";
-      case "pending":  return "Pendiente";
-      default:         return "N/A";
-    }
+    const s = status?.toLowerCase();
+    if (s === "approved" || s === "aprobada") return "Aprobada";
+    if (s === "rejected" || s === "rechazada") return "Rechazada";
+    if (s === "pending" || s === "pendiente") return "Pendiente";
+    return status || "N/A";
   };
 
   const getVacationStatusIcon = (status: string) => {
-    switch (status) {
-      case "approved": return <CheckCircle className="h-4 w-4 text-green-600" />;
-      case "rejected": return <XCircle className="h-4 w-4 text-red-600" />;
-      case "pending":  return <Clock className="h-4 w-4 text-yellow-600" />;
-      default:         return <AlertCircle className="h-4 w-4 text-gray-600" />;
-    }
+    const s = status?.toLowerCase();
+    if (s === "approved" || s === "aprobada") return <CheckCircle className="h-4 w-4 text-green-600" />;
+    if (s === "rejected" || s === "rechazada") return <XCircle className="h-4 w-4 text-red-600" />;
+    if (s === "pending" || s === "pendiente") return <Clock className="h-4 w-4 text-yellow-600" />;
+    return <AlertCircle className="h-4 w-4 text-gray-600" />;
   };
 
   const getFilteredEmployees = () =>
@@ -525,7 +540,7 @@ export function VacationView({ onBack, allowedArea }: VacationViewProps) {
                       <div className="text-center p-2 bg-blue-50 rounded">
                         <div className="font-semibold text-blue-800">
                           {typeof area.averageDaysPerEmployee === 'number'
-                            ? area.averageDaysPerEmployee.toFixed(1)
+                            ? area.averageDaysPerEmployee.toFixed(2)
                             : area.averageDaysPerEmployee}
                         </div>
                         <div className="text-blue-600">Promedio</div>
@@ -533,7 +548,7 @@ export function VacationView({ onBack, allowedArea }: VacationViewProps) {
                       <div className="text-center p-2 bg-orange-50 rounded">
                         <div className="font-semibold text-orange-800">
                           {typeof area.accumulatedDays === 'number'
-                            ? area.accumulatedDays.toFixed(1)
+                            ? area.accumulatedDays.toFixed(2)
                             : area.accumulatedDays}
                         </div>
                         <div className="text-orange-600">Acumulados</div>
@@ -764,7 +779,7 @@ export function VacationView({ onBack, allowedArea }: VacationViewProps) {
                       </div>
                       <div className="text-center">
                         <p className="font-semibold text-lg text-orange-600">
-                          {employee.daysAccumulated}
+                          {Number(employee.daysAccumulated).toFixed(2)}
                         </p>
                         <p className="text-xs text-gray-500">acumulados</p>
                       </div>
@@ -973,7 +988,7 @@ export function VacationView({ onBack, allowedArea }: VacationViewProps) {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-blue-900">
-                    {selectedVacationEmployee.daysAccumulated}
+                    {Number(selectedVacationEmployee.daysAccumulated).toFixed(2)}
                   </div>
                   <p className="text-sm text-blue-700">Total asignados</p>
                 </CardContent>
@@ -1034,7 +1049,7 @@ export function VacationView({ onBack, allowedArea }: VacationViewProps) {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-orange-900">
-                    {selectedVacationEmployee.daysAccumulated}
+                    {Number(selectedVacationEmployee.daysAccumulated).toFixed(2)}
                   </div>
                   <p className="text-sm text-orange-700">Sin usar</p>
                 </CardContent>
@@ -1221,14 +1236,14 @@ export function VacationView({ onBack, allowedArea }: VacationViewProps) {
                         <SelectItem value="all">
                           Todas ({getVacationFilterCount("all")})
                         </SelectItem>
-                        <SelectItem value="approved">
-                          Aprobadas ({getVacationFilterCount("approved")})
+                        <SelectItem value="Aprobada">
+                          Aprobadas ({getVacationFilterCount("Aprobada")})
                         </SelectItem>
-                        <SelectItem value="pending">
-                          Pendientes ({getVacationFilterCount("pending")})
+                        <SelectItem value="Pendiente">
+                          Pendientes ({getVacationFilterCount("Pendiente")})
                         </SelectItem>
-                        <SelectItem value="rejected">
-                          Rechazadas ({getVacationFilterCount("rejected")})
+                        <SelectItem value="Rechazada">
+                          Rechazadas ({getVacationFilterCount("Rechazada")})
                         </SelectItem>
                       </SelectContent>
                     </Select>
@@ -1282,19 +1297,22 @@ export function VacationView({ onBack, allowedArea }: VacationViewProps) {
                           const DAYS_ES = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
                           const MONTHS_ES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
 
-                          function parseLocal(iso: string) {
+                          function parseLocal(iso: string | null | undefined) {
+                            if (!iso) return new Date();
                             // Soporta "2026-01-30T..." o "2026-01-30"
                             const clean = iso.split('T')[0];
                             const [y, m, d] = clean.split('-').map(Number);
                             return new Date(y, m - 1, d);
                           }
 
-                          function formatFecha(iso: string) {
+                          function formatFecha(iso: string | null | undefined) {
+                            if (!iso) return '-';
                             const d = parseLocal(iso);
                             return `${d.getDate()} ${MONTHS_ES[d.getMonth()]} ${d.getFullYear()}`;
                           }
 
-                          function dayName(iso: string) {
+                          function dayName(iso: string | null | undefined) {
+                            if (!iso) return '-';
                             return DAYS_ES[parseLocal(iso).getDay()];
                           }
 

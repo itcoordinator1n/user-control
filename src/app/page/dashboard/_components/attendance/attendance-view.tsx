@@ -68,9 +68,9 @@ import type { EmployeeProfile } from "../../_types/dashboard.types";
 
 // ─── Schedule rules ─────────────────────────────────────────────────────────
 const SCHEDULE = {
-  startLocal: { h: 6,  m: 45 },
+  startLocal: { h: 7,  m: 0 },
   endLocal:   { h: 16, m: 45 },
-  graceMins:  30,
+  graceMins:  0,
 } as const;
 
 function toLocalMinutes(timeHHmm: string | null): number | null {
@@ -83,8 +83,10 @@ function toLocalMinutes(timeHHmm: string | null): number | null {
 function isLateArrival(entryTime: string | null): boolean {
   const mins = toLocalMinutes(entryTime);
   if (mins === null) return false;
+  // Llegada tardía = llega DESPUÉS de las 7:00 a.m. exactas (> 7*60 = 420)
   return mins > SCHEDULE.startLocal.h * 60 + SCHEDULE.startLocal.m + SCHEDULE.graceMins;
 }
+
 
 function getOvertimeHours(exitTime: string | null): number {
   const mins = toLocalMinutes(exitTime);
