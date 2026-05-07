@@ -34,8 +34,22 @@ async function apiFetch<T>(
   });
 
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: { message: res.statusText } }));
-    throw new Error(err.error?.message ?? err.message ?? 'API error');
+    let errBody: any;
+    try {
+      errBody = await res.json();
+    } catch (e) {
+      errBody = { message: res.statusText };
+    }
+    console.error('❌ API Error Response:', errBody);
+    
+    // Attempt to extract the most descriptive error message
+    const errorMessage = 
+      errBody?.error?.message ?? 
+      errBody?.error ?? 
+      errBody?.message ?? 
+      (typeof errBody === 'string' ? errBody : JSON.stringify(errBody));
+      
+    throw new Error(`[${res.status}] ${errorMessage}`);
   }
 
   return res.json() as Promise<T>;
@@ -44,11 +58,13 @@ async function apiFetch<T>(
 // ─── Tickets ─────────────────────────────────────────────────────────────────
 
 export interface TicketFilters {
-  status?: TicketStatus;
+  status?: TicketStatus | string;
   priority?: TicketPriority;
   assigned_to?: string;
   category?: string;
   user_id?: string;
+  user_name?: string;
+  sort?: string;
   cursor?: string;
   limit?: number;
 }

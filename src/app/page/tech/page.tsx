@@ -17,7 +17,7 @@ export default function TechKanbanPage() {
 
   // Cargar solo los tickets asignados al técnico logueado
   const { data, isLoading, isError, refetch } = useTickets(
-    userId ? { assigned_to: userId } : undefined
+    userId ? { user_id: userId } : undefined
   );
 
   const { data: pomodoroConfig } = usePomodoroConfig();

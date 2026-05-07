@@ -11,23 +11,27 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { useDashboardAnalytics } from '@/hooks/useTicketQueries';
 
-// ─── Types (shape returned by backend) ───────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface SummaryShape {
+  total_tickets: number;
+  resolved_today: number;
+  avg_resolution_hours: number;
+  open_tickets: number;
+  escalated_count: number;
+  satisfaction_avg: number | null;
+}
 
 interface DashboardData {
-  summary: {
-    total_tickets: number;
-    resolved_today: number;
-    avg_resolution_hours: number;
-    open_tickets: number;
-    escalated_count: number;
-    satisfaction_avg: number | null;
-  };
+  summary: SummaryShape;
   by_status: Array<{ status: string; count: number }>;
   by_priority: Array<{ priority: string; count: number }>;
   by_category: Array<{ category: string; count: number }>;
   by_technician: Array<{ name: string; resolved: number; open: number }>;
   daily_volume: Array<{ date: string; created: number; resolved: number }>;
 }
+
+// ─── Constants ───────────────────────────────────────────────────────────────
 
 const PRIORITY_COLORS: Record<string, string> = {
   P1: '#ef4444',
@@ -37,14 +41,23 @@ const PRIORITY_COLORS: Record<string, string> = {
 };
 
 const STATUS_COLORS = ['#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f43f5e'];
+const TICK_SM = { fontSize: 11 };
+const TICK_XS = { fontSize: 10 };
+const R_TOP: [number, number, number, number] = [2, 2, 0, 0];
+const R_RIGHT: [number, number, number, number] = [0, 2, 2, 0];
+const EMPTY: never[] = [];
 
-function KpiCard(props: {
+// ─── Sub-components ──────────────────────────────────────────────────────────
+
+interface KpiCardProps {
   icon: React.ElementType;
   label: string;
   value: string | number;
   sub?: string;
   colorClass: string;
-}) {
+}
+
+function KpiCard(props: KpiCardProps) {
   const Icon = props.icon;
   return (
     <Card>
@@ -64,43 +77,50 @@ function KpiCard(props: {
   );
 }
 
-function DateFilter(props: {
-  from: string; to: string;
+interface DateFilterProps {
+  from: string;
+  to: string;
   onChange: (from: string, to: string) => void;
-}) {
-  const presets = [
-    { label: '7 días', days: 7 },
-    { label: '30 días', days: 30 },
-    { label: '90 días', days: 90 },
-  ];
+}
+
+function buildPreset(days: number) {
   const today = new Date();
+  const from = new Date(today);
+  from.setDate(from.getDate() - days);
+  return {
+    fStr: from.toISOString().split('T')[0],
+    tStr: today.toISOString().split('T')[0],
+  };
+}
+
+function DateFilter(props: DateFilterProps) {
+  const preset7 = buildPreset(7);
+  const preset30 = buildPreset(30);
+  const preset90 = buildPreset(90);
+
+  function handle7() { props.onChange(preset7.fStr, preset7.tStr); }
+  function handle30() { props.onChange(preset30.fStr, preset30.tStr); }
+  function handle90() { props.onChange(preset90.fStr, preset90.tStr); }
+
+  const active7 = props.from === preset7.fStr && props.to === preset7.tStr;
+  const active30 = props.from === preset30.fStr && props.to === preset30.tStr;
+  const active90 = props.from === preset90.fStr && props.to === preset90.tStr;
+
   return (
     <div className="flex gap-2 flex-wrap">
-      {presets.map((preset) => {
-        const { label, days } = preset;
-        const f = new Date(today);
-        f.setDate(f.getDate() - days);
-        const fStr = f.toISOString().split('T')[0];
-        const tStr = today.toISOString().split('T')[0];
-        return (
-          <Button
-            key={days}
-            size="sm"
-            variant={props.from === fStr && props.to === tStr ? 'default' : 'outline'}
-            onClick={() => props.onChange(fStr, tStr)}
-          >
-            {label}
-          </Button>
-        );
-      })}
+      <Button size="sm" variant={active7 ? 'default' : 'outline'} onClick={handle7}>7 días</Button>
+      <Button size="sm" variant={active30 ? 'default' : 'outline'} onClick={handle30}>30 días</Button>
+      <Button size="sm" variant={active90 ? 'default' : 'outline'} onClick={handle90}>90 días</Button>
     </div>
   );
 }
 
-const formatPieLabel = (props: any) => {
-  if (!props) return '';
-  return `${props.status} ${(props.percent * 100).toFixed(0)}%`;
-};
+function formatPieLabel(entry: any) {
+  if (!entry) return '';
+  return String((entry.percent * 100).toFixed(0)) + '%';
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function TicketMgmtPage() {
   const today = new Date().toISOString().split('T')[0];
@@ -111,37 +131,58 @@ export default function TicketMgmtPage() {
   const { data: raw, isLoading } = useDashboardAnalytics({ from, to });
   const data = raw as DashboardData | undefined;
 
+  // Extract all data before JSX — prevents SWC _ref bug with Recharts
+  const summary = data ? data.summary : null;
+  const dailyVolume = data && data.daily_volume ? data.daily_volume : EMPTY;
+  const byStatus = data && data.by_status ? data.by_status : EMPTY;
+  const byPriority = data && data.by_priority ? data.by_priority : EMPTY;
+  const byCategory = data && data.by_category ? data.by_category : EMPTY;
+  const byTechnician = data && data.by_technician ? data.by_technician : EMPTY;
+
+  const satisfactionLabel = summary && summary.satisfaction_avg != null
+    ? String(summary.satisfaction_avg.toFixed(1)) + '/5'
+    : 'N/A';
+  const avgResolutionLabel = summary
+    ? String(summary.avg_resolution_hours.toFixed(1)) + 'h'
+    : '0h';
+
+  function handleDateChange(f: string, t: string) {
+    setFrom(f);
+    setTo(t);
+  }
+
+  const skeletons = [0, 1, 2, 3, 4, 5];
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4 md:p-8">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-xl font-bold">Dashboard de gerencia</h1>
           <p className="text-sm text-muted-foreground mt-0.5">KPIs consolidados del sistema de tickets IT</p>
         </div>
-        <DateFilter from={from} to={to} onChange={(f, t) => { setFrom(f); setTo(t); }} />
+        <DateFilter from={from} to={to} onChange={handleDateChange} />
       </div>
 
       {/* KPI cards */}
-      {isLoading ? (
+      {isLoading && (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          {Array.from({ length: 6 }).map((item, i) => <Skeleton key={i} className="h-28" />)}
+          {skeletons.map(function(i) {
+            return <Skeleton key={i} className="h-28" />;
+          })}
         </div>
-      ) : data?.summary ? (
+      )}
+
+      {!isLoading && summary && (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          <KpiCard icon={BarChart2} label="Total tickets" value={data.summary.total_tickets} colorClass="bg-indigo-500" />
-          <KpiCard icon={CheckCircle} label="Resueltos hoy" value={data.summary.resolved_today} colorClass="bg-green-600" />
-          <KpiCard icon={Clock} label="Tiempo promedio" value={`${data.summary.avg_resolution_hours.toFixed(1)}h`} sub="resolución" colorClass="bg-blue-500" />
-          <KpiCard icon={TrendingUp} label="Abiertos" value={data.summary.open_tickets} colorClass="bg-yellow-500" />
-          <KpiCard icon={AlertTriangle} label="Escalados" value={data.summary.escalated_count} colorClass="bg-red-500" />
-          <KpiCard
-            icon={Users}
-            label="Satisfacción"
-            value={data.summary.satisfaction_avg != null ? `${data.summary.satisfaction_avg.toFixed(1)}/5` : 'N/A'}
-            colorClass="bg-purple-500"
-          />
+          <KpiCard icon={BarChart2} label="Total tickets" value={summary.total_tickets} colorClass="bg-indigo-500" />
+          <KpiCard icon={CheckCircle} label="Resueltos hoy" value={summary.resolved_today} colorClass="bg-green-600" />
+          <KpiCard icon={Clock} label="Tiempo promedio" value={avgResolutionLabel} sub="resolución" colorClass="bg-blue-500" />
+          <KpiCard icon={TrendingUp} label="Abiertos" value={summary.open_tickets} colorClass="bg-yellow-500" />
+          <KpiCard icon={AlertTriangle} label="Escalados" value={summary.escalated_count} colorClass="bg-red-500" />
+          <KpiCard icon={Users} label="Satisfacción" value={satisfactionLabel} colorClass="bg-purple-500" />
         </div>
-      ) : null}
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Daily volume */}
@@ -150,18 +191,16 @@ export default function TicketMgmtPage() {
             <CardTitle className="text-base">Volumen diario</CardTitle>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
-              <Skeleton className="h-56" />
-            ) : (
+            {isLoading ? <Skeleton className="h-56" /> : (
               <ResponsiveContainer width="100%" height={220}>
-                <BarChart data={data?.daily_volume ?? []}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-                  <YAxis tick={{ fontSize: 11 }} />
+                <BarChart data={dailyVolume}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" tick={TICK_SM} />
+                  <YAxis tick={TICK_SM} />
                   <Tooltip />
                   <Legend />
-                  <Bar dataKey="created" name="Creados" fill="#6366f1" radius={[2, 2, 0, 0]} />
-                  <Bar dataKey="resolved" name="Resueltos" fill="#22c55e" radius={[2, 2, 0, 0]} />
+                  <Bar dataKey="created" name="Creados" fill="#6366f1" radius={R_TOP} />
+                  <Bar dataKey="resolved" name="Resueltos" fill="#22c55e" radius={R_TOP} />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -174,13 +213,11 @@ export default function TicketMgmtPage() {
             <CardTitle className="text-base">Por estado</CardTitle>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
-              <Skeleton className="h-48" />
-            ) : (
+            {isLoading ? <Skeleton className="h-48" /> : (
               <ResponsiveContainer width="100%" height={200}>
                 <PieChart>
                   <Pie
-                    data={data?.by_status ?? []}
+                    data={byStatus}
                     dataKey="count"
                     nameKey="status"
                     cx="50%"
@@ -189,9 +226,10 @@ export default function TicketMgmtPage() {
                     label={formatPieLabel}
                     labelLine={false}
                   >
-                    {(data?.by_status ?? []).map((entry, i) => (
-                      <Cell key={i} fill={STATUS_COLORS[i % STATUS_COLORS.length]} />
-                    ))}
+                    {byStatus.map(function(entry, i) {
+                      const fill = STATUS_COLORS[i % STATUS_COLORS.length];
+                      return <Cell key={entry.status} fill={fill} />;
+                    })}
                   </Pie>
                   <Tooltip />
                 </PieChart>
@@ -206,19 +244,18 @@ export default function TicketMgmtPage() {
             <CardTitle className="text-base">Por prioridad</CardTitle>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
-              <Skeleton className="h-48" />
-            ) : (
+            {isLoading ? <Skeleton className="h-48" /> : (
               <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={data?.by_priority ?? []} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis type="number" tick={{ fontSize: 11 }} />
-                  <YAxis dataKey="priority" type="category" tick={{ fontSize: 11 }} width={30} />
+                <BarChart data={byPriority} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis type="number" tick={TICK_SM} />
+                  <YAxis dataKey="priority" type="category" tick={TICK_SM} width={30} />
                   <Tooltip />
-                  <Bar dataKey="count" name="Tickets" radius={[0, 2, 2, 0]}>
-                    {(data?.by_priority ?? []).map((entry, i) => (
-                      <Cell key={i} fill={PRIORITY_COLORS[entry.priority] ?? '#6366f1'} />
-                    ))}
+                  <Bar dataKey="count" name="Tickets" radius={R_RIGHT}>
+                    {byPriority.map(function(entry, i) {
+                      const fill = PRIORITY_COLORS[entry.priority] || '#6366f1';
+                      return <Cell key={i} fill={fill} />;
+                    })}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
@@ -232,16 +269,14 @@ export default function TicketMgmtPage() {
             <CardTitle className="text-base">Por categoría</CardTitle>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
-              <Skeleton className="h-48" />
-            ) : (
+            {isLoading ? <Skeleton className="h-48" /> : (
               <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={data?.by_category ?? []}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis dataKey="category" tick={{ fontSize: 10 }} />
-                  <YAxis tick={{ fontSize: 11 }} />
+                <BarChart data={byCategory}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="category" tick={TICK_XS} />
+                  <YAxis tick={TICK_SM} />
                   <Tooltip />
-                  <Bar dataKey="count" fill="#8b5cf6" radius={[2, 2, 0, 0]} />
+                  <Bar dataKey="count" fill="#8b5cf6" radius={R_TOP} />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -254,18 +289,16 @@ export default function TicketMgmtPage() {
             <CardTitle className="text-base">Por técnico</CardTitle>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
-              <Skeleton className="h-48" />
-            ) : (
+            {isLoading ? <Skeleton className="h-48" /> : (
               <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={data?.by_technician ?? []}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-                  <YAxis tick={{ fontSize: 11 }} />
+                <BarChart data={byTechnician}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" tick={TICK_XS} />
+                  <YAxis tick={TICK_SM} />
                   <Tooltip />
                   <Legend />
-                  <Bar dataKey="resolved" name="Resueltos" fill="#22c55e" radius={[2, 2, 0, 0]} />
-                  <Bar dataKey="open" name="Abiertos" fill="#f59e0b" radius={[2, 2, 0, 0]} />
+                  <Bar dataKey="resolved" name="Resueltos" fill="#22c55e" radius={R_TOP} />
+                  <Bar dataKey="open" name="Abiertos" fill="#f59e0b" radius={R_TOP} />
                 </BarChart>
               </ResponsiveContainer>
             )}

@@ -15,6 +15,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useDashboardAnalytics, useConversationAnalytics } from '@/hooks/useTicketQueries';
 import { CATEGORY_TAXONOMY } from '@/types/tickets';
 
+// ─── Types ────────────────────────────────────────────────────────────────────
+
 interface DashboardData {
   summary: { total_tickets: number; resolved_today: number; avg_resolution_hours: number; open_tickets: number; escalated_count: number };
   by_status: Array<{ status: string; count: number }>;
@@ -31,13 +33,25 @@ interface ConvData {
   daily: Array<{ date: string; count: number }>;
 }
 
+// ─── Constants ────────────────────────────────────────────────────────────────
+
 const STATUS_LABELS: Record<string, string> = {
   new: 'Nuevo', classified: 'Clasificado', assigned: 'Asignado',
   in_progress: 'En progreso', pending_user: 'Esperando usuario',
   resolved: 'Resuelto', closed: 'Cerrado', escalated: 'Escalado', reopened: 'Reabierto',
 };
 
-const PRIORITY_COLORS: Record<string, string> = { P1: 'destructive', P2: 'default', P3: 'secondary', P4: 'outline' };
+const PRIORITY_BADGE: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+  P1: 'destructive', P2: 'default', P3: 'secondary', P4: 'outline',
+};
+
+const TICK_SM = { fontSize: 11 };
+const TICK_XS = { fontSize: 10 };
+const R_TOP: [number, number, number, number] = [2, 2, 0, 0];
+const EMPTY: never[] = [];
+const CATEGORY_KEYS = Object.keys(CATEGORY_TAXONOMY);
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function ReportsPage() {
   const today = new Date().toISOString().split('T')[0];
@@ -53,28 +67,55 @@ export default function ReportsPage() {
   const dash = rawDash as DashboardData | undefined;
   const conv = rawConv as ConvData | undefined;
 
-  const techRows = (dash?.by_technician ?? []).filter((t) =>
-    !searchTech || t.name.toLowerCase().includes(searchTech.toLowerCase())
-  );
+  // Extract all data before JSX — prevents SWC _ref bug with Recharts
+  const dailyVolume = dash && dash.daily_volume ? dash.daily_volume : EMPTY;
+  const byStatus = dash && dash.by_status ? dash.by_status : EMPTY;
+  const byPriority = dash && dash.by_priority ? dash.by_priority : EMPTY;
+  const byTech = dash && dash.by_technician ? dash.by_technician : EMPTY;
+  const convDaily = conv && conv.daily ? conv.daily : EMPTY;
+  const convChannels = conv && conv.channels ? conv.channels : EMPTY;
+  const convTotal = conv ? conv.total_conversations : 0;
+  const convAvgTurns = conv && conv.avg_turns != null ? String(conv.avg_turns.toFixed(1)) : '—';
+  const hasConv = !loadingConv && conv != null;
 
-  const exportCSV = () => {
+  const techRows = byTech.filter(function(t) {
+    if (!searchTech) return true;
+    return t.name.toLowerCase().includes(searchTech.toLowerCase());
+  });
+
+  function handleFromChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setFrom(e.target.value);
+  }
+
+  function handleToChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setTo(e.target.value);
+  }
+
+  function handleSearchChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setSearchTech(e.target.value);
+  }
+
+  function exportCSV() {
     if (!dash) return;
     const rows = [
       ['Técnico', 'Resueltos', 'Abiertos', 'Tiempo Promedio (h)'],
-      ...(dash.by_technician ?? []).map((t) => [t.name, t.resolved, t.open, t.avg_resolution_hours?.toFixed(1) ?? 'N/A']),
+      ...byTech.map(function(t) {
+        const avg = t.avg_resolution_hours != null ? t.avg_resolution_hours.toFixed(1) : 'N/A';
+        return [t.name, String(t.resolved), String(t.open), avg];
+      }),
     ];
-    const csv = rows.map((r) => r.join(',')).join('\n');
+    const csv = rows.map(function(r) { return r.join(','); }).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `reporte-tickets-${from}-${to}.csv`;
+    a.download = 'reporte-tickets-' + from + '-' + to + '.csv';
     a.click();
     URL.revokeObjectURL(url);
-  };
+  }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4 md:p-8">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-xl font-bold">Reportes</h1>
@@ -92,11 +133,11 @@ export default function ReportsPage() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="space-y-1.5">
               <Label className="text-xs">Desde</Label>
-              <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+              <Input type="date" value={from} onChange={handleFromChange} />
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Hasta</Label>
-              <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+              <Input type="date" value={to} onChange={handleToChange} />
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Categoría</Label>
@@ -106,9 +147,9 @@ export default function ReportsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todas</SelectItem>
-                  {Object.keys(CATEGORY_TAXONOMY).map((cat) => (
-                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                  ))}
+                  {CATEGORY_KEYS.map(function(cat) {
+                    return <SelectItem key={cat} value={cat}>{cat}</SelectItem>;
+                  })}
                 </SelectContent>
               </Select>
             </div>
@@ -120,7 +161,7 @@ export default function ReportsPage() {
                   className="pl-8"
                   placeholder="Nombre..."
                   value={searchTech}
-                  onChange={(e) => setSearchTech(e.target.value)}
+                  onChange={handleSearchChange}
                 />
               </div>
             </div>
@@ -137,13 +178,13 @@ export default function ReportsPage() {
           <CardContent>
             {isLoading ? <Skeleton className="h-48" /> : (
               <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={dash?.daily_volume ?? []}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                  <YAxis tick={{ fontSize: 11 }} />
+                <BarChart data={dailyVolume}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" tick={TICK_XS} />
+                  <YAxis tick={TICK_SM} />
                   <Tooltip />
-                  <Bar dataKey="created" name="Creados" fill="#6366f1" radius={[2, 2, 0, 0]} />
-                  <Bar dataKey="resolved" name="Resueltos" fill="#22c55e" radius={[2, 2, 0, 0]} />
+                  <Bar dataKey="created" name="Creados" fill="#6366f1" radius={R_TOP} />
+                  <Bar dataKey="resolved" name="Resueltos" fill="#22c55e" radius={R_TOP} />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -161,12 +202,15 @@ export default function ReportsPage() {
           <CardContent>
             {isLoading ? <Skeleton className="h-48" /> : (
               <div className="space-y-2">
-                {(dash?.by_status ?? []).map((s) => (
-                  <div key={s.status} className="flex items-center justify-between">
-                    <span className="text-sm">{STATUS_LABELS[s.status] ?? s.status}</span>
-                    <Badge variant="outline">{s.count}</Badge>
-                  </div>
-                ))}
+                {byStatus.map(function(s) {
+                  const label = STATUS_LABELS[s.status] || s.status;
+                  return (
+                    <div key={s.status} className="flex items-center justify-between">
+                      <span className="text-sm">{label}</span>
+                      <Badge variant="outline">{s.count}</Badge>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </CardContent>
@@ -180,14 +224,15 @@ export default function ReportsPage() {
           <CardContent>
             {isLoading ? <Skeleton className="h-48" /> : (
               <div className="space-y-2">
-                {(dash?.by_priority ?? []).map((p) => (
-                  <div key={p.priority} className="flex items-center justify-between">
-                    <Badge variant={(PRIORITY_COLORS[p.priority] as 'default' | 'secondary' | 'destructive' | 'outline') ?? 'outline'}>
-                      {p.priority}
-                    </Badge>
-                    <span className="text-sm font-medium">{p.count} tickets</span>
-                  </div>
-                ))}
+                {byPriority.map(function(p) {
+                  const variant = PRIORITY_BADGE[p.priority] || 'outline';
+                  return (
+                    <div key={p.priority} className="flex items-center justify-between">
+                      <Badge variant={variant}>{p.priority}</Badge>
+                      <span className="text-sm font-medium">{p.count} tickets</span>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </CardContent>
@@ -211,16 +256,19 @@ export default function ReportsPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {techRows.map((t) => (
-                      <tr key={t.name} className="border-b last:border-0">
-                        <td className="py-2">{t.name}</td>
-                        <td className="py-2 text-right text-green-600 font-medium">{t.resolved}</td>
-                        <td className="py-2 text-right text-yellow-600 font-medium">{t.open}</td>
-                        <td className="py-2 text-right text-muted-foreground">
-                          {t.avg_resolution_hours != null ? `${t.avg_resolution_hours.toFixed(1)}h` : '—'}
-                        </td>
-                      </tr>
-                    ))}
+                    {techRows.map(function(t) {
+                      const avg = t.avg_resolution_hours != null
+                        ? String(t.avg_resolution_hours.toFixed(1)) + 'h'
+                        : '—';
+                      return (
+                        <tr key={t.name} className="border-b last:border-0">
+                          <td className="py-2">{t.name}</td>
+                          <td className="py-2 text-right text-green-600 font-medium">{t.resolved}</td>
+                          <td className="py-2 text-right text-yellow-600 font-medium">{t.open}</td>
+                          <td className="py-2 text-right text-muted-foreground">{avg}</td>
+                        </tr>
+                      );
+                    })}
                     {techRows.length === 0 && (
                       <tr>
                         <td colSpan={4} className="py-4 text-center text-muted-foreground text-xs">
@@ -236,7 +284,7 @@ export default function ReportsPage() {
         </Card>
 
         {/* Conversations */}
-        {!loadingConv && conv && (
+        {hasConv && (
           <Card className="md:col-span-2">
             <CardHeader className="pb-2">
               <CardTitle className="text-base">Conversaciones del chatbot</CardTitle>
@@ -244,27 +292,29 @@ export default function ReportsPage() {
             <CardContent>
               <div className="flex gap-6 mb-4 flex-wrap">
                 <div>
-                  <p className="text-2xl font-bold">{conv.total_conversations}</p>
+                  <p className="text-2xl font-bold">{convTotal}</p>
                   <p className="text-xs text-muted-foreground">Total conversaciones</p>
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{conv.avg_turns?.toFixed(1) ?? '—'}</p>
+                  <p className="text-2xl font-bold">{convAvgTurns}</p>
                   <p className="text-xs text-muted-foreground">Turnos promedio</p>
                 </div>
-                {(conv.channels ?? []).map((c) => (
-                  <div key={c.channel}>
-                    <p className="text-2xl font-bold">{c.count}</p>
-                    <p className="text-xs text-muted-foreground capitalize">{c.channel}</p>
-                  </div>
-                ))}
+                {convChannels.map(function(c) {
+                  return (
+                    <div key={c.channel}>
+                      <p className="text-2xl font-bold">{c.count}</p>
+                      <p className="text-xs text-muted-foreground capitalize">{c.channel}</p>
+                    </div>
+                  );
+                })}
               </div>
               <ResponsiveContainer width="100%" height={160}>
-                <BarChart data={conv.daily ?? []}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                  <YAxis tick={{ fontSize: 11 }} />
+                <BarChart data={convDaily}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" tick={TICK_XS} />
+                  <YAxis tick={TICK_SM} />
                   <Tooltip />
-                  <Bar dataKey="count" name="Conversaciones" fill="#a855f7" radius={[2, 2, 0, 0]} />
+                  <Bar dataKey="count" name="Conversaciones" fill="#a855f7" radius={R_TOP} />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>

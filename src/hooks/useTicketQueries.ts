@@ -421,9 +421,25 @@ export function usePatternAnalytics() {
 
 // ─── Plataformas y permisos ───────────────────────────────────────────────────
 
+function toArray<T>(val: unknown): T[] {
+  if (Array.isArray(val)) return val as T[];
+  if (val && typeof val === 'object') {
+    const obj = val as Record<string, unknown>;
+    const key = ['data', 'platforms', 'permissions', 'items', 'results'].find((k) => Array.isArray(obj[k]));
+    if (key) return obj[key] as T[];
+  }
+  return [];
+}
+
 export function usePlatforms() {
   const token = useToken();
-  return useQuery({ queryKey: ['platforms'], queryFn: () => fetchPlatforms(token), enabled: !!token, staleTime: 5 * 60_000 });
+  return useQuery({
+    queryKey: ['platforms'],
+    queryFn: () => fetchPlatforms(token),
+    select: (res) => toArray<import('@/lib/ticket-api').Platform>(res),
+    enabled: !!token,
+    staleTime: 5 * 60_000,
+  });
 }
 
 export function useCreatePlatform() {
@@ -440,7 +456,9 @@ export function usePermissions(platform_id?: string) {
   return useQuery({
     queryKey: ['permissions', platform_id],
     queryFn: () => fetchPermissions(token, platform_id),
-    enabled: !!token, staleTime: 5 * 60_000,
+    select: (res) => toArray<import('@/lib/ticket-api').Permission>(res),
+    enabled: !!token,
+    staleTime: 5 * 60_000,
   });
 }
 
@@ -479,7 +497,9 @@ export function useAuthorizationRequests(status?: string) {
   return useQuery({
     queryKey: ['auth-requests', status],
     queryFn: () => fetchAuthorizationRequests(token, { status, limit: 50 }),
-    enabled: !!token, staleTime: 60_000,
+    select: (res) => toArray<import('@/lib/ticket-api').AuthorizationRequest>(res),
+    enabled: !!token,
+    staleTime: 60_000,
   });
 }
 
