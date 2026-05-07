@@ -89,7 +89,7 @@ export default function ClientLayout(
           {!isLoggedIn ? (
             <div className="min-h-screen bg-white dark:bg-background transition-colors duration-300">
               <Navbar isLoggedIn={isLoggedIn} />
-              <main className="container  w-screen px-0 ">
+              <main className="w-full">
                 {children}
               </main>
             </div>
