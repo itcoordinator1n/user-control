@@ -524,13 +524,17 @@ export function VacationView({ onBack, allowedArea }: VacationViewProps) {
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div className="text-center p-2 bg-blue-50 rounded">
                         <div className="font-semibold text-blue-800">
-                          {area.averageDaysPerEmployee}
+                          {typeof area.averageDaysPerEmployee === 'number'
+                            ? area.averageDaysPerEmployee.toFixed(1)
+                            : area.averageDaysPerEmployee}
                         </div>
                         <div className="text-blue-600">Promedio</div>
                       </div>
                       <div className="text-center p-2 bg-orange-50 rounded">
                         <div className="font-semibold text-orange-800">
-                          {area.accumulatedDays}
+                          {typeof area.accumulatedDays === 'number'
+                            ? area.accumulatedDays.toFixed(1)
+                            : area.accumulatedDays}
                         </div>
                         <div className="text-orange-600">Acumulados</div>
                       </div>
@@ -1273,39 +1277,100 @@ export function VacationView({ onBack, allowedArea }: VacationViewProps) {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {getPaginatedVacationRecords().map((request) => (
-                          <TableRow key={request.id}>
-                            <TableCell className="font-medium">
-                              {request.requestDate}
-                            </TableCell>
-                            <TableCell>
-                              {request.startDate === request.endDate
-                                ? request.startDate
-                                : `${request.startDate} - ${request.endDate}`}
-                            </TableCell>
-                            <TableCell className="text-center">
-                              {request.daysRequested}
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                {getVacationStatusIcon(request.status)}
-                                <span
-                                  className={getVacationStatusColor(
-                                    request.status
-                                  )}
-                                >
-                                  {getVacationStatusText(request.status)}
-                                </span>
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-sm">
-                              {request.reason}
-                            </TableCell>
-                            <TableCell className="text-sm">
-                              {request.approvedBy || "-"}
-                            </TableCell>
-                          </TableRow>
-                        ))}
+                        {getPaginatedVacationRecords().map((request) => {
+                          // ── Helpers de formato ────────────────────────────
+                          const DAYS_ES = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+                          const MONTHS_ES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+
+                          function parseLocal(iso: string) {
+                            // Soporta "2026-01-30T..." o "2026-01-30"
+                            const clean = iso.split('T')[0];
+                            const [y, m, d] = clean.split('-').map(Number);
+                            return new Date(y, m - 1, d);
+                          }
+
+                          function formatFecha(iso: string) {
+                            const d = parseLocal(iso);
+                            return `${d.getDate()} ${MONTHS_ES[d.getMonth()]} ${d.getFullYear()}`;
+                          }
+
+                          function dayName(iso: string) {
+                            return DAYS_ES[parseLocal(iso).getDay()];
+                          }
+
+                          const DAY_COLORS: Record<string, string> = {
+                            'Lunes':     'bg-blue-100 text-blue-700',
+                            'Martes':    'bg-purple-100 text-purple-700',
+                            'Miércoles': 'bg-indigo-100 text-indigo-700',
+                            'Jueves':    'bg-teal-100 text-teal-700',
+                            'Viernes':   'bg-green-100 text-green-700',
+                            'Sábado':    'bg-yellow-100 text-yellow-700',
+                            'Domingo':   'bg-rose-100 text-rose-700',
+                          };
+
+                          const reqDayName = dayName(request.requestDate);
+                          const isSingleDay = request.startDate === request.endDate ||
+                            formatFecha(request.startDate) === formatFecha(request.endDate);
+                          const startDayName = dayName(request.startDate);
+                          const endDayName = dayName(request.endDate);
+
+                          return (
+                            <TableRow key={request.id}>
+                              {/* ── Fecha Solicitud ───────────────────────── */}
+                              <TableCell>
+                                <div className="flex flex-col gap-1">
+                                  <span className={`inline-flex items-center self-start rounded-full px-2 py-0.5 text-[10px] font-semibold ${DAY_COLORS[reqDayName] || 'bg-gray-100 text-gray-600'}`}>
+                                    {reqDayName}
+                                  </span>
+                                  <span className="text-sm font-medium text-gray-800">
+                                    {formatFecha(request.requestDate)}
+                                  </span>
+                                </div>
+                              </TableCell>
+
+                              {/* ── Período ───────────────────────────────── */}
+                              <TableCell>
+                                {isSingleDay ? (
+                                  <div className="flex flex-col gap-1">
+                                    <span className={`inline-flex items-center self-start rounded-full px-2 py-0.5 text-[10px] font-semibold ${DAY_COLORS[startDayName] || 'bg-gray-100 text-gray-600'}`}>
+                                      {startDayName}
+                                    </span>
+                                    <span className="text-sm text-gray-800">{formatFecha(request.startDate)}</span>
+                                  </div>
+                                ) : (
+                                  <div className="inline-flex flex-col gap-1">
+                                    <div className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5">
+                                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold shrink-0 ${DAY_COLORS[startDayName] || 'bg-gray-100 text-gray-600'}`}>
+                                        {startDayName.slice(0, 3)}
+                                      </span>
+                                      <span className="text-xs font-semibold text-gray-700">{formatFecha(request.startDate)}</span>
+                                      <span className="text-gray-300 text-xs mx-0.5">→</span>
+                                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold shrink-0 ${DAY_COLORS[endDayName] || 'bg-gray-100 text-gray-600'}`}>
+                                        {endDayName.slice(0, 3)}
+                                      </span>
+                                      <span className="text-xs font-semibold text-gray-700">{formatFecha(request.endDate)}</span>
+                                    </div>
+                                  </div>
+                                )}
+                              </TableCell>
+
+                              <TableCell className="text-center font-semibold">
+                                {request.daysRequested}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  {getVacationStatusIcon(request.status)}
+                                  <span className={getVacationStatusColor(request.status)}>
+                                    {getVacationStatusText(request.status)}
+                                  </span>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-sm">{request.reason}</TableCell>
+                              <TableCell className="text-sm">{request.approvedBy || '-'}</TableCell>
+                            </TableRow>
+                          );
+                        })}
+
                         {getPaginatedVacationRecords().length === 0 && (
                           <TableRow>
                             <TableCell
