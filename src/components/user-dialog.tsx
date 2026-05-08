@@ -61,7 +61,13 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
     const fetchRoles = async () => {
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/rolAdministration/get-roles`
+          `${process.env.NEXT_PUBLIC_API_URL}/api/rolAdministration/get-roles`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${session?.user?.accessToken}`,
+            },
+          }
         );
         console.log("Respuesta",response)
         if (response.ok) {
@@ -76,7 +82,7 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
     };
 
     fetchRoles();
-  }, []);
+  }, [session?.user?.accessToken]);
   useEffect(() => {
     const fetchAreas = async () => {
       try {
@@ -192,6 +198,7 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
             method: "PUT",
             headers: {
               "Content-Type": "application/json",
+              Authorization: `Bearer ${session?.user?.accessToken}`,
             },
             body: JSON.stringify(formData),
           }
@@ -215,6 +222,7 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
+              Authorization: `Bearer ${session?.user?.accessToken}`,
             },
             body: JSON.stringify(formData),
           }

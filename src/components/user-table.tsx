@@ -38,16 +38,13 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { getRoleColor, getAreaFromRole } from "@/lib/role-colors";
+import { useSession } from "next-auth/react";
 
 interface UserTableProps {
   searchQuery: string;
   filters: {
-    role?: {
-      nombreRol: string;
-      area: string;
-      colorEtiqueta: string;
-    } | null;
-    area?: number | null;
+    role?: string | null;
+    area?: string | null;
     status?: boolean | null;
   } | null;
   onEditUser: (user: any) => void;
@@ -74,6 +71,7 @@ export function UserTable({
 
     ultimoAcceso: string;
   }
+  const { data: session } = useSession();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
   const [resetPasswordDialogOpen, setResetPasswordDialogOpen] = useState(false);
@@ -81,18 +79,30 @@ export function UserTable({
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
+  // Reset page when search or filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filters]);
+
   // Filter users based on search query and active filters
   const filteredUsers = users.filter((user) => {
+    const q = searchQuery.toLowerCase();
     const matchesSearch =
-      user.nombreUsuario.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.correo.toLowerCase().includes(searchQuery.toLowerCase());
+      !q ||
+      (user.nombreUsuario && user.nombreUsuario.toLowerCase().includes(q)) ||
+      (user.nombre && user.nombre.toLowerCase().includes(q)) ||
+      (user.correo && user.correo.toLowerCase().includes(q));
 
     const matchesRoleFilter =
-      !filters || !filters.role || user.roles.includes(filters.role);
+      !filters || !filters.role ||
+      user.roles.some((r) => r.nombreRol === filters.role);
+
     const matchesAreaFilter =
-      !filters || !filters.area || user.area === filters.area;
+      !filters || !filters.area ||
+      user.nombreArea === filters.area;
+
     const matchesStatusFilter =
-      !filters || !filters.status || user.estado === filters.status;
+      filters?.status == null || user.estado === filters.status;
 
     return (
       matchesSearch &&
@@ -102,8 +112,16 @@ export function UserTable({
     );
   });
 
+  // Unique roles and areas for parent component
+  const uniqueRoles = Array.from(
+    new Set(users.flatMap((u) => u.roles.map((r) => r.nombreRol)))
+  ).sort();
+  const uniqueAreas = Array.from(
+    new Set(users.map((u) => u.nombreArea).filter(Boolean))
+  ).sort();
+
   // Pagination
-  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / itemsPerPage));
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedUsers = filteredUsers.slice(
     startIndex,
@@ -111,26 +129,33 @@ export function UserTable({
   );
 
   useEffect(() => {
-    const fetchAreas = async () => {
+    const token = session?.user?.accessToken;
+    if (!token) return;
+
+    const fetchUsers = async () => {
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/userAdministration/get-all-users`
+          `${process.env.NEXT_PUBLIC_API_URL}/api/userAdministration/get-all-users`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
         );
-        console.log(response)
         if (response.ok) {
           const data = await response.json();
           setUsers(data);
-          console.log("La data que necesito",data)
         } else {
-          console.error("Error al obtener los roles");
+          console.error("Error al obtener usuarios");
         }
       } catch (error) {
         console.error("Error de red:", error);
       }
     };
 
-    fetchAreas();
-  }, []);
+    fetchUsers();
+  }, [session?.user?.accessToken]);
 
   const handleDeleteUser = (userId: User["id"]) => {
     setSelectedUserId(userId);
@@ -154,18 +179,21 @@ export function UserTable({
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${session?.user?.accessToken}`,
           },
         }
       );
 
       if (!response.ok) {
-        throw new Error("Error al crear el usuario");
+        throw new Error("Error al eliminar el usuario");
       }
 
       const data = await response.json();
-      alert(data);
+      alert(data.message);
+      // Refrescar la lista de usuarios
+      setUsers((prev) => prev.filter((u) => u.id !== selectedUserId));
     } catch (error) {
-      alert("Hubo un problema al enviar los datos");
+      alert("Hubo un problema al eliminar el usuario");
     }
     setDeleteDialogOpen(false);
   };
@@ -178,22 +206,22 @@ export function UserTable({
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${session?.user?.accessToken}`,
           },
           body: JSON.stringify({ id_usuario: selectedUserId }),
         }
       );
 
       if (!response.ok) {
-        throw new Error("Error al crear el usuario");
+        throw new Error("Error al restablecer la contraseña");
       }
 
       const data = await response.json();
       alert(data.message);
     } catch (error) {
       console.error(error);
-      alert("Hubo un problema al enviar los datos");
+      alert("Hubo un problema al restablecer la contraseña");
     }
-    // In a real application, you would reset the password here
     setResetPasswordDialogOpen(false);
   };
 
@@ -221,8 +249,8 @@ export function UserTable({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredUsers.length > 0 ? (
-              filteredUsers.map((user) => (
+            {paginatedUsers.length > 0 ? (
+              paginatedUsers.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell className="font-medium">
                     {user.nombreUsuario}
@@ -304,30 +332,35 @@ export function UserTable({
 
       {/* Pagination */}
       {filteredUsers.length > 0 && (
-        <div className="flex items-center justify-end space-x-2 py-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            disabled={currentPage === 1}
-          >
-            <ChevronLeft className="h-4 w-4" />
-            Anterior
-          </Button>
+        <div className="flex items-center justify-between py-4">
           <div className="text-sm text-muted-foreground">
-            Página {currentPage} de {totalPages}
+            Mostrando {startIndex + 1} a {Math.min(startIndex + itemsPerPage, filteredUsers.length)} de {filteredUsers.length} usuarios
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() =>
-              setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-            }
-            disabled={currentPage === totalPages}
-          >
-            Siguiente
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Anterior
+            </Button>
+            <div className="text-sm text-muted-foreground">
+              Página {currentPage} de {totalPages}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+              }
+              disabled={currentPage === totalPages}
+            >
+              Siguiente
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       )}
 
