@@ -2,6 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import type { DashboardView } from "../_types/dashboard.types";
+import { hasPerm } from "@/lib/auth";
 
 // Normaliza nombre de área al formato que usa el backend en los strings de permiso:
 // "Administración" → "administracion" (minúsculas, sin tildes)
@@ -14,34 +15,34 @@ function normalizeArea(area: string): string {
 
 export function useDashboardPermissions() {
   const { data: session } = useSession();
-  const permissions = session?.user?.permissions ?? [];
-  const userArea = session?.user?.area?.name ?? null;
+  const user = session?.user as any;
+  const permissions = user?.permissions ?? [];
+  const userArea = user?.area?.name ?? null;
 
-  // El backend aún no emite strings dashboard:* — mientras no exista ninguno, mostrar todo.
-  const hasDashboardStrings = permissions.some((p) => p.startsWith("dashboard:"));
-
+  // Verificación simplificada usando el nuevo helper hasPerm para la plataforma 'permisos'
   const canView = (view: DashboardView): boolean => {
-    if (!hasDashboardStrings) return true; // fallback permisivo hasta que el backend los emita
-    if (permissions.includes("dashboard:all:view")) return true; // acceso total
+    // Si tiene permiso de administración global de plataforma, ve todo
+    if (hasPerm(user, 'permisos', 'RRHH:ADMIN')) return true;
+    
+    // Verificación por vista específica
     switch (view) {
       case "attendance":
-        return permissions.includes("dashboard:attendance:view");
+        return hasPerm(user, 'permisos', 'METRICS:ATTENDANCE') || hasPerm(user, 'permisos', 'METRICS:GENERAL');
       case "vacations":
-        return permissions.includes("dashboard:vacations:view");
+        return hasPerm(user, 'permisos', 'RRHH:PERMITS_VIEW') || hasPerm(user, 'permisos', 'METRICS:VACATIONS');
       case "permissions":
-        return permissions.includes("dashboard:permissions:view");
+        return hasPerm(user, 'permisos', 'RRHH:APPLICATIONS_MANAGE') || hasPerm(user, 'permisos', 'METRICS:PERMITS');
       case "hr-admin":
-        return permissions.includes("dashboard:hr-admin:view");
+        return hasPerm(user, 'permisos', 'RRHH:ADMIN');
       default:
         return false;
     }
   };
 
-  // true = el usuario solo ve su propia área (no tiene dashboard:all:view)
-  const isAreaRestricted =
-    hasDashboardStrings && !permissions.includes("dashboard:all:view");
+  // true = el usuario solo ve su propia área (no tiene permisos de administrador o globales)
+  const isAreaRestricted = !hasPerm(user, 'permisos', 'RRHH:ADMIN') && !hasPerm(user, 'permisos', 'METRICS:GENERAL');
 
-  // Área normalizada para comparar con strings dashboard:area:<nombre>:view
+  // Área normalizada para comparar
   const normalizedArea = userArea ? normalizeArea(userArea) : null;
 
   return { canView, isAreaRestricted, userArea, normalizedArea, permissions };

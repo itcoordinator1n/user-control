@@ -134,12 +134,17 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
 
   useEffect(() => {
     if (user) {
+      const userRoles = (user as any).roles || [];
+      console.log("[DEBUG] user.roles raw:", JSON.stringify(userRoles));
+      // Extraer IDs numéricos de los objetos de rol para marcar los checkboxes
+      const roleIds = userRoles.map((r: any) => r.id_rol ?? r.idRol ?? r.id ?? r).filter((id: any) => typeof id === 'number');
+      console.log("[DEBUG] roleIds extracted:", roleIds);
       setFormData({
         id: user.id,
         name: (user as any).nombre,
         user: (user as any).nombreUsuario,
         email: (user as any).correo,
-        roles: (user as any).roles || [],
+        roles: roleIds,
         area: (user as any).area,
         status: (user as any).estado === 1,
         sendWelcomeEmail: false,

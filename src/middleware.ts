@@ -10,29 +10,29 @@ type Rule = {
 
 const rules: Rule[] = [
   // Empleado
-  { pattern: /^\/page\/profile(?:\/.*)?$/, anyOf: ["EMPLOYEE:PROFILE"] },
-  { pattern: /^\/page\/vacations-permits(?:\/.*)?$/, anyOf: ["EMPLOYEE:PERMITS"] },
+  { pattern: /^\/page\/profile(?:\/.*)?$/, anyOf: ["USER:READ"] },
+  { pattern: /^\/page\/vacations-permits(?:\/.*)?$/, anyOf: ["RRHH:PERMITS_VIEW"] },
 
   // RRHH
-  { pattern: /^\/page\/dashboard(?:\/.*)?$/, anyOf: ["RRHH:DASHBOARD"] },
+  { pattern: /^\/page\/dashboard(?:\/.*)?$/, anyOf: ["METRICS:GENERAL", "RRHH:ADMIN"] },
 
-  // TI
-  { pattern: /^\/page\/admin(?:\/.*)?$/, anyOf: ["ADMIN:VIEW"] },
+  // TI / Admin
+  { pattern: /^\/page\/admin(?:\/.*)?$/, anyOf: ["USER:READ", "ROLE:VIEW"] },
 
-  // Jefe
-  { pattern: /^\/page\/applications(?:\/.*)?$/, anyOf: ["BOSS:APPLICATIONS"] },
+  // Jefe / Aplicaciones
+  { pattern: /^\/page\/applications(?:\/.*)?$/, anyOf: ["RRHH:APPLICATIONS_MANAGE"] },
 
   // Tickets — técnico
-  { pattern: /^\/page\/tech(?:\/.*)?$/, anyOf: ["TICKET:TECH", "TICKET:ADMIN"] },
+  { pattern: /^\/page\/tech(?:\/.*)?$/, anyOf: ["TICKET:RESPOND", "TICKET:ADMIN"] },
 
   // Tickets — administración IT
   { pattern: /^\/page\/ticket-admin(?:\/.*)?$/, anyOf: ["TICKET:ADMIN"] },
 
   // Tickets — gerencia
-  { pattern: /^\/page\/ticket-mgmt(?:\/.*)?$/, anyOf: ["TICKET:MGMT", "TICKET:ADMIN"] },
+  { pattern: /^\/page\/ticket-mgmt(?:\/.*)?$/, anyOf: ["TICKET:READ", "TICKET:ADMIN"] },
 
   // Produccion
-  { pattern: /^\/page\/produccion(?:\/.*)?$/, anyOf: ["PRODUCCION:TIEMPOS", "PRODUCCION:REVISION"] },
+  { pattern: /^\/page\/produccion(?:\/.*)?$/, anyOf: ["PROD:REGISTER", "PROD:VIEW", "PROD:ADMIN"] },
 ];
 
 export async function middleware(req: NextRequest) {
@@ -55,46 +55,77 @@ export async function middleware(req: NextRequest) {
 
   const isPublic = (path: string) => publicRoutes.includes(path);
   const matchRule = (path: string) => rules.find(r => r.pattern.test(path));
-  const hasAny = (perms: string[], anyOf?: string[]) =>
-    !anyOf || anyOf.some(p => perms.includes(p));
-  const hasAll = (perms: string[], allOf?: string[]) =>
-    !allOf || allOf.every(p => perms.includes(p));
+  
+  // Helper para validar permisos en una plataforma o de forma global
+  const hasPermission = (token: any, perm: string, platform?: string) => {
+    if (!token) return false;
+    
+    // Si se especifica plataforma, buscar ahí primero
+    if (platform && token.platformPermissions?.[platform]?.includes(perm)) {
+      return true;
+    }
+    
+    // Fallback a permisos globales (compatibilidad)
+    return token.permissions?.includes(perm) || false;
+  };
 
-  console.log("🔹 Middleware ejecutado");
-  console.log("📍 Pathname:", pathname);
-  console.log("🔑 Token presente:", !!token);
-  console.log("👤 Permisos del usuario:", (token as any)?.permissions ?? []);
+  const isAuthorized = (token: any, rule: Rule) => {
+    // Determinar la plataforma basándonos en el pathname (ejemplo simple)
+    let platform = '';
+    if (pathname.startsWith('/page/tickets') || pathname.startsWith('/page/tech') || 
+        pathname.startsWith('/page/ticket-admin') || pathname.startsWith('/page/ticket-mgmt')) {
+      platform = 'tickets';
+    } else if (pathname.startsWith('/page/produccion')) {
+      platform = 'produccion';
+    } else if (pathname.startsWith('/page/admin')) {
+      platform = 'admin';
+    } else if (pathname.startsWith('/page/vacations-permits') || pathname.startsWith('/page/dashboard')) {
+      platform = 'permisos';
+    }
+
+    // Si hay una plataforma detectada, el usuario DEBE tenerla asignada
+    if (platform && token.platforms && !token.platforms.includes(platform)) {
+      return { authorized: false, reason: 'platform_missing' };
+    }
+
+    const perms = token.permissions || [];
+    
+    if (rule.anyOf) {
+      const ok = rule.anyOf.some(p => hasPermission(token, p, platform));
+      if (!ok) return { authorized: false, reason: 'permission_missing' };
+    }
+    
+    if (rule.allOf) {
+      const ok = rule.allOf.every(p => hasPermission(token, p, platform));
+      if (!ok) return { authorized: false, reason: 'permission_missing' };
+    }
+
+    return { authorized: true };
+  };
+
+  console.log("🔹 Middleware ejecutado:", pathname);
 
   // Ruta pública con usuario autenticado → redirigir
   if (token && isPublic(pathname)) {
-    console.log("➡️ Usuario autenticado intentando acceder a ruta pública:", pathname);
     return NextResponse.redirect(new URL('/page/profile', req.url));
   }
 
   // Ruta protegida sin usuario autenticado → redirigir a login
   if (!token && protectedRoutes.some(route => pathname.startsWith(route))) {
-    console.log("🚫 Usuario NO autenticado intentando acceder a ruta protegida:", pathname);
     return NextResponse.redirect(new URL('/page/login', req.url));
   }
 
   // Validar permisos para rutas con reglas específicas
   const rule = matchRule(pathname);
-  console.log("MI PATH NAME",pathname)
-  if (rule) {
-    
-    console.log("📜 Regla encontrada para la ruta:", rule);
-    const userPerms: string[] = ((token as any)?.permissions) ?? [];
-    const allowed = hasAny(userPerms, rule.anyOf) && hasAll(userPerms, rule.allOf);
-    console.log("✅ Cumple permisos:", allowed);
+  if (rule && token) {
+    const { authorized, reason } = isAuthorized(token, rule);
 
-    if (!allowed) {
-      console.log("❌ Usuario SIN permisos necesarios para acceder:", pathname);
-      return NextResponse.redirect(new URL("/page/forbiden", req.url));
-    } else {
-      console.log("✅ Usuario autorizado para acceder:", pathname);
+    if (!authorized) {
+      console.log(`❌ Acceso denegado: ${reason} en ${pathname}`);
+      // Si falta la plataforma, redirigir a una página específica o forbiden
+      const target = reason === 'platform_missing' ? '/page/forbiden' : '/page/forbiden';
+      return NextResponse.redirect(new URL(target, req.url));
     }
-  } else {
-    console.log("ℹ️ No existe regla definida para esta ruta:", pathname);
   }
 
   return NextResponse.next();

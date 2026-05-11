@@ -11,7 +11,13 @@ import { useTickets } from '@/hooks/useTicketQueries';
 import { useTicketSocket } from '@/hooks/useTicketSocket';
 import { Skeleton } from '@/components/ui/skeleton';
 
+import { useSession } from 'next-auth/react';
+import { hasPerm } from '@/lib/auth';
+
 export default function TicketsPage() {
+  const { data: session } = useSession();
+  const user = session?.user as any;
+
   // Conectar socket para recibir actualizaciones en tiempo real
   useTicketSocket();
 
@@ -25,6 +31,9 @@ export default function TicketsPage() {
     return () => clearTimeout(handler);
   }, [searchTerm]);
 
+  const canCreate = hasPerm(user, 'tickets', 'TICKET:CREATE');
+  const canViewKnowledge = hasPerm(user, 'tickets', 'TICKET:KNOWLEDGE') || hasPerm(user, 'tickets', 'TICKET:READ');
+
   return (
     <div className="space-y-8 p-4 md:p-8">
       {/* Header */}
@@ -33,24 +42,30 @@ export default function TicketsPage() {
           Mis solicitudes de soporte
         </h1>
         <div className="flex flex-wrap gap-2">
-          <Button asChild>
-            <Link href="/page/tickets/new">
-              <Plus className="mr-2 h-4 w-4" />
-              Nueva solicitud
-            </Link>
-          </Button>
-          <Button variant="outline" asChild>
-            <Link href="/page/tickets/improvement">
-              <Wrench className="mr-2 h-4 w-4" />
-              Solicitud de mejora
-            </Link>
-          </Button>
-          <Button variant="ghost" asChild>
-            <Link href="/page/tickets/knowledge">
-              <BookOpen className="mr-2 h-4 w-4" />
-              Base de conocimiento
-            </Link>
-          </Button>
+          {canCreate && (
+            <>
+              <Button asChild>
+                <Link href="/page/tickets/new">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Nueva solicitud
+                </Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <Link href="/page/tickets/improvement">
+                  <Wrench className="mr-2 h-4 w-4" />
+                  Solicitud de mejora
+                </Link>
+              </Button>
+            </>
+          )}
+          {canViewKnowledge && (
+            <Button variant="ghost" asChild>
+              <Link href="/page/tickets/knowledge">
+                <BookOpen className="mr-2 h-4 w-4" />
+                Base de conocimiento
+              </Link>
+            </Button>
+          )}
         </div>
       </div>
 

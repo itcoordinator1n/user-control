@@ -4,11 +4,15 @@ import NextAuth, { DefaultSession, User } from 'next-auth';
 
 export interface CustomAuthUser extends User {
     id: number;
-    token: number;
+    token: string;
+    permissions: string[];
+    platforms: string[];
+    platformPermissions: Record<string, string[]>;
 }
 
 declare module 'next-auth' {
     interface Session extends DefaultSession {
+        user: CustomAuthUser;
         token: string;
     }
 }
