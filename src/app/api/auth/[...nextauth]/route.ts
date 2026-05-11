@@ -8,6 +8,8 @@ declare module "next-auth" {
       id: string;
       accessToken: string;
       permissions: string[];
+      platforms: string[];
+      platformPermissions: Record<string, string[]>;
       idEmployee?: string | number;
       name?: string | null;
       email?: string | null;
@@ -21,6 +23,8 @@ declare module "next-auth/jwt" {
     id: string;
     accessToken: string;
     permissions: string[];
+    platforms: string[];
+    platformPermissions: Record<string, string[]>;
     area: { name: string; color?: string } | null;
     idEmployee: string | number | null;
   }
@@ -28,12 +32,13 @@ declare module "next-auth/jwt" {
 
 interface Pay  {
       permissions: string[];
+      platforms?: string[];
+      platformPermissions?: Record<string, string[]>;
       id?: string | number;
       idEmployee?: string | number;
       name?: string | null;
       email?: string | null;
       area?: { name: string; color?: string };
-      // ... cualquier otro claim que venga en tu token
     } 
 
 import { NextAuthOptions } from "next-auth";
@@ -108,6 +113,8 @@ export const authOptions: NextAuthOptions = {
         try {
           const payload: Pay = jwtDecode(token.accessToken as string);
           token.permissions = payload?.permissions ?? [];
+          token.platforms = payload?.platforms ?? [];
+          token.platformPermissions = payload?.platformPermissions ?? {};
           token.area = payload?.area ?? null;
           token.idEmployee = payload?.idEmployee ?? null;
           // Asignar nombre y email desde el token para el avatar
@@ -125,6 +132,8 @@ export const authOptions: NextAuthOptions = {
       if (session?.user) {
         session.user.accessToken = token.accessToken as string;
         session.user.permissions = (token.permissions as string[]) || [];
+        session.user.platforms = (token.platforms as string[]) || [];
+        session.user.platformPermissions = (token.platformPermissions as Record<string, string[]>) || {};
         session.user.area = (token.area as { name: string; color?: string } | null) ?? null;
         session.user.idEmployee = (token.idEmployee as string | number | undefined) ?? undefined;
         // Propagar nombre y email a la sesión
