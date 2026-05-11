@@ -143,9 +143,9 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
         id: user.id,
         name: (user as any).nombre,
         user: (user as any).nombreUsuario,
-        email: (user as any).correo,
+        email: (user as any).correo || "",
         roles: roleIds,
-        area: (user as any).area,
+        area: Number((user as any).area) || 1,
         status: (user as any).estado === 1,
         sendWelcomeEmail: false,
       });
@@ -195,6 +195,11 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
 
     if (isEditing) {
       try {
+        const payload = {
+          ...formData,
+          email: formData.email || undefined,
+          area: Number(formData.area),
+        };
         const response = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL}/api/userAdministration/update-user/${
             (user as any).id
@@ -205,19 +210,19 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
               "Content-Type": "application/json",
               Authorization: `Bearer ${session?.user?.accessToken}`,
             },
-            body: JSON.stringify(formData),
+            body: JSON.stringify(payload),
           }
         );
 
+        const data = await response.json();
         if (!response.ok) {
-          throw new Error("Error al crear el usuario");
+          throw new Error(data.message || "Error al actualizar el usuario");
         }
 
-        const data = await response.json();
         alert(data.message);
-      } catch (error) {
+      } catch (error: any) {
         console.error(error);
-        alert("Hubo un problema al enviar los datos");
+        alert(error.message || "Hubo un problema al enviar los datos");
       }
     } else {
       try {

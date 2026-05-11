@@ -10,29 +10,29 @@ type Rule = {
 
 const rules: Rule[] = [
   // Empleado
-  { pattern: /^\/page\/profile(?:\/.*)?$/, anyOf: ["USER:READ"] },
-  { pattern: /^\/page\/vacations-permits(?:\/.*)?$/, anyOf: ["RRHH:PERMITS_VIEW"] },
+  { pattern: /^\/page\/profile(?:\/.*)?$/, anyOf: ["USER:READ", "EMPLOYEE:PROFILE"] },
+  { pattern: /^\/page\/vacations-permits(?:\/.*)?$/, anyOf: ["RRHH:PERMITS_VIEW", "EMPLOYEE:PERMITS"] },
 
   // RRHH
-  { pattern: /^\/page\/dashboard(?:\/.*)?$/, anyOf: ["METRICS:GENERAL", "RRHH:ADMIN"] },
+  { pattern: /^\/page\/dashboard(?:\/.*)?$/, anyOf: ["METRICS:GENERAL", "RRHH:ADMIN", "RRHH:DASHBOARD", "dashboard:all:view"] },
 
   // TI / Admin
-  { pattern: /^\/page\/admin(?:\/.*)?$/, anyOf: ["USER:READ", "ROLE:VIEW"] },
+  { pattern: /^\/page\/admin(?:\/.*)?$/, anyOf: ["USER:READ", "ROLE:VIEW", "ADMIN:VIEW"] },
 
   // Jefe / Aplicaciones
-  { pattern: /^\/page\/applications(?:\/.*)?$/, anyOf: ["RRHH:APPLICATIONS_MANAGE"] },
+  { pattern: /^\/page\/applications(?:\/.*)?$/, anyOf: ["RRHH:APPLICATIONS_MANAGE", "BOSS:APPLICATIONS"] },
 
   // Tickets — técnico
-  { pattern: /^\/page\/tech(?:\/.*)?$/, anyOf: ["TICKET:RESPOND", "TICKET:ADMIN"] },
+  { pattern: /^\/page\/tech(?:\/.*)?$/, anyOf: ["TICKET:RESPOND", "TICKET:ADMIN", "TICKET:TECH"] },
 
   // Tickets — administración IT
   { pattern: /^\/page\/ticket-admin(?:\/.*)?$/, anyOf: ["TICKET:ADMIN"] },
 
   // Tickets — gerencia
-  { pattern: /^\/page\/ticket-mgmt(?:\/.*)?$/, anyOf: ["TICKET:READ", "TICKET:ADMIN"] },
+  { pattern: /^\/page\/ticket-mgmt(?:\/.*)?$/, anyOf: ["TICKET:READ", "TICKET:ADMIN", "TICKET:MGMT"] },
 
   // Produccion
-  { pattern: /^\/page\/produccion(?:\/.*)?$/, anyOf: ["PROD:REGISTER", "PROD:VIEW", "PROD:ADMIN"] },
+  { pattern: /^\/page\/produccion(?:\/.*)?$/, anyOf: ["PROD:REGISTER", "PROD:VIEW", "PROD:ADMIN", "PRODUCCION:TIEMPOS", "PRODUCCION:REVISION"] },
 ];
 
 export async function middleware(req: NextRequest) {
