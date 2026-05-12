@@ -142,19 +142,28 @@ const sidebarNavigation: NavItem[] = [
 ];
 
 // ---------------- Mapa de permisos por ruta ----------------
-const routePermission: Record<string, string> = {
-  "/page/profile":         "EMPLOYEE:PROFILE",
-  "/page/vacations-permits": "EMPLOYEE:PERMITS",
-  "/page/dashboard":       "RRHH:DASHBOARD",
-  "/page/admin":           "ADMIN:VIEW",
-  "/page/applications":    "BOSS:APPLICATIONS",
-  "/page/tech":            "TICKET:TECH",
-  "/page/ticket-admin":    "TICKET:ADMIN",
-  "/page/ticket-mgmt":     "TICKET:MGMT",
-  "/page/vacations-permits/application": "EMPLOYEE:PERMITS",
+// Cada ruta acepta CUALQUIERA de los slugs listados (nuevo + legacy)
+const routePermission: Record<string, string[]> = {
+  "/page/profile":         ["USER:READ", "EMPLOYEE:PROFILE"],
+  "/page/vacations-permits": ["RRHH:PERMITS_VIEW", "EMPLOYEE:PERMITS"],
+  "/page/dashboard":       ["METRICS:GENERAL", "RRHH:ADMIN", "RRHH:DASHBOARD", "dashboard:all:view"],
+  "/page/admin":           ["USER:READ", "ROLE:VIEW", "ADMIN:VIEW"],
+  "/page/applications":    ["RRHH:APPLICATIONS_MANAGE", "BOSS:APPLICATIONS"],
+  "/page/tech":            ["TICKET:RESPOND", "TICKET:ADMIN", "TICKET:TECH"],
+  "/page/ticket-admin":    ["TICKET:ADMIN"],
+  "/page/ticket-mgmt":     ["TICKET:READ", "TICKET:ADMIN", "TICKET:MGMT"],
+  "/page/tickets":         ["TICKET:READ", "TICKET:CREATE", "TICKET:TECH", "TICKET:MGMT", "TICKET:ADMIN"],
+  "/page/vacations-permits/application": ["RRHH:PERMITS_REQUEST", "RRHH:PERMITS_VIEW", "EMPLOYEE:PERMITS"],
 
-  // Rutas de Produccion
-  "/page/produccion/control-tiempos": "PRODUCCION:TIEMPOS",
+  // Producción
+  "/page/produccion/control-tiempos": ["PROD:REGISTER", "PROD:VIEW", "PROD:ADMIN", "PRODUCCION:TIEMPOS"],
+
+  // Marketing
+  "/page/marketingDashboard": ["MARKETING:DASHBOARD", "COMPARISON:VIEW"],
+  "/page/comparisonByDates":  ["COMPARISON:VIEW", "COMPARISON:MANAGE"],
+  "/page/comparisonTable":    ["COMPARISON:VIEW", "COMPARISON:MANAGE"],
+  "/page/comparison":         ["COMPARISON:VIEW", "COMPARISON:MANAGE"],
+  "/page/products":           ["PRODUCT:READ", "PRODUCT:CREATE"],
 };
 
 export function AppSidebar() {
@@ -162,8 +171,8 @@ export function AppSidebar() {
   const { setOpenMobile } = useSidebar();
   const userPerms = useMemo(() => (session?.user as any)?.permissions ?? [], [session]);
 
-  const hasPerm = (required?: string) =>
-    !required || userPerms.includes(required);
+  const hasPerm = (required?: string[]) =>
+    !required || required.some(p => userPerms.includes(p));
 
   const filteredNav: NavItem[] = useMemo(() => {
     return sidebarNavigation
