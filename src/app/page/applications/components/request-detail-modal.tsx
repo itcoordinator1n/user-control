@@ -32,6 +32,7 @@ import {
   isPermitRequest 
 } from "./types";
 import { generatePDF } from "./pdf-utils";
+import { adjustTimeRange } from "@/lib/utils";
 
 const TYPE_LABELS: Record<string, string> = {
   vacation: "Vacaciones",
@@ -195,7 +196,7 @@ export function RequestDetailModal({
                         <Clock className="h-6 w-6 text-primary" />
                         <div>
                           <p className="text-xs text-primary font-medium">Horario</p>
-                          <p className="text-sm font-bold text-foreground">{(selectedRequest as any).timeRange}</p>
+                          <p className="text-sm font-bold text-foreground">{adjustTimeRange((selectedRequest as any).timeRange)}</p>
                         </div>
                       </div>
                     </div>

@@ -1,6 +1,7 @@
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 import { Request, isVacationRequest, isPermitRequest } from "./types";
+import { adjustTimeRange } from "@/lib/utils";
 
 export const generatePDF = (request: Request) => {
   const doc = new jsPDF();
@@ -71,7 +72,7 @@ export const generatePDF = (request: Request) => {
     const details = [
       ["Tipo:", "Permiso"],
       ["Fecha:", request.date],
-      ["Horario:", request.timeRange],
+      ["Horario:", adjustTimeRange(request.timeRange)],
       ["Motivo:", request.reason],
     ];
     details.forEach(([label, value]) => {
