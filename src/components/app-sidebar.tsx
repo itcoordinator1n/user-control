@@ -169,17 +169,66 @@ const routePermission: Record<string, string[]> = {
 export function AppSidebar() {
   const { data: session, status } = useSession();
   const { setOpenMobile } = useSidebar();
-  const userPerms = useMemo(() => (session?.user as any)?.permissions ?? [], [session]);
 
-  const hasPerm = (required?: string[]) =>
-    !required || required.some(p => userPerms.includes(p));
+  const canAccessRoute = (url: string) => {
+    const user = session?.user as any;
+    if (!user) return false;
+
+    // Determinar la plataforma requerida por la ruta (sincronizado con middleware.ts)
+    let platform = '';
+    if (url.startsWith('/page/tickets') || url.startsWith('/page/tech') || 
+        url.startsWith('/page/ticket-admin') || url.startsWith('/page/ticket-mgmt')) {
+      platform = 'tickets';
+    } else if (url.startsWith('/page/produccion')) {
+      platform = 'produccion';
+    } else if (url.startsWith('/page/admin')) {
+      platform = 'admin';
+    } else if (url.startsWith('/page/vacations-permits') || url.startsWith('/page/dashboard')) {
+      platform = 'permisos';
+    }
+
+    const userPlatforms = user.platforms || [];
+
+    // Debug para ayudar a ver qué está recibiendo realmente el frontend en la sesión
+    if (url.startsWith('/page/vacations-permits')) {
+      console.log("🔍 Debug Sidebar - Ruta:", url);
+      console.log("   👉 Plataforma Requerida:", platform);
+      console.log("   👉 Plataformas del Usuario:", userPlatforms);
+      console.log("   👉 Permisos del Usuario:", user.permissions);
+    }
+
+    // Si la ruta exige una plataforma, el usuario DEBE tenerla asignada
+    if (platform && !userPlatforms.includes(platform)) {
+      if (url.startsWith('/page/vacations-permits')) console.log("   ❌ Bloqueado: Falta la plataforma en userPlatforms");
+      return false;
+    }
+
+    const requiredPerms = routePermission[url];
+    if (!requiredPerms || requiredPerms.length === 0) return true;
+
+    // Verificar si tiene al menos uno de los permisos requeridos (en la plataforma o global)
+    const hasPermission = requiredPerms.some(perm => {
+      if (platform && user.platformPermissions?.[platform]?.includes(perm)) {
+        return true;
+      }
+      return user.permissions?.includes(perm) || false;
+    });
+
+    if (url.startsWith('/page/vacations-permits') && !hasPermission) {
+      console.log("   ❌ Bloqueado: Falta alguno de los permisos requeridos:", requiredPerms);
+    } else if (url.startsWith('/page/vacations-permits')) {
+      console.log("   ✅ Permitido: Acceso concedido a", url);
+    }
+
+    return hasPermission;
+  };
 
   const filteredNav: NavItem[] = useMemo(() => {
     return sidebarNavigation
       .map((item) => {
         if (!item.subItems) return item;
         const visibleSubs = item.subItems.filter((s) =>
-          hasPerm(routePermission[s.url]),
+          canAccessRoute(s.url),
         );
         if (visibleSubs.length === 0) return { ...item, subItems: [] };
         return { ...item, subItems: visibleSubs };
@@ -188,7 +237,7 @@ export function AppSidebar() {
         if (!item.subItems) return true;
         return item.subItems.length > 0;
       });
-  }, [userPerms]);
+  }, [session]);
 
   const [expandedSections, setExpandedSections] = useState<
     Record<string, boolean>

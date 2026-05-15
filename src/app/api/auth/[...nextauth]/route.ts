@@ -43,6 +43,40 @@ interface Pay  {
 
 import { NextAuthOptions } from "next-auth";
 
+// Mapa de permisos → plataforma para inferencia cuando el backend no la envía
+const PERMISSION_TO_PLATFORM: Record<string, string> = {
+  'RRHH:PERMITS_VIEW':          'permisos',
+  'RRHH:PERMITS_REQUEST':       'permisos',
+  'EMPLOYEE:PERMITS':           'permisos',
+  'RRHH:ADMIN':                 'permisos',
+  'RRHH:DASHBOARD':             'permisos',
+  'RRHH:APPLICATIONS_MANAGE':   'permisos',
+  'BOSS:APPLICATIONS':          'permisos',
+  'TICKET:READ':                'tickets',
+  'TICKET:CREATE':              'tickets',
+  'TICKET:RESPOND':             'tickets',
+  'TICKET:ADMIN':               'tickets',
+  'TICKET:TECH':                'tickets',
+  'TICKET:MGMT':                'tickets',
+  'PROD:REGISTER':              'produccion',
+  'PROD:VIEW':                  'produccion',
+  'PROD:ADMIN':                 'produccion',
+  'PRODUCCION:TIEMPOS':         'produccion',
+  'USER:CREATE':                'admin',
+  'ROLE:VIEW':                  'admin',
+  'ADMIN:VIEW':                 'admin',
+  'METRICS:GENERAL':            'permisos',
+};
+
+function inferPlatforms(permissions: string[]): string[] {
+  const platforms = new Set<string>();
+  for (const perm of permissions) {
+    const plat = PERMISSION_TO_PLATFORM[perm];
+    if (plat) platforms.add(plat);
+  }
+  return Array.from(platforms);
+}
+
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
@@ -59,18 +93,16 @@ export const authOptions: NextAuthOptions = {
           headers: { "Content-Type": "application/json" }
         };
 
-        const maxRetries = 2; // Intenta hasta 3 veces en total (1 original + 2 reintentos)
+        const maxRetries = 2;
         let attempt = 0;
 
         while (attempt <= maxRetries) {
           try {
             const res = await fetch(url, options);
             
-            // Si la respuesta es un error de servidor (5xx) o timeout, podríamos reintentar. 
-            // Si es un error 4xx (credenciales inválidas), no reintentamos.
             if (!res.ok && res.status >= 500 && attempt < maxRetries) {
                attempt++;
-               await new Promise(resolve => setTimeout(resolve, 2000)); // Esperar 2 segundos antes de reintentar
+               await new Promise(resolve => setTimeout(resolve, 2000));
                continue;
             }
 
@@ -78,22 +110,22 @@ export const authOptions: NextAuthOptions = {
             console.log("Acceso en el servidor data:", data);
             
             if (res.ok && data) {
+              // El backend puede enviar el usuario anidado en data.user o en la raíz
+              const userData = data.user || data;
               return {
-                id: data.user.id_usuario,
-                token: data.token
+                id: userData.id_usuario || userData.id,
+                token: data.token,
               };
             }
             
-            return null; // Credenciales inválidas u otro error controlado
+            return null;
             
           } catch (error) {
             console.error(`Error connecting to login API (Attempt ${attempt + 1}):`, error);
             if (attempt < maxRetries) {
               attempt++;
-              await new Promise(resolve => setTimeout(resolve, 2000)); // Esperar 2 segundos si hay error de red
+              await new Promise(resolve => setTimeout(resolve, 2000));
             } else {
-              // Si ya superamos los reintentos, devolvemos null para que NextAuth rechace el login
-              // En un futuro podrías lanzar un error personalizado para mostrar un mensaje específico en el frontend.
               return null; 
             }
           }
@@ -112,12 +144,39 @@ export const authOptions: NextAuthOptions = {
       if (token.accessToken) {
         try {
           const payload: Pay = jwtDecode(token.accessToken as string);
-          token.permissions = payload?.permissions ?? [];
-          token.platforms = payload?.platforms ?? [];
-          token.platformPermissions = payload?.platformPermissions ?? {};
+          const rawPermissions: string[] = payload?.permissions ?? [];
+          token.permissions = rawPermissions;
+
+          // Plataformas: usar las del payload si existen y no están vacías,
+          // de lo contrario inferirlas desde los permisos (workaround backend)
+          const rawPlatforms: string[] = payload?.platforms ?? [];
+          if (rawPlatforms.length > 0) {
+            token.platforms = rawPlatforms;
+          } else {
+            token.platforms = inferPlatforms(rawPermissions);
+            if (token.platforms.length > 0) {
+              console.log(">>> [NextAuth] Plataformas inferidas:", token.platforms);
+            }
+          }
+
+          // platformPermissions: normalizar clave "_global" a cada plataforma inferida
+          const rawPlatformPerms: Record<string, string[]> = payload?.platformPermissions ?? {};
+          const globalPerms: string[] = rawPlatformPerms['_global'] ?? [];
+
+          if (globalPerms.length > 0) {
+            // El backend usa "_global" → mapear a cada plataforma
+            const normalized: Record<string, string[]> = {};
+            for (const plat of token.platforms as string[]) {
+              normalized[plat] = globalPerms;
+            }
+            token.platformPermissions = normalized;
+            console.log(">>> [NextAuth] platformPermissions normalizado:", normalized);
+          } else {
+            token.platformPermissions = rawPlatformPerms;
+          }
+
           token.area = payload?.area ?? null;
           token.idEmployee = payload?.idEmployee ?? null;
-          // Asignar nombre y email desde el token para el avatar
           if (payload.name) token.name = payload.name;
           if (payload.email) token.email = payload.email;
           if (payload.id) token.id = payload.id.toString();
@@ -136,7 +195,6 @@ export const authOptions: NextAuthOptions = {
         session.user.platformPermissions = (token.platformPermissions as Record<string, string[]>) || {};
         session.user.area = (token.area as { name: string; color?: string } | null) ?? null;
         session.user.idEmployee = (token.idEmployee as string | number | undefined) ?? undefined;
-        // Propagar nombre y email a la sesión
         session.user.name = token.name;
         session.user.email = token.email;
         session.user.id = token.id as string;
@@ -144,14 +202,12 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
     async redirect({ baseUrl }) {
-      // En lugar de redirigir a /page/admin, se recarga la página actual
       return `${baseUrl}/page/profile`;
     }
   },
   pages: {
     signIn: '/page/profile',
     signOut: '/page/landing',
-    // error: '/auth/error',
   }
 };
 
