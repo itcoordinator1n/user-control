@@ -25,7 +25,6 @@ import { WaitModal } from "./wait-modal"
 import { useEffect, useState } from "react"
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { useSession } from "next-auth/react"
-import { adjustTimeRange } from "@/lib/utils"
 
 interface RequestDetailsModalProps {
   open: boolean
@@ -298,9 +297,9 @@ export function RequestDetailsModal({
 
         if (request.tipo === "permiso") {
           const fechaDisplay = request.startDateTime ? formatDatePart(request.startDateTime) : request.date
-          const horaDisplay = adjustTimeRange(request.startDateTime && request.endDateTime
+          const horaDisplay = request.startDateTime && request.endDateTime
             ? `${formatTimePart(request.startDateTime)} - ${formatTimePart(request.endDateTime)}`
-            : request.timeRange)
+            : request.timeRange
           page.drawText(`Fecha: ${fechaDisplay}`, { x: MARGIN_X, y: cursorY, size: 11, font: fontRegular, color: COLOR_TEXT })
           cursorY -= 15
           page.drawText(`Horario: ${horaDisplay}`, { x: MARGIN_X, y: cursorY, size: 11, font: fontRegular, color: COLOR_TEXT })
@@ -432,9 +431,9 @@ export function RequestDetailsModal({
                           <p className="text-xs text-muted-foreground mb-1">Horario</p>
                           <div className="flex items-center gap-2 text-primary font-medium">
                             <Clock className="h-4 w-4 shrink-0" />
-                            {adjustTimeRange(request.startDateTime && request.endDateTime
+                            {request.startDateTime && request.endDateTime
                               ? `${formatTimePart(request.startDateTime)} - ${formatTimePart(request.endDateTime)}`
-                              : request.timeRange)}
+                              : request.timeRange}
                           </div>
                         </div>
                         {request.compensatorio && (

@@ -1,7 +1,6 @@
 "use client"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { adjustTimeRange } from "@/lib/utils"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ChevronLeft, ChevronRight, FileText, Calendar, Clock, User } from "lucide-react"
@@ -383,7 +382,7 @@ export function RequestsTable({ type, onRequestDeleted, canApprove = false, mode
                                 </div>
                                 {type === "permits" && (
                                   <div className="text-sm text-muted-foreground truncate">
-                                    {adjustTimeRange((request as PermitRequest).timeRange)}
+                                    {(request as PermitRequest).timeRange}
                                   </div>
                                 )}
                               </td>
@@ -516,7 +515,7 @@ export function RequestsTable({ type, onRequestDeleted, canApprove = false, mode
                                       : (request as VacationRequest).period}
                                   </div>
                                   {type === "permits" && (
-                                    <div className="text-xs text-muted-foreground">{adjustTimeRange((request as PermitRequest).timeRange)}</div>
+                                    <div className="text-xs text-muted-foreground">{(request as PermitRequest).timeRange}</div>
                                   )}
                                 </div>
                               </div>
