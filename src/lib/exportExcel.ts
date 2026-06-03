@@ -315,8 +315,124 @@ export async function exportControlToExcel(control: ProduccionControl) {
   totalRow.getCell(totalColIndex).value = `${globalH}:${globalM.toString().padStart(2, '0')}:${globalS.toString().padStart(2, '0')}`;
   totalRow.getCell(totalColIndex).alignment = { horizontal: "center" };
   totalRow.getCell(totalColIndex).font = { bold: true };
+  totalRow.getCell(totalColIndex).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFdbeafe' } };
   
   currentRow += 2;
+
+  // ──────────────────────────────────────────────
+  // RESUMEN DE TIEMPOS POR ÁREA / GRUPO
+  // ──────────────────────────────────────────────
+
+  // Calcular totales agrupados por categoria (grupo)
+  const resumenMap = new Map<string, number>();
+  control.actividades.forEach(act => {
+    const grupo = act.categoria || "Otras Actividades";
+    let ms = 0;
+    act.intervalos.forEach(interval => {
+      if (interval.hora_inicio && interval.hora_fin) {
+        const st = parseUTC(interval.hora_inicio);
+        const ed = parseUTC(interval.hora_fin);
+        ms += Math.max(0, ed.getTime() - st.getTime());
+      }
+    });
+    resumenMap.set(grupo, (resumenMap.get(grupo) || 0) + ms);
+  });
+
+  const resumenEntries = Array.from(resumenMap.entries());
+
+  if (resumenEntries.length > 0) {
+    // Título de la sección
+    const summaryTitleRow = sheet.getRow(currentRow);
+    sheet.mergeCells(currentRow, 1, currentRow, totalColIndex);
+    summaryTitleRow.getCell(1).value = "RESUMEN DE TIEMPOS POR ÁREA";
+    summaryTitleRow.getCell(1).font = { bold: true, size: 12, color: { argb: "FFFFFFFF" } };
+    summaryTitleRow.getCell(1).alignment = { vertical: "middle", horizontal: "center" };
+    summaryTitleRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1e3a5f' } };
+    summaryTitleRow.height = 18;
+    currentRow++;
+
+    // Encabezados del resumen (columnas compactas)
+    const summaryHeaderRow = sheet.getRow(currentRow);
+    const summaryColArea = 2;
+    const summaryColHrs = 5;
+    const summaryColPct = 8;
+
+    sheet.mergeCells(currentRow, summaryColArea, currentRow, summaryColArea + 2);
+    summaryHeaderRow.getCell(summaryColArea).value = "Área / Grupo";
+    summaryHeaderRow.getCell(summaryColArea).font = { bold: true };
+    summaryHeaderRow.getCell(summaryColArea).alignment = { horizontal: "center" };
+    summaryHeaderRow.getCell(summaryColArea).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFe2e8f0' } };
+
+    sheet.mergeCells(currentRow, summaryColHrs, currentRow, summaryColHrs + 2);
+    summaryHeaderRow.getCell(summaryColHrs).value = "Total Horas";
+    summaryHeaderRow.getCell(summaryColHrs).font = { bold: true };
+    summaryHeaderRow.getCell(summaryColHrs).alignment = { horizontal: "center" };
+    summaryHeaderRow.getCell(summaryColHrs).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFe2e8f0' } };
+
+    sheet.mergeCells(currentRow, summaryColPct, currentRow, summaryColPct + 2);
+    summaryHeaderRow.getCell(summaryColPct).value = "% del Total";
+    summaryHeaderRow.getCell(summaryColPct).font = { bold: true };
+    summaryHeaderRow.getCell(summaryColPct).alignment = { horizontal: "center" };
+    summaryHeaderRow.getCell(summaryColPct).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFe2e8f0' } };
+
+    // Bordes encabezado resumen
+    [summaryColArea, summaryColHrs, summaryColPct].forEach(c => {
+      summaryHeaderRow.getCell(c).border = { top: { style: "thin" }, left: { style: "thin" }, bottom: { style: "thin" }, right: { style: "thin" } };
+    });
+    currentRow++;
+
+    // Filas de datos del resumen
+    resumenEntries.forEach(([grupo, ms]) => {
+      const row = sheet.getRow(currentRow);
+
+      sheet.mergeCells(currentRow, summaryColArea, currentRow, summaryColArea + 2);
+      row.getCell(summaryColArea).value = grupo;
+      row.getCell(summaryColArea).font = { bold: false };
+      row.getCell(summaryColArea).alignment = { horizontal: "left" };
+      row.getCell(summaryColArea).border = { top: { style: "thin" }, left: { style: "thin" }, bottom: { style: "thin" }, right: { style: "thin" } };
+
+      const rH = Math.floor(ms / 3600000);
+      const rM = Math.floor((ms % 3600000) / 60000);
+      const rS = Math.floor((ms % 60000) / 1000);
+      sheet.mergeCells(currentRow, summaryColHrs, currentRow, summaryColHrs + 2);
+      row.getCell(summaryColHrs).value = `${rH}:${rM.toString().padStart(2, '0')}:${rS.toString().padStart(2, '0')}`;
+      row.getCell(summaryColHrs).font = { bold: true };
+      row.getCell(summaryColHrs).alignment = { horizontal: "center" };
+      row.getCell(summaryColHrs).border = { top: { style: "thin" }, left: { style: "thin" }, bottom: { style: "thin" }, right: { style: "thin" } };
+
+      const pct = globalTotalMs > 0 ? ((ms / globalTotalMs) * 100).toFixed(1) : "0.0";
+      sheet.mergeCells(currentRow, summaryColPct, currentRow, summaryColPct + 2);
+      row.getCell(summaryColPct).value = `${pct}%`;
+      row.getCell(summaryColPct).alignment = { horizontal: "center" };
+      row.getCell(summaryColPct).border = { top: { style: "thin" }, left: { style: "thin" }, bottom: { style: "thin" }, right: { style: "thin" } };
+
+      currentRow++;
+    });
+
+    // Fila total del resumen
+    const summaryTotalRow = sheet.getRow(currentRow);
+    sheet.mergeCells(currentRow, summaryColArea, currentRow, summaryColArea + 2);
+    summaryTotalRow.getCell(summaryColArea).value = "TOTAL GENERAL";
+    summaryTotalRow.getCell(summaryColArea).font = { bold: true };
+    summaryTotalRow.getCell(summaryColArea).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFdbeafe' } };
+    summaryTotalRow.getCell(summaryColArea).border = { top: { style: "medium" }, left: { style: "thin" }, bottom: { style: "thin" }, right: { style: "thin" } };
+
+    sheet.mergeCells(currentRow, summaryColHrs, currentRow, summaryColHrs + 2);
+    summaryTotalRow.getCell(summaryColHrs).value = `${globalH}:${globalM.toString().padStart(2, '0')}:${globalS.toString().padStart(2, '0')}`;
+    summaryTotalRow.getCell(summaryColHrs).font = { bold: true };
+    summaryTotalRow.getCell(summaryColHrs).alignment = { horizontal: "center" };
+    summaryTotalRow.getCell(summaryColHrs).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFdbeafe' } };
+    summaryTotalRow.getCell(summaryColHrs).border = { top: { style: "medium" }, left: { style: "thin" }, bottom: { style: "thin" }, right: { style: "thin" } };
+
+    sheet.mergeCells(currentRow, summaryColPct, currentRow, summaryColPct + 2);
+    summaryTotalRow.getCell(summaryColPct).value = "100%";
+    summaryTotalRow.getCell(summaryColPct).alignment = { horizontal: "center" };
+    summaryTotalRow.getCell(summaryColPct).font = { bold: true };
+    summaryTotalRow.getCell(summaryColPct).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFdbeafe' } };
+    summaryTotalRow.getCell(summaryColPct).border = { top: { style: "medium" }, left: { style: "thin" }, bottom: { style: "thin" }, right: { style: "thin" } };
+
+    currentRow += 2;
+  }
 
   // Footer
   sheet.getCell(currentRow, 1).value = `Observaciones: ${control.observaciones || ""}`;
@@ -346,3 +462,4 @@ export async function exportControlToExcel(control: ProduccionControl) {
   const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
   saveAs(blob, `Control_Tiempos_${control.n_lote}_${format(new Date(), "yyyyMMdd")}.xlsx`);
 }
+

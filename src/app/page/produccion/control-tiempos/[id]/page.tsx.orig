@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, Fragment } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
@@ -217,7 +217,7 @@ export default function DetalleControlTiempos() {
         const activities = await getTodasLasActividades(session?.user?.accessToken, control.fk_producto);
         setAllProductActivities(activities);
         
-        // Extraer grupos únicos basados en las actividades asociadas al producto
+        // Extraer grupos ├║nicos basados en las actividades asociadas al producto
         const uniqueGroupsMap = new Map<number, string>();
         activities.forEach((a: any) => uniqueGroupsMap.set(a.fk_grupo, a.grupo_nombre));
         
@@ -278,7 +278,7 @@ export default function DetalleControlTiempos() {
         { motivo_pausa: "INTERRUPCION", observaciones },
         session?.user?.accessToken
       );
-      // 2. Crear registro de interrupción
+      // 2. Crear registro de interrupci├│n
       const interrupcion = await crearInterrupcion(intervaloId, observaciones, session?.user?.accessToken);
       // 3. Actualizar estado local
       setControl(prev => {
@@ -305,7 +305,7 @@ export default function DetalleControlTiempos() {
 
   const handleNuevoIntervalo = async (actividad: ProduccionActividad) => {
     const isRunningElsewhere = control?.actividades.some(a => a.fk_operario === actividad.fk_operario && a.intervalos.some(i => i.hora_fin === null));
-    if (isRunningElsewhere) return alert("Este operario ya tiene un cronómetro activo. Det├⌐ngalo primero.");
+    if (isRunningElsewhere) return alert("Este operario ya tiene un cron├│metro activo. Det├⌐ngalo primero.");
     try {
       const nuevoIntervalo = await iniciarIntervalo(actividad.id, session?.user?.accessToken);
       setControl(prev => prev ? { ...prev, actividades: prev.actividades.map(a => a.id === actividad.id ? { ...a, intervalos: [...a.intervalos, nuevoIntervalo] } : a) } : prev);
@@ -316,7 +316,7 @@ export default function DetalleControlTiempos() {
   };
 
   const handleEliminarActividad = async (actividadId: string) => {
-    if (!confirm("┬┐Está seguro de eliminar esta actividad y todos sus tiempos registrados?")) return;
+    if (!confirm("┬┐Est├í seguro de eliminar esta actividad y todos sus tiempos registrados?")) return;
     try {
       const ok = await deleteActividad(actividadId, session?.user?.accessToken);
       if (ok) {
@@ -327,7 +327,7 @@ export default function DetalleControlTiempos() {
   };
 
   const handleEliminarIntervalo = async (actividadId: string, intervaloId: string) => {
-    if (!confirm("┬┐Está seguro de eliminar este intervalo de tiempo?")) return;
+    if (!confirm("┬┐Est├í seguro de eliminar este intervalo de tiempo?")) return;
     try {
       const ok = await deleteIntervalo(intervaloId, session?.user?.accessToken);
       if (ok) {
@@ -339,7 +339,7 @@ export default function DetalleControlTiempos() {
 
   const handleFinalizarRegistro = async () => {
     const hasRunning = control?.actividades.some(a => a.intervalos.some(i => i.hora_fin === null));
-    if (hasRunning) return alert("Aún hay cronómetros en ejecución. Det├⌐ngalos todos antes de finalizar el registro.");
+    if (hasRunning) return alert("A├║n hay cron├│metros en ejecuci├│n. Det├⌐ngalos todos antes de finalizar el registro.");
     const obs = prompt("Observaciones opcionales para este registro:", control?.observaciones || "");
     if (obs === null) return; // cancelled
     try {
@@ -349,7 +349,7 @@ export default function DetalleControlTiempos() {
   };
 
   const handleEliminarControl = async () => {
-    if (!confirm("┬┐Está seguro de eliminar TODO el registro de control de tiempos y todas sus actividades? Esta acción no se puede deshacer.")) return;
+    if (!confirm("┬┐Est├í seguro de eliminar TODO el registro de control de tiempos y todas sus actividades? Esta acci├│n no se puede deshacer.")) return;
     try {
       const ok = await deleteControl(control!.id, session?.user?.accessToken);
       if (ok) {
@@ -374,7 +374,7 @@ export default function DetalleControlTiempos() {
   };
 
   if (loading) return <div className="p-10 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-blue-500" /></div>;
-  if (!control) return <div className="p-10 text-center">No se encontró el registro</div>;
+  if (!control) return <div className="p-10 text-center">No se encontr├│ el registro</div>;
 
   const isEnProgreso = control.estado === "EN_PROGRESO";
   const isFinalizado = control.estado === "FINALIZADO";
@@ -383,28 +383,6 @@ export default function DetalleControlTiempos() {
 
   const operariosOcupadosIds = control.actividades.filter(a => a.intervalos.some(i => i.hora_fin === null)).map(a => a.fk_operario) || [];
   const empleadosDisponibles = empleados.filter(e => !operariosOcupadosIds.includes(e.int_id_empleado));
-
-  // Helpers para el reporte PDF
-  const fmtMs = (ms: number) => {
-    if (ms <= 0) return '0:00';
-    const h = Math.floor(ms / 3600000);
-    const m = Math.floor((ms % 3600000) / 60000);
-    return `${h}:${m.toString().padStart(2, '0')}`;
-  };
-  const resumenPorGrupo = (() => {
-    const map: Record<string, number> = {};
-    control.actividades.forEach(act => {
-      const cat = act.categoria || 'GENERAL';
-      act.intervalos.forEach(iv => {
-        if (iv.hora_inicio && iv.hora_fin) {
-          const ms = Math.max(0, parseISO(iv.hora_fin).getTime() - parseISO(iv.hora_inicio).getTime());
-          map[cat] = (map[cat] || 0) + ms;
-        }
-      });
-    });
-    return Object.entries(map).map(([grupo, ms]) => ({ grupo, ms })).sort((a, b) => b.ms - a.ms);
-  })();
-  const totalGeneralMs = resumenPorGrupo.reduce((acc, { ms }) => acc + ms, 0);
 
   return (
     <div className="container mx-auto py-6 max-w-6xl">
@@ -416,7 +394,7 @@ export default function DetalleControlTiempos() {
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-3">
             Detalle de Registro
             {isEnProgreso && <span className="text-xs px-2.5 py-1 rounded bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 font-semibold tracking-wider animate-pulse">EN PROGRESO</span>}
-            {isFinalizado && <span className="text-xs px-2.5 py-1 rounded bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 font-semibold tracking-wider">FINALIZADO (PEND. REVISIÓN)</span>}
+            {isFinalizado && <span className="text-xs px-2.5 py-1 rounded bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 font-semibold tracking-wider">FINALIZADO (PEND. REVISI├ôN)</span>}
             {isRevisado && <span className="text-xs px-2.5 py-1 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 font-semibold tracking-wider">REVISADO / COMPLETADO</span>}
           </h1>
         </div>
@@ -430,16 +408,6 @@ export default function DetalleControlTiempos() {
             <span className="hidden sm:inline">Eliminar Registro</span>
           </Button>
         )}
-        {!isEnProgreso && (
-          <Button
-            variant="outline"
-            onClick={() => window.print()}
-            className="gap-2 text-blue-700 border-blue-300 hover:bg-blue-50"
-          >
-            <PlayCircle className="h-4 w-4" />
-            Imprimir / PDF
-          </Button>
-        )}
       </div>
 
       <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 mb-6">
@@ -447,8 +415,8 @@ export default function DetalleControlTiempos() {
         <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
           <div className="space-y-2"><Label>Proceso</Label><input type="text" className="w-full px-3 py-2 border rounded-md bg-slate-100 dark:bg-slate-800" disabled value={control.proceso} /></div>
           <div className="space-y-2"><Label>Producto</Label><input type="text" className="w-full px-3 py-2 border rounded-md bg-slate-100 dark:bg-slate-800" disabled value={control.producto_nombre} /></div>
-          <div className="space-y-2"><Label>Área</Label><input type="text" className="w-full px-3 py-2 border rounded-md bg-slate-100 dark:bg-slate-800" disabled value={control.area} /></div>
-          <div className="space-y-2"><Label>Nº de Lote</Label><input type="text" className="w-full px-3 py-2 border rounded-md bg-slate-100 dark:bg-slate-800" disabled value={control.n_lote} /></div>
+          <div className="space-y-2"><Label>├ürea</Label><input type="text" className="w-full px-3 py-2 border rounded-md bg-slate-100 dark:bg-slate-800" disabled value={control.area} /></div>
+          <div className="space-y-2"><Label>N┬║ de Lote</Label><input type="text" className="w-full px-3 py-2 border rounded-md bg-slate-100 dark:bg-slate-800" disabled value={control.n_lote} /></div>
           <div className="space-y-2"><Label>O/P</Label><input type="text" className="w-full px-3 py-2 border rounded-md bg-slate-100 dark:bg-slate-800" disabled value={control.op} /></div>
         </div>
       </div>
@@ -623,7 +591,7 @@ export default function DetalleControlTiempos() {
                       }
                     });
 
-                    // 2. Renderizar actividades "sueltas" (que no están en el formato)
+                    // 2. Renderizar actividades "sueltas" (que no est├ín en el formato)
                     const leftovers = control.actividades.filter(a => !renderedIds.has(a.id));
                     if (leftovers.length > 0) {
                       rows.push(
@@ -746,7 +714,7 @@ export default function DetalleControlTiempos() {
                           <>
                             {!isReadonly && (
                               <Button variant="outline" onClick={() => handleNuevoIntervalo(act)} className="gap-2 text-blue-600 border-blue-200 hover:bg-blue-50">
-                                <Play className="h-4 w-4" /> Nuevo Cronómetro
+                                <Play className="h-4 w-4" /> Nuevo Cron├│metro
                               </Button>
                             )}
                             <Button variant="outline" onClick={() => setResumenActividad(act)} className="gap-2 text-slate-600 border-slate-200 hover:bg-slate-50">
@@ -764,7 +732,7 @@ export default function DetalleControlTiempos() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
             {control.actividades.filter(a => a.actividad_nombre.toLowerCase().includes(searchTerm.toLowerCase()) || a.operario_nombre.toLowerCase().includes(searchTerm.toLowerCase())).length === 0 ? (
               <div className="col-span-full py-12 text-center border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
-                <p className="text-slate-500">No hay actividades registradas que coincidan con la búsqueda.</p>
+                <p className="text-slate-500">No hay actividades registradas que coincidan con la b├║squeda.</p>
               </div>
             ) : (
               control.actividades
@@ -825,14 +793,14 @@ export default function DetalleControlTiempos() {
                           <>
                             {!isReadonly && (
                               <Button variant="outline" onClick={() => handleNuevoIntervalo(act)} className="gap-2 text-blue-600 border-blue-200 hover:bg-blue-50">
-                                <Play className="h-4 w-4" /> Agregar Cronómetro
+                                <Play className="h-4 w-4" /> Agregar Cron├│metro
                               </Button>
                             )}
                             <Button variant="outline" onClick={() => setResumenActividad(act)} className="gap-2 text-slate-600 border-slate-200 hover:bg-slate-50">
                               <Eye className="h-4 w-4" /> Ver Resumen
                             </Button>
                             {!isReadonly && (
-                              <Button variant="outline" onClick={() => handleEliminarActividad(act.id)} className="gap-2 text-red-600 border-red-200 hover:bg-red-50" title="Eliminar Acción">
+                              <Button variant="outline" onClick={() => handleEliminarActividad(act.id)} className="gap-2 text-red-600 border-red-200 hover:bg-red-50" title="Eliminar Acci├│n">
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             )}
@@ -855,10 +823,10 @@ export default function DetalleControlTiempos() {
         )}
       </div>
 
-      {/* SECCION DE FIRMAS Y REVISIÓN (Solo si no está en progreso) */}
+      {/* SECCION DE FIRMAS Y REVISI├ôN (Solo si no est├í en progreso) */}
       {!isEnProgreso && (
         <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 mb-6">
-          <h2 className="text-lg font-semibold mb-6 text-slate-800 dark:text-slate-100 border-b pb-2">Firmas de Validación</h2>
+          <h2 className="text-lg font-semibold mb-6 text-slate-800 dark:text-slate-100 border-b pb-2">Firmas de Validaci├│n</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Creador */}
             <div className="p-4 rounded-lg border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-800/50">
@@ -879,11 +847,11 @@ export default function DetalleControlTiempos() {
                     <ShieldCheck className="h-5 w-5" />
                     {control.revisado_por_nombre}
                   </p>
-                  <p className="text-xs text-slate-500 mt-1">Revisión y validación completada</p>
+                  <p className="text-xs text-slate-500 mt-1">Revisi├│n y validaci├│n completada</p>
                 </>
               ) : (
                 <div className="mt-2">
-                  <p className="text-sm text-slate-500 mb-3">Pendiente de validación</p>
+                  <p className="text-sm text-slate-500 mb-3">Pendiente de validaci├│n</p>
                   {isReviewMode && (
                     <Button onClick={handleMarcarRevisado} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white gap-2">
                       <ShieldCheck className="h-4 w-4" /> Aprobar y Validar
@@ -946,7 +914,7 @@ export default function DetalleControlTiempos() {
                   </div>
                 ) : modalGrupos.length === 0 ? (
                   <div className="text-center py-8 text-slate-400 text-sm">
-                    No hay grupos disponibles para el área seleccionada.
+                    No hay grupos disponibles para el ├írea seleccionada.
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 gap-3">
@@ -1002,7 +970,7 @@ export default function DetalleControlTiempos() {
 
             {/* PASO 3: Operario */}
             {modalStep === 3 && (() => {
-              // Excluir operarios con cronómetro activo Y los ya en cola
+              // Excluir operarios con cron├│metro activo Y los ya en cola
               const operariosEnCola = new Set(pendingQueue.map(q => q.fk_operario));
               const disponibles = empleadosDisponibles.filter(e => !operariosEnCola.has(e.int_id_empleado));
               return (
@@ -1024,7 +992,7 @@ export default function DetalleControlTiempos() {
                     onValueChange={(val) => setNuevaAct(prev => ({ ...prev, fk_operario: parseInt(val) }))}
                     placeholder="Seleccione un operario"
                     searchPlaceholder="Buscar operario..."
-                    emptyMessage={disponibles.length === 0 ? "Todos los operarios están ocupados o asignados" : "No se encontraron resultados"}
+                    emptyMessage={disponibles.length === 0 ? "Todos los operarios est├ín ocupados o asignados" : "No se encontraron resultados"}
                   />
                 </div>
               );
@@ -1033,7 +1001,7 @@ export default function DetalleControlTiempos() {
             {/* PASO 4: Cola de actividades */}
             {modalStep === 4 && (
               <div className="space-y-3">
-                <p className="text-sm text-muted-foreground">Las siguientes actividades iniciarán al mismo tiempo:</p>
+                <p className="text-sm text-muted-foreground">Las siguientes actividades iniciar├ín al mismo tiempo:</p>
                 <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
                   {pendingQueue.map((item, idx) => (
                     <div key={idx} className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 border rounded-lg px-3 py-2.5 text-sm">
@@ -1057,10 +1025,10 @@ export default function DetalleControlTiempos() {
           </div>
 
           <DialogFooter className="gap-2 flex-wrap">
-            {/* Atrás: en pasos 2 y 3 */}
+            {/* Atr├ís: en pasos 2 y 3 */}
             {(modalStep === 2 || modalStep === 3) && (
               <Button variant="outline" onClick={() => setModalStep(s => (s > 1 ? ((s - 1) as 1 | 2 | 3 | 4) : s))}>
-                Atrás
+                Atr├ís
               </Button>
             )}
             <Button variant="outline" onClick={() => { setIsModalOpen(false); setModalStep(1); setPendingQueue([]); }}>
@@ -1118,7 +1086,7 @@ export default function DetalleControlTiempos() {
                       <th className="px-4 py-2 text-left">#</th>
                       <th className="px-4 py-2 text-left">Inicio</th>
                       <th className="px-4 py-2 text-left">Fin</th>
-                      <th className="px-4 py-2 text-right">Duración</th>
+                      <th className="px-4 py-2 text-right">Duraci├│n</th>
                       {!isReadonly && <th className="px-4 py-2 text-center"></th>}
                     </tr>
                   </thead>
@@ -1175,235 +1143,13 @@ export default function DetalleControlTiempos() {
         </DialogContent>
       </Dialog>
 
-      {/* MODAL DETENER CRONÓMETRO */}
+      {/* MODAL DETENER CRON├ôMETRO */}
       <StopTimerModal
         open={!!stopModal}
         actividadNombre={stopModal ? stopModal.actividadNombre : ""}
         onClose={() => setStopModal(null)}
         onConfirm={handleStopConfirm}
       />
-
-      {/* REPORTE IMPRIMIBLE - Solo visible en @media print */}
-      {!isEnProgreso && (
-        <div className="print-report" style={{ display: 'none' }}>
-
-          {/* 1. CABECERA */}
-          <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '8px' }}>
-            <tbody>
-              <tr>
-                <td style={{ width: '25%', border: '1px solid #555', padding: '4px 8px', verticalAlign: 'middle' }}>
-                  <div style={{ fontWeight: 900, fontSize: '16px', color: '#1e3a5f', letterSpacing: '2px' }}>INFARMA</div>
-                  <div style={{ fontSize: '7px', color: '#666' }}>CODIGO: RO-OP-068 | Version: 02</div>
-                </td>
-                <td style={{ border: '1px solid #555', padding: '4px 8px', textAlign: 'center', verticalAlign: 'middle' }}>
-                  <div style={{ fontWeight: 700, fontSize: '11px', textTransform: 'uppercase' }}>Hoja Control de Tiempos de Produccion: {control.area}</div>
-                  <div style={{ fontSize: '7px', color: '#666', marginTop: '2px' }}>Elaborado por: Departamento de Manufactura</div>
-                </td>
-                <td style={{ width: '18%', border: '1px solid #555', padding: '4px 6px', fontSize: '7px', verticalAlign: 'top' }}>
-                  <div>Codigo: RO-OP-068</div>
-                  <div>Version: 02</div>
-                  <div>Fecha: {new Date(control.fecha).toLocaleDateString('es-HN')}</div>
-                  <div>Estado: {control.estado}</div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-
-          {/* 2. DATOS DEL PROCESO */}
-          <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '6px', fontSize: '8px' }}>
-            <tbody>
-              <tr>
-                <td style={{ border: '1px solid #555', padding: '2px 6px', width: '20%' }}><strong>Proceso:</strong> {control.proceso}</td>
-                <td style={{ border: '1px solid #555', padding: '2px 6px' }}><strong>Producto:</strong> {control.producto_nombre}</td>
-                <td style={{ border: '1px solid #555', padding: '2px 6px', width: '18%' }}><strong>Area:</strong> {control.area}</td>
-              </tr>
-              <tr>
-                <td style={{ border: '1px solid #555', padding: '2px 6px' }}><strong>No. de Lote:</strong> {control.n_lote}</td>
-                <td style={{ border: '1px solid #555', padding: '2px 6px' }}><strong>O/P:</strong> {control.op}</td>
-                <td style={{ border: '1px solid #555', padding: '2px 6px' }}><strong>Observaciones:</strong> {control.observaciones || 'Ninguna'}</td>
-              </tr>
-            </tbody>
-          </table>
-
-          {/* 3. TABLA DE ACTIVIDADES */}
-          {(() => {
-            const maxInt = Math.max(3, ...control.actividades.map((a: { intervalos: unknown[] }) => a.intervalos.length));
-            const idxArr = Array.from({ length: maxInt }, (_: unknown, i: number) => i);
-            const rows: React.ReactNode[] = [];
-            let gMs = 0;
-            const rendered = new Set<string>();
-            const actW = 28; const opW = 20; const totW = 7;
-            const remaining = 100 - actW - opW - totW;
-            const pairW = remaining / maxInt;
-
-            FORMATO_ACTIVIDADES.forEach((item: { tipo: string; label?: string }, fi: number) => {
-              if (item.tipo === 'header') {
-                rows.push(
-                  <tr key={`ph-${fi}`} className="pr-section">
-                    <td colSpan={2 + maxInt * 2 + 1}>{item.label}</td>
-                  </tr>
-                );
-              } else if (item.tipo === 'actividad') {
-                const matched = control.actividades.filter((a: { actividad_nombre: string; id: string }) => a.actividad_nombre === item.label && !rendered.has(a.id));
-                if (matched.length === 0) {
-                  rows.push(
-                    <tr key={`pe-${fi}`} className="pr-empty">
-                      <td style={{ color: '#444' }}>{item.label}</td>
-                      <td />
-                      {idxArr.map((i: number) => <Fragment key={i}><td /><td /></Fragment>)}
-                      <td />
-                    </tr>
-                  );
-                } else {
-                  matched.forEach((act: { id: string; operario_nombre: string; intervalos: Array<{ hora_inicio: string | null; hora_fin: string | null }> }) => {
-                    rendered.add(act.id);
-                    let rMs = 0;
-                    rows.push(
-                      <tr key={act.id} className="pr-data">
-                        <td style={{ fontWeight: 600 }}>{item.label}</td>
-                        <td style={{ textAlign: 'center' }}>{act.operario_nombre}</td>
-                        {idxArr.map((idx: number) => {
-                          const iv = act.intervalos[idx];
-                          if (!iv?.hora_inicio) return <Fragment key={idx}><td /><td /></Fragment>;
-                          const st = parseISO(iv.hora_inicio);
-                          const ed = iv.hora_fin ? parseISO(iv.hora_fin) : null;
-                          if (ed) rMs += Math.max(0, ed.getTime() - st.getTime());
-                          return (
-                            <Fragment key={idx}>
-                              <td style={{ textAlign: 'center' }}>{st.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
-                              <td style={{ textAlign: 'center' }}>{ed ? ed.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</td>
-                            </Fragment>
-                          );
-                        })}
-                        <td className="pr-total-cell">{rMs > 0 ? (() => { gMs += rMs; return fmtMs(rMs); })() : ''}</td>
-                      </tr>
-                    );
-                  });
-                }
-              } else {
-                rows.push(<tr key={`blank-${fi}`} className="pr-empty"><td colSpan={2 + maxInt * 2 + 1} style={{ height: '6px', padding: 0 }} /></tr>);
-              }
-            });
-
-            const leftovers = control.actividades.filter((a: { id: string }) => !rendered.has(a.id));
-            if (leftovers.length > 0) {
-              rows.push(<tr key="oth-h" className="pr-section"><td colSpan={2 + maxInt * 2 + 1}>Otras Actividades</td></tr>);
-              leftovers.forEach((act: { id: string; actividad_nombre: string; operario_nombre: string; intervalos: Array<{ hora_inicio: string | null; hora_fin: string | null }> }) => {
-                let rMs = 0;
-                rows.push(
-                  <tr key={`oth-${act.id}`} className="pr-data">
-                    <td style={{ fontWeight: 600 }}>{act.actividad_nombre}</td>
-                    <td style={{ textAlign: 'center' }}>{act.operario_nombre}</td>
-                    {idxArr.map((idx: number) => {
-                      const iv = act.intervalos[idx];
-                      if (!iv?.hora_inicio) return <Fragment key={idx}><td /><td /></Fragment>;
-                      const st = parseISO(iv.hora_inicio);
-                      const ed = iv.hora_fin ? parseISO(iv.hora_fin) : null;
-                      if (ed) rMs += Math.max(0, ed.getTime() - st.getTime());
-                      return (
-                        <Fragment key={idx}>
-                          <td style={{ textAlign: 'center' }}>{st.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
-                          <td style={{ textAlign: 'center' }}>{ed ? ed.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</td>
-                        </Fragment>
-                      );
-                    })}
-                    <td className="pr-total-cell">{rMs > 0 ? (() => { gMs += rMs; return fmtMs(rMs); })() : ''}</td>
-                  </tr>
-                );
-              });
-            }
-
-            return (
-              <table className="pr-table" style={{ marginBottom: '8px' }}>
-                <colgroup>
-                  <col style={{ width: `${actW}%` }} />
-                  <col style={{ width: `${opW}%` }} />
-                  {idxArr.map((i: number) => (
-                    <Fragment key={i}>
-                      <col style={{ width: `${pairW / 2}%` }} />
-                      <col style={{ width: `${pairW / 2}%` }} />
-                    </Fragment>
-                  ))}
-                  <col style={{ width: `${totW}%` }} />
-                </colgroup>
-                <thead>
-                  <tr>
-                    <th rowSpan={2} style={{ textAlign: 'left', paddingLeft: '4px' }}>Actividad</th>
-                    <th rowSpan={2}>Operario / Nombre y Apellido</th>
-                    {idxArr.map((i: number) => <th key={i} colSpan={2}>Intervalo {i + 1}</th>)}
-                    <th rowSpan={2} style={{ background: '#dce8f5', color: '#1e3a5f' }}>TOTAL</th>
-                  </tr>
-                  <tr>
-                    {idxArr.map((i: number) => (
-                      <Fragment key={i}>
-                        <th>DE</th>
-                        <th>HASTA</th>
-                      </Fragment>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>{rows}</tbody>
-                <tfoot>
-                  <tr className="pr-grand-total">
-                    <td colSpan={1 + maxInt * 2 + 1} style={{ textAlign: 'right', paddingRight: '6px' }}>TOTAL GENERAL:</td>
-                    <td style={{ textAlign: 'center' }}>{fmtMs(gMs)}</td>
-                  </tr>
-                </tfoot>
-              </table>
-            );
-          })()}
-
-          {/* 4. RESUMEN POR AREA */}
-          {resumenPorGrupo.length > 0 && (
-            <div style={{ marginBottom: '10px' }}>
-              <table className="pr-summary-table" style={{ width: '55%' }}>
-                <thead>
-                  <tr><th colSpan={3} style={{ textAlign: 'left' }}>RESUMEN DE TIEMPOS POR AREA</th></tr>
-                  <tr>
-                    <th style={{ textAlign: 'left', width: '50%' }}>Area / Grupo</th>
-                    <th>Total Horas</th>
-                    <th>% del Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {resumenPorGrupo.map(({ grupo, ms }: { grupo: string; ms: number }) => (
-                    <tr key={grupo}>
-                      <td>{grupo}</td>
-                      <td style={{ textAlign: 'center', fontWeight: 700, color: '#1e3a5f' }}>{fmtMs(ms)}</td>
-                      <td style={{ textAlign: 'center' }}>{totalGeneralMs > 0 ? ((ms / totalGeneralMs) * 100).toFixed(1) : 0}%</td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr>
-                    <td style={{ fontWeight: 700 }}>TOTAL GENERAL</td>
-                    <td style={{ textAlign: 'center', fontWeight: 700, color: '#1e3a5f' }}>{fmtMs(totalGeneralMs)}</td>
-                    <td style={{ textAlign: 'center', fontWeight: 700 }}>100%</td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          )}
-
-          {/* 5. FIRMAS */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px', fontSize: '8px', marginTop: '12px' }}>
-            <div>
-              <div style={{ borderTop: '1px solid #374151', paddingTop: '3px', marginTop: '22px' }}>
-                <div style={{ fontWeight: 700 }}>{control.registrado_por_nombre}</div>
-                <div style={{ color: '#555', marginTop: '1px' }}>Registrado y Finalizado - Supervisor de Turno</div>
-              </div>
-            </div>
-            <div>
-              <div style={{ borderTop: '1px solid #374151', paddingTop: '3px', marginTop: '22px' }}>
-                <div style={{ fontWeight: 700 }}>{control.revisado_por_nombre || '___________________________'}</div>
-                <div style={{ color: '#555', marginTop: '1px' }}>Revisado y Validado - Jefe de Manufactura</div>
-              </div>
-            </div>
-          </div>
-
-        </div>
-      )}
     </div>
   );
 }
-
