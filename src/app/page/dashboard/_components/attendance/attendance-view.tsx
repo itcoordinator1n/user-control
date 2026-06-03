@@ -279,12 +279,15 @@ export function AttendanceView({ onBack, allowedArea, onNavigateToPermission }: 
       const monthlyData: any[] = await res.json();
       if (!monthlyData.length) return;
 
-      // Times from get-monthly-attendance are already in local time — no conversion needed
+      // Subtract 6 h (UTC → Honduras local) before writing to Excel
       const setHoursUtil = (hour: string) => {
         if (!hour) return "";
         const [h, m, s] = hour.split(":").map(Number);
         if (isNaN(h)) return "";
-        return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s != null ? s : 0).padStart(2, "0")}`;
+        const date = new Date();
+        date.setHours(h, m, s != null ? s : 0, 0);
+        date.setHours(date.getHours() - 6);
+        return date.toTimeString().split(" ")[0];
       };
 
       // Worked hours from local HH:mm:ss strings
