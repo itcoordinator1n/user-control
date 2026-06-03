@@ -292,13 +292,16 @@ export function AttendanceView({ onBack, allowedArea, onNavigateToPermission }: 
 
       // Worked hours from local HH:mm:ss strings
       const calcWorkedHoursRaw = (entryRaw: string, exitRaw: string): string => {
-        if (!entryRaw || !exitRaw) return "—";
+        const e = (entryRaw || "").trim();
+        const x = (exitRaw  || "").trim();
+        if (!e || !x) return "—";
         const toMins = (t: string) => {
           const [h, m] = t.split(":").map(Number);
+          if (isNaN(h) || isNaN(m)) return NaN;
           return h * 60 + m;
         };
-        const diff = toMins(exitRaw) - toMins(entryRaw);
-        if (diff <= 0) return "—";
+        const diff = toMins(x) - toMins(e);
+        if (isNaN(diff) || diff <= 0) return "—";
         const hh = Math.floor(diff / 60);
         const mm = diff % 60;
         return mm > 0 ? `${hh}h ${mm}m` : `${hh}h`;
@@ -349,9 +352,9 @@ export function AttendanceView({ onBack, allowedArea, onNavigateToPermission }: 
           r.int_id_empleado,
           r.nombre_empleado,
           r.area,
-          setHoursUtil(r.entrada),
-          setHoursUtil(r.salida),
-          calcWorkedHoursRaw(r.entrada ? r.entrada : "", r.salida ? r.salida : ""),
+          setHoursUtil((r.entrada || "").trim()),
+          setHoursUtil((r.salida  || "").trim()),
+          calcWorkedHoursRaw((r.entrada || "").trim(), (r.salida || "").trim()),
         ]),
       });
       detail.columns = [
