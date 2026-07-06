@@ -112,14 +112,29 @@ export const SYSTEM_PERMISSIONS: PermissionModule[] = [
       { id: "AUDIT:AREA", label: "Ver por Área", description: "Ver auditoría solo de su área asignada" },
     ],
   },
+  {
+    name: "Control de Equipos + Conciliación",
+    icon: "ClipboardList",
+    permissions: [
+      // Slugs exactos del backend (infarma_server: constants/equiposPermissions.js)
+      { id: "EQUIPO:READ", label: "Ver Inventario", description: "Ver inventario y detalle de equipos" },
+      { id: "EQUIPO:INGEST_VIEW", label: "Ver Capturas", description: "Ver capturas / estado de ingesta" },
+      { id: "EQUIPO:ADMIN", label: "Administrar Equipos", description: "Registrar, dar de baja o borrar equipos" },
+      { id: "CONCILIACION:READ", label: "Ver Conciliación", description: "Ver activos, resumen y vistas de conciliación" },
+      { id: "CONCILIACION:MATCH", label: "Emparejar", description: "Vincular / desvincular / auto-match de activos" },
+      { id: "CONCILIACION:CONFIRMAR_BAJA", label: "Confirmar Baja", description: "Confirmar la baja contable de un activo" },
+      { id: "CONCILIACION:REGISTRAR", label: "Registrar Nuevos", description: "Registrar equipos no presentes en libros" },
+      { id: "CONCILIACION:EXPORTAR", label: "Exportar / Importar", description: "Exportar CSV e importar el archivo contable" },
+    ],
+  },
 ];
 
 /**
  * Utilidad para obtener un permiso por su ID (slug)
  */
 export const getPermissionById = (id: string) => {
-  for (const module of SYSTEM_PERMISSIONS) {
-    const found = module.permissions.find(p => p.id === id);
+  for (const mod of SYSTEM_PERMISSIONS) {
+    const found = mod.permissions.find(p => p.id === id);
     if (found) return found;
   }
   return null;
@@ -132,9 +147,9 @@ export const getPermissionById = (id: string) => {
 export const mapBackendPermissions = (backendModules: any[]) => {
   // Esta función servirá para vincular lo que devuelve el API con nuestro SYSTEM_PERMISSIONS
   // Por ahora devolvemos SYSTEM_PERMISSIONS enriquecido si hay coincidencia
-  return SYSTEM_PERMISSIONS.map(module => ({
-    ...module,
-    permissions: module.permissions.map(p => {
+  return SYSTEM_PERMISSIONS.map(mod => ({
+    ...mod,
+    permissions: mod.permissions.map(p => {
       // Buscar en el backend si existe este permiso por nombre o similar
       // (Lógica de mapeo real aquí)
       return p;

@@ -13,6 +13,7 @@ import {
   HandCoins,
   Ticket,
   Factory,
+  ClipboardList,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -123,6 +124,19 @@ const sidebarNavigation: NavItem[] = [
     id: "produccion",
     subItems: [
       { title: "Control de tiempos", url: "/page/produccion/control-tiempos", id: "produccion-tiempos" },
+    ],
+  },
+  {
+    title: "Conciliación",
+    icon: ClipboardList,
+    id: "conciliacion",
+    subItems: [
+      { title: "Resumen",             url: "/page/conciliacion",                id: "conc-resumen" },
+      { title: "Campaña de búsqueda", url: "/page/conciliacion/campana",        id: "conc-campana" },
+      { title: "Emparejamiento",      url: "/page/conciliacion/emparejamiento", id: "conc-empar" },
+      { title: "Candidatos a baja",   url: "/page/conciliacion/candidatos-baja",id: "conc-baja" },
+      { title: "Nuevos por registrar",url: "/page/conciliacion/por-registrar",  id: "conc-registrar" },
+      { title: "Importar archivo",    url: "/page/conciliacion/importar",       id: "conc-import" },
     ],
   },
   {

@@ -51,6 +51,7 @@ export async function middleware(req: NextRequest) {
     '/page/ticket-admin',
     '/page/ticket-mgmt',
     '/page/produccion',
+    '/page/conciliacion',
   ];
 
   const isPublic = (path: string) => publicRoutes.includes(path);

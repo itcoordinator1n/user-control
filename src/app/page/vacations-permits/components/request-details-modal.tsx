@@ -353,7 +353,8 @@ export function RequestDetailsModal({
       }
 
       const pdfBytes = await pdfDoc.save();
-      const blob = new Blob([pdfBytes], { type: "application/pdf" });
+      // pdf-lib devuelve Uint8Array<ArrayBufferLike>; cast a BlobPart (idéntico en runtime)
+      const blob = new Blob([pdfBytes as unknown as BlobPart], { type: "application/pdf" });
       downloadBlob(blob, `Solicitud_${request.id}.pdf`);
     } catch (err: any) {
       console.error(err)

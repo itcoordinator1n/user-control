@@ -10,6 +10,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { useSession } from "next-auth/react"
 import PasswordChangeModal from "@/components/password-change-modal";
+import { Toaster } from "@/components/ui/toaster";
 import {jwtDecode} from "jwt-decode";
 export default function ClientLayout(
   {
@@ -85,6 +86,7 @@ export default function ClientLayout(
       <body suppressHydrationWarning>
 
         <PasswordChangeModal isOpen={open} setOpen={setOpen}/>
+        <Toaster />
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
           {!isLoggedIn ? (
             <div className="min-h-screen bg-white dark:bg-background transition-colors duration-300">
