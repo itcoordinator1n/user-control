@@ -107,7 +107,7 @@ export async function exportControlToExcel(control: ProduccionControl) {
   sheet.getCell(4, totalColIndex - 1).font = { size: 8 };
   sheet.getCell(4, totalColIndex - 1).alignment = { vertical: "middle", horizontal: "center" };
 
-  sheet.getCell(4, totalColIndex).value = "Revisado por:\nJefe de Manufactura";
+  sheet.getCell(4, totalColIndex).value = `Revisado por:\n${control.revisado_por_cargo || "—"}`;
   sheet.getCell(4, totalColIndex).alignment = { wrapText: true, vertical: "top" };
   sheet.getCell(4, totalColIndex).font = { size: 7 };
 
@@ -471,7 +471,8 @@ export async function exportControlToExcel(control: ProduccionControl) {
   sheet.mergeCells(currentRow, 7, currentRow, totalColIndex);
 
   currentRow++;
-  sheet.getCell(currentRow, 7).value = `( Jefe de Manufactura )`;
+  // Cargo real (rol de produccion), no un texto fijo
+  sheet.getCell(currentRow, 7).value = control.revisado_por_cargo ? `( ${control.revisado_por_cargo} )` : "";
   sheet.getCell(currentRow, 7).font = { bold: true };
   sheet.mergeCells(currentRow, 7, currentRow, totalColIndex);
 

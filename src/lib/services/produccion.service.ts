@@ -66,10 +66,13 @@ export interface ProduccionControl {
   estado: "EN_PROGRESO" | "FINALIZADO" | "REVISADO" | "APROBADO";
   registrado_por: number;
   registrado_por_nombre: string;
+  /** Rol en la plataforma `produccion`; es el cargo que se imprime bajo la firma. */
+  registrado_por_cargo: string | null;
   revisado_por: number | null;
   revisado_por_nombre: string | null;
   /** Fecha de la firma. Null en controles validados antes de que existiera la columna. */
   revisado_en: string | null;
+  revisado_por_cargo: string | null;
   aprobado_por: number | null;
   aprobado_por_nombre: string | null;
   actividades: ProduccionActividad[];

@@ -975,7 +975,9 @@ export default function DetalleControlTiempos() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* 1. Encargado de área */}
             <div className="p-4 rounded-lg border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-800/50">
-              <p className="text-xs text-slate-500 uppercase font-semibold mb-2">Registrado Por (Encargado de Área)</p>
+              <p className="text-xs text-slate-500 uppercase font-semibold mb-2">
+                Registrado Por{control.registrado_por_cargo ? ` (${control.registrado_por_cargo})` : ""}
+              </p>
               <p className="font-medium text-slate-900 dark:text-slate-100 flex items-center gap-2">
                 <CheckCircle className="h-4 w-4 text-emerald-500" />
                 {control.registrado_por_nombre}
@@ -985,7 +987,9 @@ export default function DetalleControlTiempos() {
 
             {/* 2. Jefe de Producción */}
             <div className={`p-4 rounded-lg border ${control.revisado_por_nombre ? 'border-emerald-200 bg-emerald-50/50 dark:border-emerald-800/50 dark:bg-emerald-900/20' : 'border-dashed border-slate-300 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/30'}`}>
-              <p className="text-xs text-slate-500 uppercase font-semibold mb-2">Validado Por (Jefe de Producción)</p>
+              <p className="text-xs text-slate-500 uppercase font-semibold mb-2">
+                Validado Por{control.revisado_por_cargo ? ` (${control.revisado_por_cargo})` : ""}
+              </p>
               {control.revisado_por_nombre ? (
                 <>
                   <p className="font-medium text-emerald-700 dark:text-emerald-400 flex items-center gap-2">
@@ -1559,13 +1563,17 @@ export default function DetalleControlTiempos() {
             <div>
               <div style={{ borderTop: '1px solid #374151', paddingTop: '4px', marginTop: '24px' }}>
                 <div style={{ fontWeight: 700 }}>{control.registrado_por_nombre}</div>
-                <div style={{ color: '#555', marginTop: '1px' }}>Registrado y Finalizado - Encargado de Área</div>
+                <div style={{ color: '#555', marginTop: '1px' }}>
+                  Registrado y Finalizado{control.registrado_por_cargo ? ` - ${control.registrado_por_cargo}` : ""}
+                </div>
               </div>
             </div>
             <div>
               <div style={{ borderTop: '1px solid #374151', paddingTop: '4px', marginTop: '24px' }}>
                 <div style={{ fontWeight: 700 }}>{control.revisado_por_nombre || '___________________________'}</div>
-                <div style={{ color: '#555', marginTop: '1px' }}>Revisado y Validado - Jefe de Producción</div>
+                <div style={{ color: '#555', marginTop: '1px' }}>
+                  Revisado y Validado{control.revisado_por_cargo ? ` - ${control.revisado_por_cargo}` : ""}
+                </div>
                 <div style={{ color: '#555', marginTop: '2px' }}>
                   Fecha de validación: <strong>{fechaValidacion}</strong>
                 </div>
