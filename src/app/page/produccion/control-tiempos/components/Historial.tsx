@@ -1,11 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { PlusCircle, Search, FileSpreadsheet, Eye, Loader2, Trash2, AlertTriangle } from "lucide-react";
+import { PlusCircle, Search, FileSpreadsheet, Eye, Loader2, Trash2, AlertTriangle, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SmartPagination } from "@/components/smart-pagination";
+import { normalizeArea } from "@/lib/utils";
+import { useProduccionPermissions } from "../../_hooks/use-produccion-permissions";
 import { useSession } from "next-auth/react";
 import { getControlesTiempos, deleteControl, ProduccionControl } from "@/lib/services/produccion.service";
 import { exportControlToExcel } from "@/lib/exportExcel";
@@ -13,6 +17,9 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
 // Ayudante para normalizar fechas del servidor (usualmente UTC) de forma robusta
+/** Recuerda el area filtrada entre visitas (por navegador, no por usuario). */
+const AREA_STORAGE_KEY = "produccion:historial:area";
+
 const parseISO = (s: string) => {
   if (!s) return new Date();
   return new Date(s.replace(" ", "T"));
@@ -21,9 +28,13 @@ const parseISO = (s: string) => {
 export default function ControlTiemposHistory() {
   const router = useRouter();
   const { data: session } = useSession();
+  const { canRegister } = useProduccionPermissions();
   const [controles, setControles] = useState<ProduccionControl[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [filterArea, setFilterArea] = useState<string>("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   // Delete confirmation state
   const [deleteTarget, setDeleteTarget] = useState<ProduccionControl | null>(null);
@@ -62,11 +73,70 @@ export default function ControlTiemposHistory() {
     }
   };
 
-  const filteredControles = controles.filter((c) => 
-    c.producto_nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.n_lote?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.op?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Areas derivadas del propio dataset, AGRUPADAS SIN TILDES.
+  //
+  // El catalogo `produccion_areas` guarda "Solidos"/"Liquidos" sin tilde, pero
+  // 27 de los registros historicos se guardaron con tilde ("Solidos"/"Liquidos").
+  // Si no se normaliza, el selector acaba mostrando la misma area dos veces.
+  // Se agrupa por nombre normalizado y se muestra la grafia mas frecuente.
+  const areasDisponibles = useMemo(() => {
+    const conteo = new Map<string, Map<string, number>>();
+    controles.forEach((c) => {
+      if (!c.area) return;
+      const clave = normalizeArea(c.area);
+      if (!conteo.has(clave)) conteo.set(clave, new Map());
+      const variantes = conteo.get(clave)!;
+      variantes.set(c.area, (variantes.get(c.area) ?? 0) + 1);
+    });
+    return Array.from(conteo.entries())
+      .map(([clave, variantes]) => ({
+        clave,
+        // grafia mas usada como etiqueta visible
+        etiqueta: Array.from(variantes.entries()).sort((a, b) => b[1] - a[1])[0][0],
+        total: Array.from(variantes.values()).reduce((a, b) => a + b, 0),
+      }))
+      .sort((a, b) => a.etiqueta.localeCompare(b.etiqueta, "es"));
+  }, [controles]);
+
+  // El area del usuario NO sirve para preseleccionar: en la tabla `area` todo el
+  // personal de produccion esta en "Planta", no en sub-areas (Liquidos, Solidos...),
+  // asi que nunca coincidiria con `control.area`. En su lugar recordamos la
+  // ultima seleccion de este navegador.
+  useEffect(() => {
+    try {
+      const guardada = window.localStorage.getItem(AREA_STORAGE_KEY);
+      if (guardada) setFilterArea(guardada);
+    } catch {
+      // modo privado o almacenamiento bloqueado: se queda en "all"
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(AREA_STORAGE_KEY, filterArea);
+    } catch {
+      // no poder recordar la preferencia no debe romper el listado
+    }
+  }, [filterArea]);
+
+  const filteredControles = controles.filter((c) => {
+    const matchBusqueda =
+      c.producto_nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      c.n_lote?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      c.op?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchArea = filterArea === "all" || normalizeArea(c.area ?? "") === filterArea;
+    return matchBusqueda && matchArea;
+  });
+
+  // Paginacion en cliente
+  const totalPages = Math.max(1, Math.ceil(filteredControles.length / itemsPerPage));
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedControles = filteredControles.slice(startIndex, startIndex + itemsPerPage);
+
+  // Volver a la primera pagina al cambiar de filtro
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterArea]);
 
   const calcHoras = (control: ProduccionControl) => {
     let totalMs = 0;
@@ -84,14 +154,16 @@ export default function ControlTiemposHistory() {
 
   return (
     <div className="w-full">
-      <div className="flex justify-end mb-4">
-        <Link href="/page/produccion/control-tiempos/nuevo">
-          <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-md transition-all gap-2">
-            <PlusCircle className="h-4 w-4" />
-            Nuevo Registro
-          </Button>
-        </Link>
-      </div>
+      {canRegister && (
+        <div className="flex justify-end mb-4">
+          <Link href="/page/produccion/control-tiempos/nuevo">
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-md transition-all gap-2">
+              <PlusCircle className="h-4 w-4" />
+              Nuevo Registro
+            </Button>
+          </Link>
+        </div>
+      )}
 
       <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
         <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between bg-slate-50/50 dark:bg-slate-900/50 gap-4">
@@ -105,6 +177,23 @@ export default function ControlTiemposHistory() {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
+
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <Select value={filterArea} onValueChange={setFilterArea}>
+              <SelectTrigger className="w-full sm:w-52">
+                <Filter className="mr-2 h-4 w-4 shrink-0" />
+                <SelectValue placeholder="Todas las áreas" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas las áreas</SelectItem>
+                {areasDisponibles.map((a) => (
+                  <SelectItem key={a.clave} value={a.clave}>
+                    {a.etiqueta} ({a.total})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {/* Vista de Tabla (Desktop) */}
@@ -114,6 +203,7 @@ export default function ControlTiemposHistory() {
               <tr>
                 <th className="px-6 py-4 font-semibold">Fecha</th>
                 <th className="px-6 py-4 font-semibold">Producto</th>
+                <th className="px-6 py-4 font-semibold">Área</th>
                 <th className="px-6 py-4 font-semibold">Lote / OP</th>
                 <th className="px-6 py-4 font-semibold">Total Horas</th>
                 <th className="px-6 py-4 font-semibold">Estado</th>
@@ -123,7 +213,7 @@ export default function ControlTiemposHistory() {
             <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
+                  <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
                     <div className="flex flex-col items-center justify-center">
                       <Loader2 className="h-8 w-8 animate-spin text-blue-500 mb-2" />
                       Cargando registros...
@@ -132,12 +222,12 @@ export default function ControlTiemposHistory() {
                 </tr>
               ) : filteredControles.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
+                  <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
                     No se encontraron registros.
                   </td>
                 </tr>
               ) : (
-                filteredControles.map((control) => (
+                paginatedControles.map((control) => (
                   <tr 
                     key={control.id} 
                     onClick={() => router.push(`/page/produccion/control-tiempos/${control.id}`)}
@@ -148,6 +238,11 @@ export default function ControlTiemposHistory() {
                     </td>
                     <td className="px-6 py-4 text-slate-600 dark:text-slate-300">
                       {control.producto_nombre}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                        {control.area || "—"}
+                      </span>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex flex-col">
@@ -210,7 +305,7 @@ export default function ControlTiemposHistory() {
           ) : filteredControles.length === 0 ? (
             <p className="text-center text-slate-500 py-8">No se encontraron registros.</p>
           ) : (
-            filteredControles.map((control) => (
+            paginatedControles.map((control) => (
               <div 
                 key={control.id} 
                 className="bg-white dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm"
@@ -224,6 +319,7 @@ export default function ControlTiemposHistory() {
                       {format(new Date(control.fecha), "dd MMMM yyyy", { locale: es })}
                     </p>
                     <h3 className="font-bold text-slate-900 dark:text-white line-clamp-1">{control.producto_nombre}</h3>
+                    <p className="text-xs text-slate-500">{control.area || "Sin área"}</p>
                   </div>
                   <div className="flex items-center gap-2 ml-2">
                     <StatusBadge estado={control.estado} />
@@ -258,6 +354,20 @@ export default function ControlTiemposHistory() {
             ))
           )}
         </div>
+
+        {/* PAGINACIÓN */}
+        {!loading && filteredControles.length > 0 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 border-t border-slate-200 dark:border-slate-800">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              Mostrando {startIndex + 1} a {Math.min(startIndex + itemsPerPage, filteredControles.length)} de {filteredControles.length} registros
+            </p>
+            <SmartPagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+            />
+          </div>
+        )}
       </div>
 
       {/* MODAL CONFIRMACIÓN DE BORRADO */}
@@ -315,9 +425,10 @@ const StatusBadge = ({ estado }: { estado: string }) => {
       Pend. Revisión
     </span>
   );
+  // Validado por el Jefe de Producción; todavía falta la firma del Jefe de Planta
   if (estado === 'REVISADO') return (
     <span className="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
-      Validado
+      Pend. Aprobación
     </span>
   );
   if (estado === 'APROBADO') return (

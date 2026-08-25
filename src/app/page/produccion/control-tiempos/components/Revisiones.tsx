@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Loader2, CheckCircle, FileSpreadsheet } from "lucide-react";
+import { Search, Loader2, CheckCircle, FileSpreadsheet, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSession } from "next-auth/react";
 import { getControlesTiempos, ProduccionControl } from "@/lib/services/produccion.service";
+import { SmartPagination } from "@/components/smart-pagination";
+import { useProduccionPermissions } from "../../_hooks/use-produccion-permissions";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { exportControlToExcel } from "@/lib/exportExcel";
@@ -17,12 +19,26 @@ const parseISO = (s: string) => {
   return new Date(s.replace(" ", "T"));
 };
 
+// Las dos colas del flujo de firmas:
+//   FINALIZADO -> la valida el Jefe de Producción
+//   REVISADO   -> la aprueba el Jefe de Planta
+type Cola = "FINALIZADO" | "REVISADO";
+
 export default function ControlTiemposRevisiones() {
   const router = useRouter();
   const { data: session } = useSession();
+  const { canValidate, canApprove } = useProduccionPermissions();
   const [controles, setControles] = useState<ProduccionControl[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  // Arranca en la cola que le corresponde al permiso del usuario
+  const [cola, setCola] = useState<Cola>(canValidate ? "FINALIZADO" : "REVISADO");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  useEffect(() => {
+    setCola(canValidate ? "FINALIZADO" : "REVISADO");
+  }, [canValidate]);
 
   useEffect(() => {
     if (!session?.user?.accessToken) return;
@@ -33,22 +49,61 @@ export default function ControlTiemposRevisiones() {
     setLoading(true);
     try {
       const data = await getControlesTiempos(session?.user?.accessToken);
-      // Solo controles en estado FINALIZADO (Pendiente Revisión)
-      setControles(data.filter(c => c.estado === 'FINALIZADO'));
+      // Ambas colas en memoria; el filtro por estado se aplica al renderizar
+      setControles(data.filter(c => c.estado === 'FINALIZADO' || c.estado === 'REVISADO'));
     } catch(e) { console.error(e); setControles([]); }
     finally { setLoading(false); }
   };
 
-  const filteredControles = controles.filter((c) => 
-    c.producto_nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.n_lote?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.op?.toLowerCase().includes(searchTerm.toLowerCase())
+  const conteo = (estado: Cola) => controles.filter(c => c.estado === estado).length;
+
+  const filteredControles = controles.filter((c) =>
+    c.estado === cola && (
+      c.producto_nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      c.n_lote?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      c.op?.toLowerCase().includes(searchTerm.toLowerCase())
+    )
   );
+
+  // Paginacion en cliente
+  const totalPages = Math.max(1, Math.ceil(filteredControles.length / itemsPerPage));
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedControles = filteredControles.slice(startIndex, startIndex + itemsPerPage);
+
+  useEffect(() => { setCurrentPage(1); }, [searchTerm, cola]);
+
+  const esColaValidacion = cola === "FINALIZADO";
+  const puedeActuar = esColaValidacion ? canValidate : canApprove;
+  const etiquetaEstado = esColaValidacion ? "Pendiente Revisión" : "Pendiente Aprobación";
+  const etiquetaAccion = esColaValidacion ? "Validar" : "Aprobar";
+  const emptyMessage = esColaValidacion
+    ? "No hay reportes pendientes de validación."
+    : "No hay reportes pendientes de aprobación.";
 
   return (
     <div className="w-full">
       <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
         <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between bg-slate-50/50 dark:bg-slate-900/50 gap-4">
+          {/* Filtro segmentado: una cola por firma */}
+          <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0">
+            {([
+              { value: "FINALIZADO" as Cola, label: "Por revisar" },
+              { value: "REVISADO" as Cola, label: "Por aprobar" },
+            ]).map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => setCola(opt.value)}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                  cola === opt.value
+                    ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm"
+                    : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                }`}
+              >
+                {opt.label}
+                <span className="ml-1.5 text-xs text-slate-400">{conteo(opt.value)}</span>
+              </button>
+            ))}
+          </div>
           <div className="relative w-full max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <input 
@@ -71,13 +126,14 @@ export default function ControlTiemposRevisiones() {
                 <th className="px-6 py-4 font-semibold">Lote / OP</th>
                 <th className="px-6 py-4 font-semibold">Total Horas</th>
                 <th className="px-6 py-4 font-semibold">Estado</th>
+                <th className="px-6 py-4 font-semibold">Validado por</th>
                 <th className="px-6 py-4 font-semibold text-right">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
+                  <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
                     <div className="flex flex-col items-center justify-center">
                       <Loader2 className="h-8 w-8 animate-spin text-blue-500 mb-2" />
                       Cargando revisiones...
@@ -86,12 +142,12 @@ export default function ControlTiemposRevisiones() {
                 </tr>
               ) : filteredControles.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
-                    No hay revisiones pendientes.
+                  <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
+                    {emptyMessage}
                   </td>
                 </tr>
               ) : (
-                filteredControles.map((control) => (
+                paginatedControles.map((control) => (
                   <tr key={control.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
                     <td className="px-6 py-4 font-medium text-slate-900 dark:text-white whitespace-nowrap">
                       {format(new Date(control.fecha), "dd MMM yyyy", { locale: es })}
@@ -123,9 +179,16 @@ export default function ControlTiemposRevisiones() {
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
-                        Pendiente Revisión
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-medium ${
+                        esColaValidacion
+                          ? "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
+                          : "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300"
+                      }`}>
+                        {etiquetaEstado}
                       </span>
+                    </td>
+                    <td className="px-6 py-4 text-slate-600 dark:text-slate-300">
+                      {control.revisado_por_nombre ?? <span className="text-slate-400">—</span>}
                     </td>
                     <td className="px-6 py-4 text-right flex justify-end gap-2">
                       <Button 
@@ -134,8 +197,8 @@ export default function ControlTiemposRevisiones() {
                         className="gap-2 border-blue-200 text-blue-700 hover:bg-blue-50 dark:border-blue-900 dark:text-blue-400"
                         onClick={() => router.push(`/page/produccion/control-tiempos/${control.id}`)}
                       >
-                        <CheckCircle className="h-4 w-4" />
-                        Auditar
+                        {puedeActuar ? <ShieldCheck className="h-4 w-4" /> : <CheckCircle className="h-4 w-4" />}
+                        {puedeActuar ? etiquetaAccion : "Auditar"}
                       </Button>
                       <Button 
                         size="icon" 
@@ -158,9 +221,9 @@ export default function ControlTiemposRevisiones() {
           {loading ? (
             <div className="flex justify-center py-8"><Loader2 className="h-8 w-8 animate-spin text-blue-500" /></div>
           ) : filteredControles.length === 0 ? (
-            <p className="text-center text-slate-500 py-8">No hay revisiones pendientes.</p>
+            <p className="text-center text-slate-500 py-8">{emptyMessage}</p>
           ) : (
-            filteredControles.map((control) => (
+            paginatedControles.map((control) => (
               <div 
                 key={control.id} 
                 className="bg-white dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm"
@@ -172,8 +235,12 @@ export default function ControlTiemposRevisiones() {
                     </p>
                     <h3 className="font-bold text-slate-900 dark:text-white line-clamp-1">{control.producto_nombre}</h3>
                   </div>
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
-                    Pendiente
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                    esColaValidacion
+                      ? "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
+                      : "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300"
+                  }`}>
+                    {esColaValidacion ? "Por revisar" : "Por aprobar"}
                   </span>
                 </div>
                 
@@ -207,8 +274,8 @@ export default function ControlTiemposRevisiones() {
                     className="flex-1 gap-2 bg-blue-600 hover:bg-blue-700 text-white text-xs h-9"
                     onClick={() => router.push(`/page/produccion/control-tiempos/${control.id}`)}
                   >
-                    <CheckCircle className="h-4 w-4" />
-                    Auditar Registro
+                    {puedeActuar ? <ShieldCheck className="h-4 w-4" /> : <CheckCircle className="h-4 w-4" />}
+                    {puedeActuar ? `${etiquetaAccion} Registro` : "Auditar Registro"}
                   </Button>
                   <Button 
                     variant="outline" 
@@ -223,6 +290,20 @@ export default function ControlTiemposRevisiones() {
             ))
           )}
         </div>
+
+        {/* PAGINACIÓN */}
+        {!loading && filteredControles.length > 0 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 border-t border-slate-200 dark:border-slate-800">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              Mostrando {startIndex + 1} a {Math.min(startIndex + itemsPerPage, filteredControles.length)} de {filteredControles.length} reportes
+            </p>
+            <SmartPagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

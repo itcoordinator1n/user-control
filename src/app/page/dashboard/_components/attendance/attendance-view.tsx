@@ -7,7 +7,7 @@ import { useEmployeeProfile } from "../../_hooks/use-employee-profile";
 import { DashboardSkeleton } from "../shared/dashboard-skeleton";
 import { AreaFilter } from "../shared/area-filter";
 import { PeriodFilter } from "../shared/period-filter";
-import { SmartPagination } from "../shared/smart-pagination";
+import { SmartPagination } from "@/components/smart-pagination";
 import { saveAs } from "file-saver";
 import {
   ArrowLeft,

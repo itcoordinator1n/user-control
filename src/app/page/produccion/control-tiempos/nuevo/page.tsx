@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Fragment } from "react";
+import { useState, useEffect, useCallback, Fragment } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { PlusCircle, StopCircle, Play, Save, Clock, ArrowLeft, Loader2, Trash2, LayoutGrid, Table, List, Eye, Search } from "lucide-react";
@@ -36,6 +36,7 @@ import {
   terminarIntervalo,
   crearInterrupcion,
   updateControlTiempos,
+  enviarResumenControl,
   deleteActividad,
   deleteIntervalo,
   getAreas,
@@ -52,6 +53,7 @@ import {
   ActividadCatalogo
 } from "@/lib/services/produccion.service";
 import { StopTimerModal, StopAction } from "@/components/produccion/stop-timer-modal";
+import { ValidacionModal } from "@/components/produccion/validacion-modal";
 
 
 
@@ -129,12 +131,28 @@ export default function NuevoControlTiempos() {
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState<"cards" | "table" | "list">("list");
 
+  // State: modal de finalizar registro
+  const [finalizarOpen, setFinalizarOpen] = useState(false);
+
   // State: Stop-timer modal
   const [stopModal, setStopModal] = useState<{
     actividadId: string;
     actividadNombre: string;
     intervaloId: string;
   } | null>(null);
+
+  // Refresca la lista de operarios libres. El backend ya excluye a los que
+  // tienen un intervalo abierto en CUALQUIER control EN_PROGRESO, así que hay
+  // que volver a pedirla cada vez que la ocupación puede haber cambiado —
+  // si no, un operario liberado en otro control solo reaparece al recargar.
+  const refrescarEmpleados = useCallback(async () => {
+    if (!session?.user?.accessToken) return;
+    try {
+      setEmpleados(await getEmpleadosProduccion(session.user.accessToken));
+    } catch (error) {
+      console.error("Error refrescando empleados:", error);
+    }
+  }, [session?.user?.accessToken]);
 
   // Load masters
   useEffect(() => {
@@ -165,6 +183,7 @@ export default function NuevoControlTiempos() {
     setModalGrupos([]);
     setModalActividades([]);
     setIsModalOpen(true);
+    refrescarEmpleados();
 
     const areaObj =
       areasCatalog.find(a => a.nombre === formCabecera.area) ??
@@ -262,6 +281,7 @@ export default function NuevoControlTiempos() {
       setSelectedGrupo(null);
       setPendingQueue([]);
       setNuevaAct({ categoria: "General", actividad_nombre: "", fk_operario: 0 });
+      refrescarEmpleados();
     } catch (e) {
       console.error(e);
       alert("Error al iniciar actividades");
@@ -320,6 +340,7 @@ export default function NuevoControlTiempos() {
       });
     }
     setStopModal(null);
+    refrescarEmpleados();
   };
 
   const handleNuevoIntervalo = async (actividad: ProduccionActividad) => {
@@ -412,23 +433,38 @@ export default function NuevoControlTiempos() {
     }
   };
 
-  const handleFinalizarRegistro = async () => {
+  const handleFinalizarRegistro = () => {
     // Verificar si hay relojes corriendo
     const hasRunning = control?.actividades.some(a => a.intervalos.some(i => i.hora_fin === null));
     if (hasRunning) {
       alert("Aún hay cronómetros en ejecución. Deténgalos todos antes de finalizar el registro.");
       return;
     }
+    setFinalizarOpen(true);
+  };
 
-    const obs = prompt("Observaciones opcionales para este registro:");
-    
-    try {
-      await updateControlTiempos(control!.id, obs || "", "FINALIZADO", session?.user?.accessToken);
-      router.push("/page/produccion/control-tiempos");
-    } catch (e) {
-      console.error(e);
-      alert("Error al finalizar");
-    }
+  // El reporte pasa a FINALIZADO y entra a la cola del Jefe de Producción
+  const handleFinalizarConfirm = async (observaciones: string) => {
+    const token = session?.user?.accessToken;
+    const ok = await updateControlTiempos(control!.id, observaciones, "FINALIZADO", token);
+    if (!ok) throw new Error("No se pudo finalizar el registro");
+
+      // El resumen es un aviso: si el correo falla, el registro YA quedó
+      // cerrado y no debe deshacerse por eso. Solo lo reportamos.
+      try {
+        const r = await enviarResumenControl(
+          control!.id,
+          `${window.location.origin}/page/produccion/control-tiempos/${control!.id}`,
+          token
+        );
+        if (r.advertencia) console.warn("[resumen]", r.advertencia);
+        else console.info("[resumen] enviado a:", r.enviados.join(", ") || "(nadie)");
+      } catch (e) {
+        console.error("[resumen] no se pudo enviar el correo:", e);
+      }
+
+    setFinalizarOpen(false);
+    router.push("/page/produccion/control-tiempos?tab=revisiones");
   };
 
   const handleEliminarControl = async () => {
@@ -1321,6 +1357,15 @@ export default function NuevoControlTiempos() {
         actividadNombre={stopModal ? stopModal.actividadNombre : ""}
         onClose={() => setStopModal(null)}
         onConfirm={handleStopConfirm}
+      />
+
+      {/* MODAL FINALIZAR REGISTRO */}
+      <ValidacionModal
+        open={finalizarOpen}
+        mode="finalizar"
+        referencia={control ? `${control.producto_nombre} — Lote ${control.n_lote} / OP ${control.op}` : undefined}
+        onClose={() => setFinalizarOpen(false)}
+        onConfirm={handleFinalizarConfirm}
       />
     </div>
   );

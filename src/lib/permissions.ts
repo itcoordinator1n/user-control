@@ -94,6 +94,10 @@ export const SYSTEM_PERMISSIONS: PermissionModule[] = [
     permissions: [
       { id: "PROD:VIEW", label: "Ver Registros", description: "Visualizar el historial de tiempos de producción" },
       { id: "PROD:REGISTER", label: "Registrar Tiempos", description: "Iniciar y detener cronómetros de actividades" },
+      { id: "PROD:BOARD", label: "Tablero de Ocupación", description: "Ver el tablero en vivo de operarios ocupados por área" },
+      { id: "PROD:VALIDATE", label: "Validar Control de Tiempos", description: "Revisar y validar reportes finalizados (Jefe de Producción)" },
+      { id: "PROD:APPROVE", label: "Aprobar y Cerrar", description: "Aprobación final que da por concluido el reporte (Jefe de Planta)" },
+      { id: "PROD:CATALOG", label: "Gestión de Actividades", description: "Administrar el catálogo de actividades y grupos de producción" },
       { id: "PROD:ADMIN", label: "Configurar Planta", description: "Gestionar grupos, estaciones y metas de producción" },
     ],
   },

@@ -5,6 +5,7 @@ import { Plus, Edit2, Trash2, Search, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { SmartPagination } from "@/components/smart-pagination";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { useSession } from "next-auth/react";
@@ -15,6 +16,8 @@ export default function GruposList() {
   const [grupos, setGrupos] = useState<{ id: number; nombre: string; count?: number }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingGrupo, setEditingGrupo] = useState<{ id: number; nombre: string } | null>(null);
   const [nombre, setNombre] = useState("");
@@ -38,8 +41,15 @@ export default function GruposList() {
   }, [session?.user?.accessToken]);
 
   const filteredGrupos = grupos.filter((g) =>
-    g.nombre.toLowerCase().includes(searchTerm.toLowerCase())
+    g.nombre?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Paginacion en cliente
+  const totalPages = Math.max(1, Math.ceil(filteredGrupos.length / itemsPerPage));
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedGrupos = filteredGrupos.slice(startIndex, startIndex + itemsPerPage);
+
+  useEffect(() => { setCurrentPage(1); }, [searchTerm]);
 
   const handleSave = async () => {
     if (!nombre.trim()) return;
@@ -126,7 +136,7 @@ export default function GruposList() {
                 </TableCell>
               </TableRow>
             ) : (
-              filteredGrupos.map((grupo) => (
+              paginatedGrupos.map((grupo) => (
                 <TableRow key={grupo.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                   <TableCell className="font-medium text-slate-500">#{grupo.id}</TableCell>
                   <TableCell className="font-semibold text-slate-900 dark:text-white">{grupo.nombre}</TableCell>
@@ -151,6 +161,20 @@ export default function GruposList() {
           </TableBody>
         </Table>
       </div>
+
+      {/* PAGINACIÓN */}
+      {!isLoading && filteredGrupos.length > 0 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Mostrando {startIndex + 1} a {Math.min(startIndex + itemsPerPage, filteredGrupos.length)} de {filteredGrupos.length} grupos
+          </p>
+          <SmartPagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
+        </div>
+      )}
 
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="sm:max-w-[425px]">

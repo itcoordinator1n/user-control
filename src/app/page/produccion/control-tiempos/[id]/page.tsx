@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, Fragment } from "react";
-import { useRouter, useParams, useSearchParams } from "next/navigation";
+import { useState, useEffect, useMemo, useCallback, Fragment } from "react";
+import { useRouter, useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { PlusCircle, StopCircle, Play, Save, Clock, ArrowLeft, Loader2, Trash2, Eye, CheckCircle, ShieldCheck, LayoutGrid, Table, List, Search, PlayCircle } from "lucide-react";
+import { PlusCircle, StopCircle, Play, Save, Clock, ArrowLeft, Loader2, Trash2, Eye, CheckCircle, ShieldCheck, Undo2, LayoutGrid, Table, List, Search, PlayCircle } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,7 +32,10 @@ import {
   deleteActividad,
   deleteIntervalo,
   updateControlTiempos,
+  enviarResumenControl,
   marcarComoRevisado,
+  marcarComoAprobado,
+  rechazarControl,
   deleteControl,
   ProduccionControl,
   ProduccionActividad,
@@ -42,6 +45,8 @@ import {
   ActividadCatalogo
 } from "@/lib/services/produccion.service";
 import { StopTimerModal, StopAction } from "@/components/produccion/stop-timer-modal";
+import { ValidacionModal, ValidacionMode } from "@/components/produccion/validacion-modal";
+import { useProduccionPermissions } from "../../_hooks/use-produccion-permissions";
 
 // Ayudante para normalizar fechas del servidor (usualmente UTC) de forma robusta
 const parseISO = (s: string) => {
@@ -79,11 +84,12 @@ import { FORMATO_ACTIVIDADES } from "@/lib/exportExcel";
 export default function DetalleControlTiempos() {
   const router = useRouter();
   const params = useParams();
-  const searchParams = useSearchParams();
   const id = params.id as string;
-  const isReviewMode = searchParams.get("mode") === "review";
   const { data: session } = useSession();
-  const currentUserId = session?.user?.id ? parseInt(session.user.id as string) : 2; // Default mock boss ID
+  const { canRegister, canValidate, canApprove } = useProduccionPermissions();
+
+  // Modal de finalizar / validar / aprobar / devolver a corrección
+  const [validacionMode, setValidacionMode] = useState<ValidacionMode | null>(null);
   
   const [loading, setLoading] = useState(true);
   const [empleados, setEmpleados] = useState<ProduccionEmpleado[]>([]);
@@ -118,6 +124,19 @@ export default function DetalleControlTiempos() {
     intervaloId: string;
   } | null>(null);
 
+  // Refresca la lista de operarios libres. El backend ya excluye a los que
+  // tienen un intervalo abierto en CUALQUIER control EN_PROGRESO, así que hay
+  // que volver a pedirla cada vez que la ocupación puede haber cambiado —
+  // si no, un operario liberado en otro control solo reaparece al recargar.
+  const refrescarEmpleados = useCallback(async () => {
+    if (!session?.user?.accessToken) return;
+    try {
+      setEmpleados(await getEmpleadosProduccion(session.user.accessToken));
+    } catch (e) {
+      console.error("Error refrescando empleados:", e);
+    }
+  }, [session?.user?.accessToken]);
+
   useEffect(() => {
     const load = async () => {
       if (!session?.user?.accessToken) return;
@@ -149,7 +168,7 @@ export default function DetalleControlTiempos() {
       }
     };
     if (id) load();
-  }, [id, router]);
+  }, [id, session?.user?.accessToken]);
 
   // A├▒ade la actividad actual a la cola y pasa al paso 4
   const handleAddToQueue = () => {
@@ -193,6 +212,7 @@ export default function DetalleControlTiempos() {
       setSelectedGrupo(null);
       setPendingQueue([]);
       setNuevaAct({ categoria: "General", actividad_nombre: "", fk_operario: 0 });
+      refrescarEmpleados();
     } catch (e) {
       console.error(e);
       alert("Error al iniciar actividades");
@@ -210,6 +230,7 @@ export default function DetalleControlTiempos() {
     setModalGrupos([]);
     setModalActividades([]);
     setIsModalOpen(true);
+    refrescarEmpleados();
 
     if (control?.fk_producto) {
       setModalLoadingGrupos(true);
@@ -271,6 +292,7 @@ export default function DetalleControlTiempos() {
         };
       });
       setStopModal(null);
+      refrescarEmpleados();
     } else if (action === "INTERRUPCION") {
       // 1. Cerrar el intervalo activo
       const intervaloFin = await terminarIntervalo(
@@ -300,6 +322,7 @@ export default function DetalleControlTiempos() {
         };
       });
       setStopModal(null);
+      refrescarEmpleados();
     }
   };
 
@@ -337,19 +360,57 @@ export default function DetalleControlTiempos() {
     } catch (e) { console.error(e); alert("Error al eliminar el intervalo"); }
   };
 
-  const handleFinalizarRegistro = async () => {
+  // --- Transiciones de estado del reporte ---------------------------------
+  // EN_PROGRESO --finalizar--> FINALIZADO --validar--> REVISADO --aprobar--> APROBADO
+  // "Devolver a corrección" regresa el control a EN_PROGRESO en cualquier punto.
+
+  const abrirFinalizar = () => {
     const hasRunning = control?.actividades.some(a => a.intervalos.some(i => i.hora_fin === null));
-    if (hasRunning) return alert("Aún hay cronómetros en ejecución. Det├⌐ngalos todos antes de finalizar el registro.");
-    const obs = prompt("Observaciones opcionales para este registro:", control?.observaciones || "");
-    if (obs === null) return; // cancelled
-    try {
-      await updateControlTiempos(control!.id, obs, "FINALIZADO", session?.user?.accessToken);
-      router.push("/page/produccion/control-tiempos");
-    } catch (e) { console.error(e); alert("Error al finalizar"); }
+    if (hasRunning) return alert("Aún hay cronómetros en ejecución. Deténgalos todos antes de finalizar el registro.");
+    setValidacionMode("finalizar");
+  };
+
+  const handleValidacionConfirm = async (comentario: string) => {
+    if (!control || !validacionMode) return;
+    const token = session?.user?.accessToken;
+
+    if (validacionMode === "finalizar") {
+      const actualizado = await updateControlTiempos(control.id, comentario, "FINALIZADO", token);
+      if (!actualizado) throw new Error("No se pudo finalizar el registro");
+
+      // El resumen es un aviso: si el correo falla, el registro YA quedó
+      // cerrado y no debe deshacerse por eso. Solo lo reportamos.
+      try {
+        const r = await enviarResumenControl(
+          control.id,
+          `${window.location.origin}/page/produccion/control-tiempos/${control.id}`,
+          token
+        );
+        if (r.advertencia) console.warn("[resumen]", r.advertencia);
+        else console.info("[resumen] enviado a:", r.enviados.join(", ") || "(nadie)");
+      } catch (e) {
+        console.error("[resumen] no se pudo enviar el correo:", e);
+      }
+
+      setValidacionMode(null);
+      router.push("/page/produccion/control-tiempos?tab=revisiones");
+      return;
+    }
+
+    // El backend devuelve el control ya actualizado (incluye revisado_por_nombre
+    // / aprobado_por_nombre), así que reemplazamos el estado con su respuesta.
+    const actualizado =
+      validacionMode === "validar" ? await marcarComoRevisado(control.id, token)
+      : validacionMode === "aprobar" ? await marcarComoAprobado(control.id, token)
+      : await rechazarControl(control.id, comentario, token);
+
+    setControl(actualizado);
+    setValidacionMode(null);
+    router.push("/page/produccion/control-tiempos?tab=revisiones");
   };
 
   const handleEliminarControl = async () => {
-    if (!confirm("┬┐Está seguro de eliminar TODO el registro de control de tiempos y todas sus actividades? Esta acción no se puede deshacer.")) return;
+    if (!confirm("¿Está seguro de eliminar TODO el registro de control de tiempos y todas sus actividades? Esta acción no se puede deshacer.")) return;
     try {
       const ok = await deleteControl(control!.id, session?.user?.accessToken);
       if (ok) {
@@ -361,25 +422,22 @@ export default function DetalleControlTiempos() {
     } catch (e) { console.error(e); alert("Error al eliminar el registro"); }
   };
 
-  const handleMarcarRevisado = async () => {
-    if (!confirm("┬┐Confirma que ha revisado este control de tiempos?")) return;
-    try {
-      const ok = await marcarComoRevisado(control!.id, currentUserId, session?.user?.accessToken);
-      if (ok) {
-        setControl(prev => prev ? { ...prev, estado: "REVISADO", revisado_por: currentUserId, revisado_por_nombre: session?.user?.name || "Jefe de Manufactura" } : prev);
-        alert("Marcado como revisado exitosamente");
-        if (isReviewMode) router.push("/page/produccion/revisiones");
-      }
-    } catch (e) { console.error(e); }
-  };
-
   if (loading) return <div className="p-10 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-blue-500" /></div>;
   if (!control) return <div className="p-10 text-center">No se encontró el registro</div>;
 
   const isEnProgreso = control.estado === "EN_PROGRESO";
   const isFinalizado = control.estado === "FINALIZADO";
   const isRevisado = control.estado === "REVISADO";
+  const isAprobado = control.estado === "APROBADO";
   const isReadonly = !isEnProgreso;
+
+  // Acciones disponibles según estado × permiso del usuario
+  const puedeFinalizar = isEnProgreso && canRegister;
+  const puedeValidar = isFinalizado && canValidate;
+  const puedeAprobar = isRevisado && canApprove;
+  const puedeRechazar = (isFinalizado && canValidate) || (isRevisado && canApprove);
+
+  const referenciaControl = `${control.producto_nombre} — Lote ${control.n_lote} / OP ${control.op}`;
 
   const operariosOcupadosIds = control.actividades.filter(a => a.intervalos.some(i => i.hora_fin === null)).map(a => a.fk_operario) || [];
   const empleadosDisponibles = empleados.filter(e => !operariosOcupadosIds.includes(e.int_id_empleado));
@@ -417,10 +475,11 @@ export default function DetalleControlTiempos() {
             Detalle de Registro
             {isEnProgreso && <span className="text-xs px-2.5 py-1 rounded bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 font-semibold tracking-wider animate-pulse">EN PROGRESO</span>}
             {isFinalizado && <span className="text-xs px-2.5 py-1 rounded bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 font-semibold tracking-wider">FINALIZADO (PEND. REVISIÓN)</span>}
-            {isRevisado && <span className="text-xs px-2.5 py-1 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 font-semibold tracking-wider">REVISADO / COMPLETADO</span>}
+            {isRevisado && <span className="text-xs px-2.5 py-1 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 font-semibold tracking-wider">VALIDADO (PEND. APROBACIÓN)</span>}
+            {isAprobado && <span className="text-xs px-2.5 py-1 rounded bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 font-semibold tracking-wider">APROBADO / CERRADO</span>}
           </h1>
         </div>
-        {!isRevisado && (
+        {(isEnProgreso || isFinalizado) && (
           <Button 
             variant="ghost" 
             onClick={handleEliminarControl}
@@ -438,6 +497,28 @@ export default function DetalleControlTiempos() {
           >
             <PlayCircle className="h-4 w-4" />
             Imprimir / PDF
+          </Button>
+        )}
+
+        {/* Acciones de firma — visibles al abrir el registro, sin hacer scroll */}
+        {puedeRechazar && (
+          <Button
+            variant="outline"
+            onClick={() => setValidacionMode("rechazar")}
+            className="gap-2 border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-900 dark:text-amber-400 dark:hover:bg-amber-900/20"
+          >
+            <Undo2 className="h-4 w-4" />
+            <span className="hidden sm:inline">Devolver</span>
+          </Button>
+        )}
+        {puedeValidar && (
+          <Button onClick={() => setValidacionMode("validar")} className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white">
+            <ShieldCheck className="h-4 w-4" /> Validar
+          </Button>
+        )}
+        {puedeAprobar && (
+          <Button onClick={() => setValidacionMode("aprobar")} className="gap-2 bg-blue-600 hover:bg-blue-700 text-white">
+            <ShieldCheck className="h-4 w-4" /> Aprobar y Cerrar
           </Button>
         )}
       </div>
@@ -846,9 +927,9 @@ export default function DetalleControlTiempos() {
         </div>
         )}
 
-        {isEnProgreso && control.actividades.length > 0 && (
+        {puedeFinalizar && control.actividades.length > 0 && (
           <div className="mt-8 pt-6 border-t flex justify-end">
-            <Button size="lg" onClick={handleFinalizarRegistro} className="bg-blue-600 hover:bg-blue-700 text-white gap-2">
+            <Button size="lg" onClick={abrirFinalizar} className="bg-blue-600 hover:bg-blue-700 text-white gap-2">
               <Save className="h-5 w-5" /> Finalizar Registro de Horas
             </Button>
           </div>
@@ -858,11 +939,19 @@ export default function DetalleControlTiempos() {
       {/* SECCION DE FIRMAS Y REVISIÓN (Solo si no está en progreso) */}
       {!isEnProgreso && (
         <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 mb-6">
-          <h2 className="text-lg font-semibold mb-6 text-slate-800 dark:text-slate-100 border-b pb-2">Firmas de Validación</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Creador */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 border-b pb-2">
+            <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Firmas de Validación</h2>
+            {isAprobado && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                <ShieldCheck className="h-3.5 w-3.5" /> Reporte concluido
+              </span>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* 1. Encargado de área */}
             <div className="p-4 rounded-lg border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-800/50">
-              <p className="text-xs text-slate-500 uppercase font-semibold mb-2">Registrado Por (Finalizado)</p>
+              <p className="text-xs text-slate-500 uppercase font-semibold mb-2">Registrado Por (Encargado de Área)</p>
               <p className="font-medium text-slate-900 dark:text-slate-100 flex items-center gap-2">
                 <CheckCircle className="h-4 w-4 text-emerald-500" />
                 {control.registrado_por_nombre}
@@ -870,9 +959,9 @@ export default function DetalleControlTiempos() {
               <p className="text-xs text-slate-500 mt-1">Fecha: {new Date(control.fecha).toLocaleDateString()}</p>
             </div>
 
-            {/* Revisor (Jefe Manufactura) */}
-            <div className={`p-4 rounded-lg border ${isRevisado ? 'border-emerald-200 bg-emerald-50/50 dark:border-emerald-800/50 dark:bg-emerald-900/20' : 'border-dashed border-slate-300 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/30'}`}>
-              <p className="text-xs text-slate-500 uppercase font-semibold mb-2">Validado Por (Jefe Manufactura)</p>
+            {/* 2. Jefe de Producción */}
+            <div className={`p-4 rounded-lg border ${control.revisado_por_nombre ? 'border-emerald-200 bg-emerald-50/50 dark:border-emerald-800/50 dark:bg-emerald-900/20' : 'border-dashed border-slate-300 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/30'}`}>
+              <p className="text-xs text-slate-500 uppercase font-semibold mb-2">Validado Por (Jefe de Producción)</p>
               {control.revisado_por_nombre ? (
                 <>
                   <p className="font-medium text-emerald-700 dark:text-emerald-400 flex items-center gap-2">
@@ -882,17 +971,62 @@ export default function DetalleControlTiempos() {
                   <p className="text-xs text-slate-500 mt-1">Revisión y validación completada</p>
                 </>
               ) : (
-                <div className="mt-2">
-                  <p className="text-sm text-slate-500 mb-3">Pendiente de validación</p>
-                  {isReviewMode && (
-                    <Button onClick={handleMarcarRevisado} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white gap-2">
-                      <ShieldCheck className="h-4 w-4" /> Aprobar y Validar
-                    </Button>
-                  )}
-                </div>
+                <p className="text-sm text-slate-500 mt-2">Pendiente de validación</p>
+              )}
+            </div>
+
+            {/* 3. Jefe de Planta */}
+            <div className={`p-4 rounded-lg border ${control.aprobado_por_nombre ? 'border-blue-200 bg-blue-50/50 dark:border-blue-800/50 dark:bg-blue-900/20' : 'border-dashed border-slate-300 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/30'}`}>
+              <p className="text-xs text-slate-500 uppercase font-semibold mb-2">Aprobado Por (Jefe de Planta)</p>
+              {control.aprobado_por_nombre ? (
+                <>
+                  <p className="font-medium text-blue-700 dark:text-blue-400 flex items-center gap-2">
+                    <ShieldCheck className="h-5 w-5" />
+                    {control.aprobado_por_nombre}
+                  </p>
+                  <p className="text-xs text-slate-500 mt-1">Reporte dado por concluido</p>
+                </>
+              ) : (
+                <p className="text-sm text-slate-500 mt-2">
+                  {isRevisado ? "Pendiente de aprobación" : "A la espera de la validación previa"}
+                </p>
               )}
             </div>
           </div>
+
+          {/* Acciones del validador — visibles solo con el permiso correspondiente */}
+          {(puedeValidar || puedeAprobar || puedeRechazar) && (
+            <div className="mt-6 pt-6 border-t flex flex-col sm:flex-row sm:justify-end gap-2">
+              {puedeRechazar && (
+                <Button
+                  variant="outline"
+                  onClick={() => setValidacionMode("rechazar")}
+                  className="gap-2 border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-900 dark:text-amber-400 dark:hover:bg-amber-900/20"
+                >
+                  <Undo2 className="h-4 w-4" /> Devolver a Corrección
+                </Button>
+              )}
+              {puedeValidar && (
+                <Button onClick={() => setValidacionMode("validar")} className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white">
+                  <ShieldCheck className="h-4 w-4" /> Validar y Enviar a Aprobación
+                </Button>
+              )}
+              {puedeAprobar && (
+                <Button onClick={() => setValidacionMode("aprobar")} className="gap-2 bg-blue-600 hover:bg-blue-700 text-white">
+                  <ShieldCheck className="h-4 w-4" /> Aprobar y Cerrar
+                </Button>
+              )}
+            </div>
+          )}
+
+          {/* Sin permiso: se explica por qué no hay acciones, en vez de dejar el vacío */}
+          {!isAprobado && !puedeValidar && !puedeAprobar && !puedeRechazar && (
+            <p className="mt-6 pt-6 border-t text-sm text-slate-500">
+              {isFinalizado
+                ? "Este reporte espera la validación del Jefe de Producción."
+                : "Este reporte espera la aprobación final del Jefe de Planta."}
+            </p>
+          )}
         </div>
       )}
 
@@ -1183,6 +1317,15 @@ export default function DetalleControlTiempos() {
         onConfirm={handleStopConfirm}
       />
 
+      {/* MODAL FINALIZAR / VALIDAR / APROBAR / DEVOLVER */}
+      <ValidacionModal
+        open={!!validacionMode}
+        mode={validacionMode ?? "validar"}
+        referencia={referenciaControl}
+        onClose={() => setValidacionMode(null)}
+        onConfirm={handleValidacionConfirm}
+      />
+
       {/* REPORTE IMPRIMIBLE - Solo visible en @media print */}
       {!isEnProgreso && (
         <div className="print-report" style={{ display: 'none' }}>
@@ -1386,17 +1529,23 @@ export default function DetalleControlTiempos() {
           )}
 
           {/* 5. FIRMAS */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px', fontSize: '8px', marginTop: '12px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '24px', fontSize: '8px', marginTop: '12px' }}>
             <div>
               <div style={{ borderTop: '1px solid #374151', paddingTop: '3px', marginTop: '22px' }}>
                 <div style={{ fontWeight: 700 }}>{control.registrado_por_nombre}</div>
-                <div style={{ color: '#555', marginTop: '1px' }}>Registrado y Finalizado - Supervisor de Turno</div>
+                <div style={{ color: '#555', marginTop: '1px' }}>Registrado y Finalizado - Encargado de Área</div>
               </div>
             </div>
             <div>
               <div style={{ borderTop: '1px solid #374151', paddingTop: '3px', marginTop: '22px' }}>
                 <div style={{ fontWeight: 700 }}>{control.revisado_por_nombre || '___________________________'}</div>
-                <div style={{ color: '#555', marginTop: '1px' }}>Revisado y Validado - Jefe de Manufactura</div>
+                <div style={{ color: '#555', marginTop: '1px' }}>Revisado y Validado - Jefe de Producción</div>
+              </div>
+            </div>
+            <div>
+              <div style={{ borderTop: '1px solid #374151', paddingTop: '3px', marginTop: '22px' }}>
+                <div style={{ fontWeight: 700 }}>{control.aprobado_por_nombre || '___________________________'}</div>
+                <div style={{ color: '#555', marginTop: '1px' }}>Aprobado - Jefe de Planta</div>
               </div>
             </div>
           </div>

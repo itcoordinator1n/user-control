@@ -170,7 +170,7 @@ const routePermission: Record<string, string[]> = {
   "/page/vacations-permits/application": ["RRHH:PERMITS_REQUEST", "RRHH:PERMITS_VIEW", "EMPLOYEE:PERMITS"],
 
   // Producción
-  "/page/produccion/control-tiempos": ["PROD:REGISTER", "PROD:VIEW", "PROD:ADMIN", "PRODUCCION:TIEMPOS"],
+  "/page/produccion/control-tiempos": ["PROD:REGISTER", "PROD:VIEW", "PROD:BOARD", "PROD:VALIDATE", "PROD:APPROVE", "PROD:CATALOG", "PROD:ADMIN", "PRODUCCION:TIEMPOS"],
 
   // Marketing
   "/page/marketingDashboard": ["MARKETING:DASHBOARD", "COMPARISON:VIEW"],

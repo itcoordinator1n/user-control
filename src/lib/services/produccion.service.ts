@@ -239,33 +239,128 @@ export async function updateControlTiempos(id: string, observaciones: string, es
   return res.ok;
 }
 
-export async function marcarComoRevisado(id: string, fk_usuario: number, token?: string): Promise<boolean> {
-  const res = await fetch(`${API_URL}/api/produccion/controles/${id}/revisar`, {
+// El backend toma el usuario del JWT (req.user.idEmployee), NO del body, y
+// responde con el ProduccionControl ya actualizado. Devolvemos ese objeto para
+// no reconstruir el estado a mano en la UI.
+async function transicionEstado(
+  id: string,
+  accion: "revisar" | "aprobar",
+  token?: string
+): Promise<ProduccionControl> {
+  const res = await fetch(`${API_URL}/api/produccion/controles/${id}/${accion}`, {
     method: "PUT",
     headers: getHeaders(token),
-    body: JSON.stringify({ fk_usuario }),
   });
-  return res.ok;
+  if (!res.ok) {
+    const txt = await res.text().catch(() => "");
+    let msg = txt;
+    try { msg = JSON.parse(txt)?.error ?? txt; } catch { /* respuesta no JSON */ }
+    console.error("API ERROR", res.status, txt);
+    // 422 = transición de estado inválida; el mensaje del backend es accionable
+    throw new Error(msg || `Error al ${accion} el control (${res.status})`);
+  }
+  return res.json();
 }
 
-export async function marcarComoAprobado(id: string, fk_usuario: number, token?: string): Promise<boolean> {
-  const res = await fetch(`${API_URL}/api/produccion/controles/${id}/aprobar`, {
+export async function marcarComoRevisado(id: string, token?: string): Promise<ProduccionControl> {
+  return transicionEstado(id, "revisar", token);
+}
+
+export async function marcarComoAprobado(id: string, token?: string): Promise<ProduccionControl> {
+  return transicionEstado(id, "aprobar", token);
+}
+
+/**
+ * Devuelve el control al encargado para corrección.
+ *
+ * TODO: quitar el fallback cuando el backend exponga PUT /controles/:id/rechazar
+ * (debe persistir rechazado_por + motivo_rechazo). Mientras tanto usamos
+ * PUT /controles/:id, que acepta EN_PROGRESO en VALID_ESTADOS.
+ */
+export async function rechazarControl(
+  id: string,
+  motivo: string,
+  token?: string
+): Promise<ProduccionControl> {
+  const res = await fetch(`${API_URL}/api/produccion/controles/${id}/rechazar`, {
     method: "PUT",
     headers: getHeaders(token),
-    body: JSON.stringify({ fk_usuario }),
+    body: JSON.stringify({ motivo }),
   });
-  return res.ok;
+  if (res.ok) return res.json();
+
+  if (res.status !== 404) {
+    const txt = await res.text().catch(() => "");
+    let msg = txt;
+    try { msg = JSON.parse(txt)?.error ?? txt; } catch { /* respuesta no JSON */ }
+    throw new Error(msg || `Error al rechazar el control (${res.status})`);
+  }
+
+  // Fallback: el endpoint dedicado aún no existe
+  const fb = await fetch(`${API_URL}/api/produccion/controles/${id}`, {
+    method: "PUT",
+    headers: getHeaders(token),
+    body: JSON.stringify({ estado: "EN_PROGRESO", observaciones: `DEVUELTO: ${motivo}` }),
+  });
+  if (!fb.ok) {
+    const txt = await fb.text().catch(() => "");
+    throw new Error("Error al devolver el control a corrección: " + txt);
+  }
+  return fb.json();
 }
 
-export async function getRevisionesPendientes(token?: string): Promise<ProduccionControl[]> {
-  const res = await fetch(`${API_URL}/api/produccion/controles/revisiones`, { headers: getHeaders(token) });
+export interface ResumenEmailResult {
+  enviados: string[];
+  rechazados?: string[];
+  advertencia?: string;
+}
+
+/**
+ * Envía SOLO el resumen por grupo del control (el mismo bloque del Excel
+ * final) a quienes pueden firmarlo. Los destinatarios los resuelve el backend
+ * por permiso (PROD:VALIDATE / PROD:APPROVE), así que se configuran desde
+ * Admin → Roles sin tocar código.
+ *
+ * No debe tumbar el cierre del registro: quien llama captura el error.
+ */
+export async function enviarResumenControl(
+  id: string,
+  urlDetalle?: string,
+  token?: string
+): Promise<ResumenEmailResult> {
+  const res = await fetch(`${API_URL}/api/produccion/controles/${id}/resumen-email`, {
+    method: "POST",
+    headers: getHeaders(token),
+    body: JSON.stringify({ urlDetalle }),
+  });
+  if (!res.ok) {
+    const txt = await res.text().catch(() => "");
+    throw new Error("Error enviando el resumen por correo: " + txt);
+  }
+  return res.json();
+}
+
+export async function getRevisionesPendientes(
+  token?: string,
+  estado?: ProduccionControl["estado"]
+): Promise<ProduccionControl[]> {
+  const qs = estado ? `?estado=${encodeURIComponent(estado)}` : "";
+  const res = await fetch(`${API_URL}/api/produccion/controles/revisiones${qs}`, { headers: getHeaders(token) });
   if (!res.ok) {
     // Si falla el endpoint (porque aún no lo suben) tratar de filtrar de getAll
     console.warn("Endpoint revisiones falló, intentando filtro local...");
     const all = await getControlesTiempos(token);
-    return all.filter(c => c.estado === "FINALIZADO" || c.estado === "REVISADO");
+    return all.filter(c => estado ? c.estado === estado : (c.estado === "FINALIZADO" || c.estado === "REVISADO"));
   }
-  return res.json();
+  const data: ProduccionControl[] = await res.json();
+  if (!estado) return data;
+  // El backend todavía fija WHERE estado = 'FINALIZADO' e ignora ?estado. Si la
+  // respuesta no corresponde a la cola pedida, resolvemos desde el listado
+  // completo. Cuando el backend honre ?estado, este fallback deja de dispararse.
+  const filtered = data.filter(c => c.estado === estado);
+  if (filtered.length || data.every(c => c.estado === estado)) return filtered;
+  const all = await getControlesTiempos(token);
+  return all.filter(c => c.estado === estado);
 }
 
 // --- Endpoints Actividades e Intervalos ---

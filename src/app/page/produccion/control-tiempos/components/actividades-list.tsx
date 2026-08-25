@@ -5,6 +5,7 @@ import { Plus, Edit2, Trash2, Search, Link2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { SmartPagination } from "@/components/smart-pagination";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -24,6 +25,8 @@ export default function ActividadesList() {
   const [grupos, setGrupos] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAct, setEditingAct] = useState<any | null>(null);
   
@@ -57,9 +60,16 @@ export default function ActividadesList() {
   }, [session?.user?.accessToken]);
 
   const filtered = actividades.filter((a) =>
-    a.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    a.grupo_nombre.toLowerCase().includes(searchTerm.toLowerCase())
+    a.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    a.grupo_nombre?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Paginacion en cliente
+  const totalPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage));
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginated = filtered.slice(startIndex, startIndex + itemsPerPage);
+
+  useEffect(() => { setCurrentPage(1); }, [searchTerm]);
 
   const handleSave = async () => {
     if (!nombre.trim() || !fkGrupo) return;
@@ -146,7 +156,7 @@ export default function ActividadesList() {
                 </TableCell>
               </TableRow>
             ) : (
-              filtered.map((act) => (
+              paginated.map((act) => (
                 <TableRow key={act.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                   <TableCell className="font-semibold text-slate-900 dark:text-white">{act.nombre}</TableCell>
                   <TableCell>
@@ -181,6 +191,20 @@ export default function ActividadesList() {
           </TableBody>
         </Table>
       </div>
+
+      {/* PAGINACIÓN */}
+      {!isLoading && filtered.length > 0 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Mostrando {startIndex + 1} a {Math.min(startIndex + itemsPerPage, filtered.length)} de {filtered.length} actividades
+          </p>
+          <SmartPagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
+        </div>
+      )}
 
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="sm:max-w-[425px]">
