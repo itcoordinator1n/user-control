@@ -244,7 +244,7 @@ export async function updateControlTiempos(id: string, observaciones: string, es
 // no reconstruir el estado a mano en la UI.
 async function transicionEstado(
   id: string,
-  accion: "revisar" | "aprobar",
+  accion: "revisar",
   token?: string
 ): Promise<ProduccionControl> {
   const res = await fetch(`${API_URL}/api/produccion/controles/${id}/${accion}`, {
@@ -264,10 +264,6 @@ async function transicionEstado(
 
 export async function marcarComoRevisado(id: string, token?: string): Promise<ProduccionControl> {
   return transicionEstado(id, "revisar", token);
-}
-
-export async function marcarComoAprobado(id: string, token?: string): Promise<ProduccionControl> {
-  return transicionEstado(id, "aprobar", token);
 }
 
 /**
@@ -318,7 +314,7 @@ export interface ResumenEmailResult {
 /**
  * Envía SOLO el resumen por grupo del control (el mismo bloque del Excel
  * final) a quienes pueden firmarlo. Los destinatarios los resuelve el backend
- * por permiso (PROD:VALIDATE / PROD:APPROVE), así que se configuran desde
+ * por permiso (PROD:VALIDATE), así que se configuran desde
  * Admin → Roles sin tocar código.
  *
  * No debe tumbar el cierre del registro: quien llama captura el error.

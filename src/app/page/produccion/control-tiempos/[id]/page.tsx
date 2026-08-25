@@ -34,7 +34,6 @@ import {
   updateControlTiempos,
   enviarResumenControl,
   marcarComoRevisado,
-  marcarComoAprobado,
   rechazarControl,
   deleteControl,
   ProduccionControl,
@@ -86,7 +85,7 @@ export default function DetalleControlTiempos() {
   const params = useParams();
   const id = params.id as string;
   const { data: session } = useSession();
-  const { canRegister, canValidate, canApprove } = useProduccionPermissions();
+  const { canRegister, canValidate } = useProduccionPermissions();
 
   // Modal de finalizar / validar / aprobar / devolver a corrección
   const [validacionMode, setValidacionMode] = useState<ValidacionMode | null>(null);
@@ -361,8 +360,11 @@ export default function DetalleControlTiempos() {
   };
 
   // --- Transiciones de estado del reporte ---------------------------------
-  // EN_PROGRESO --finalizar--> FINALIZADO --validar--> REVISADO --aprobar--> APROBADO
+  // EN_PROGRESO --finalizar--> FINALIZADO --validar--> REVISADO (concluido)
   // "Devolver a corrección" regresa el control a EN_PROGRESO en cualquier punto.
+  //
+  // La trazabilidad es de DOS firmas: registrado por y validado por. El estado
+  // APROBADO existe en el backend pero no se usa desde la UI.
 
   const abrirFinalizar = () => {
     const hasRunning = control?.actividades.some(a => a.intervalos.some(i => i.hora_fin === null));
@@ -400,9 +402,9 @@ export default function DetalleControlTiempos() {
     // El backend devuelve el control ya actualizado (incluye revisado_por_nombre
     // / aprobado_por_nombre), así que reemplazamos el estado con su respuesta.
     const actualizado =
-      validacionMode === "validar" ? await marcarComoRevisado(control.id, token)
-      : validacionMode === "aprobar" ? await marcarComoAprobado(control.id, token)
-      : await rechazarControl(control.id, comentario, token);
+      validacionMode === "validar"
+        ? await marcarComoRevisado(control.id, token)
+        : await rechazarControl(control.id, comentario, token);
 
     setControl(actualizado);
     setValidacionMode(null);
@@ -428,14 +430,14 @@ export default function DetalleControlTiempos() {
   const isEnProgreso = control.estado === "EN_PROGRESO";
   const isFinalizado = control.estado === "FINALIZADO";
   const isRevisado = control.estado === "REVISADO";
-  const isAprobado = control.estado === "APROBADO";
+  // Registros historicos que pudieran haber quedado en APROBADO se tratan como cerrados
+  const isCerrado = isRevisado || control.estado === "APROBADO";
   const isReadonly = !isEnProgreso;
 
   // Acciones disponibles según estado × permiso del usuario
   const puedeFinalizar = isEnProgreso && canRegister;
   const puedeValidar = isFinalizado && canValidate;
-  const puedeAprobar = isRevisado && canApprove;
-  const puedeRechazar = (isFinalizado && canValidate) || (isRevisado && canApprove);
+  const puedeRechazar = isFinalizado && canValidate;
 
   const referenciaControl = `${control.producto_nombre} — Lote ${control.n_lote} / OP ${control.op}`;
 
@@ -475,8 +477,7 @@ export default function DetalleControlTiempos() {
             Detalle de Registro
             {isEnProgreso && <span className="text-xs px-2.5 py-1 rounded bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 font-semibold tracking-wider animate-pulse">EN PROGRESO</span>}
             {isFinalizado && <span className="text-xs px-2.5 py-1 rounded bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 font-semibold tracking-wider">FINALIZADO (PEND. REVISIÓN)</span>}
-            {isRevisado && <span className="text-xs px-2.5 py-1 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 font-semibold tracking-wider">VALIDADO (PEND. APROBACIÓN)</span>}
-            {isAprobado && <span className="text-xs px-2.5 py-1 rounded bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 font-semibold tracking-wider">APROBADO / CERRADO</span>}
+            {isCerrado && <span className="text-xs px-2.5 py-1 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 font-semibold tracking-wider">VALIDADO / CONCLUIDO</span>}
           </h1>
         </div>
         {(isEnProgreso || isFinalizado) && (
@@ -514,11 +515,6 @@ export default function DetalleControlTiempos() {
         {puedeValidar && (
           <Button onClick={() => setValidacionMode("validar")} className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white">
             <ShieldCheck className="h-4 w-4" /> Validar
-          </Button>
-        )}
-        {puedeAprobar && (
-          <Button onClick={() => setValidacionMode("aprobar")} className="gap-2 bg-blue-600 hover:bg-blue-700 text-white">
-            <ShieldCheck className="h-4 w-4" /> Aprobar y Cerrar
           </Button>
         )}
       </div>
@@ -941,14 +937,14 @@ export default function DetalleControlTiempos() {
         <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 mb-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 border-b pb-2">
             <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Firmas de Validación</h2>
-            {isAprobado && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+            {isCerrado && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
                 <ShieldCheck className="h-3.5 w-3.5" /> Reporte concluido
               </span>
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* 1. Encargado de área */}
             <div className="p-4 rounded-lg border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-800/50">
               <p className="text-xs text-slate-500 uppercase font-semibold mb-2">Registrado Por (Encargado de Área)</p>
@@ -975,27 +971,10 @@ export default function DetalleControlTiempos() {
               )}
             </div>
 
-            {/* 3. Jefe de Planta */}
-            <div className={`p-4 rounded-lg border ${control.aprobado_por_nombre ? 'border-blue-200 bg-blue-50/50 dark:border-blue-800/50 dark:bg-blue-900/20' : 'border-dashed border-slate-300 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/30'}`}>
-              <p className="text-xs text-slate-500 uppercase font-semibold mb-2">Aprobado Por (Jefe de Planta)</p>
-              {control.aprobado_por_nombre ? (
-                <>
-                  <p className="font-medium text-blue-700 dark:text-blue-400 flex items-center gap-2">
-                    <ShieldCheck className="h-5 w-5" />
-                    {control.aprobado_por_nombre}
-                  </p>
-                  <p className="text-xs text-slate-500 mt-1">Reporte dado por concluido</p>
-                </>
-              ) : (
-                <p className="text-sm text-slate-500 mt-2">
-                  {isRevisado ? "Pendiente de aprobación" : "A la espera de la validación previa"}
-                </p>
-              )}
-            </div>
           </div>
 
           {/* Acciones del validador — visibles solo con el permiso correspondiente */}
-          {(puedeValidar || puedeAprobar || puedeRechazar) && (
+          {(puedeValidar || puedeRechazar) && (
             <div className="mt-6 pt-6 border-t flex flex-col sm:flex-row sm:justify-end gap-2">
               {puedeRechazar && (
                 <Button
@@ -1008,23 +987,16 @@ export default function DetalleControlTiempos() {
               )}
               {puedeValidar && (
                 <Button onClick={() => setValidacionMode("validar")} className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white">
-                  <ShieldCheck className="h-4 w-4" /> Validar y Enviar a Aprobación
-                </Button>
-              )}
-              {puedeAprobar && (
-                <Button onClick={() => setValidacionMode("aprobar")} className="gap-2 bg-blue-600 hover:bg-blue-700 text-white">
-                  <ShieldCheck className="h-4 w-4" /> Aprobar y Cerrar
+                  <ShieldCheck className="h-4 w-4" /> Validar y Concluir
                 </Button>
               )}
             </div>
           )}
 
           {/* Sin permiso: se explica por qué no hay acciones, en vez de dejar el vacío */}
-          {!isAprobado && !puedeValidar && !puedeAprobar && !puedeRechazar && (
+          {isFinalizado && !puedeValidar && !puedeRechazar && (
             <p className="mt-6 pt-6 border-t text-sm text-slate-500">
-              {isFinalizado
-                ? "Este reporte espera la validación del Jefe de Producción."
-                : "Este reporte espera la aprobación final del Jefe de Planta."}
+              Este reporte espera la validación del Jefe de Producción.
             </p>
           )}
         </div>
@@ -1529,7 +1501,7 @@ export default function DetalleControlTiempos() {
           )}
 
           {/* 5. FIRMAS */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '24px', fontSize: '8px', marginTop: '12px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px', fontSize: '8px', marginTop: '12px' }}>
             <div>
               <div style={{ borderTop: '1px solid #374151', paddingTop: '3px', marginTop: '22px' }}>
                 <div style={{ fontWeight: 700 }}>{control.registrado_por_nombre}</div>
@@ -1540,12 +1512,6 @@ export default function DetalleControlTiempos() {
               <div style={{ borderTop: '1px solid #374151', paddingTop: '3px', marginTop: '22px' }}>
                 <div style={{ fontWeight: 700 }}>{control.revisado_por_nombre || '___________________________'}</div>
                 <div style={{ color: '#555', marginTop: '1px' }}>Revisado y Validado - Jefe de Producción</div>
-              </div>
-            </div>
-            <div>
-              <div style={{ borderTop: '1px solid #374151', paddingTop: '3px', marginTop: '22px' }}>
-                <div style={{ fontWeight: 700 }}>{control.aprobado_por_nombre || '___________________________'}</div>
-                <div style={{ color: '#555', marginTop: '1px' }}>Aprobado - Jefe de Planta</div>
               </div>
             </div>
           </div>

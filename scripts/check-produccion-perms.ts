@@ -18,13 +18,13 @@ const CASOS: Caso[] = [
     esperado: { historial: true, nuevoRegistro: true, tablero: false, revisiones: false, actividades: false, firmar: false },
   },
   {
-    nombre: "Jefe (valida y aprueba)",
-    slugs: ["PROD:VIEW", "PROD:BOARD", "PROD:VALIDATE", "PROD:APPROVE"], enforce: true,
+    nombre: "Jefe de Produccion (valida)",
+    slugs: ["PROD:VIEW", "PROD:BOARD", "PROD:VALIDATE"], enforce: true,
     esperado: { historial: true, nuevoRegistro: false, tablero: true, revisiones: true, actividades: false, firmar: true },
   },
   {
     nombre: "Administrador (todos los slugs)",
-    slugs: ["PROD:VIEW", "PROD:REGISTER", "PROD:BOARD", "PROD:VALIDATE", "PROD:APPROVE", "PROD:CATALOG", "PROD:ADMIN"], enforce: true,
+    slugs: ["PROD:VIEW", "PROD:REGISTER", "PROD:BOARD", "PROD:VALIDATE", "PROD:CATALOG", "PROD:ADMIN"], enforce: true,
     esperado: { historial: true, nuevoRegistro: true, tablero: true, revisiones: true, actividades: true, firmar: true },
   },
   {
@@ -33,7 +33,7 @@ const CASOS: Caso[] = [
     esperado: { historial: true, nuevoRegistro: true, tablero: false, revisiones: false, actividades: true, firmar: false },
   },
   {
-    nombre: "PROD:ADMIN sin slugs de firma → ya no es comodín",
+    nombre: "PROD:ADMIN sin slug de firma → ya no es comodín",
     slugs: ["PROD:ADMIN"], enforce: true,
     esperado: { historial: true, nuevoRegistro: true, tablero: true, revisiones: false, actividades: true, firmar: false },
   },
@@ -58,9 +58,9 @@ for (const { nombre, slugs, enforce, esperado } of CASOS) {
     historial: p.canView,
     nuevoRegistro: p.canRegister,
     tablero: p.canBoard,
-    revisiones: p.canValidate || p.canApprove,
+    revisiones: p.canValidate,
     actividades: p.canCatalog,
-    firmar: p.canValidate || p.canApprove,
+    firmar: p.canValidate,
   };
   const errores = CLAVES.filter((k) => real[k] !== esperado[k])
     .map((k) => `${k}: esperado ${esperado[k]}, obtenido ${real[k]}`);

@@ -19,26 +19,17 @@ const parseISO = (s: string) => {
   return new Date(s.replace(" ", "T"));
 };
 
-// Las dos colas del flujo de firmas:
-//   FINALIZADO -> la valida el Jefe de Producción
-//   REVISADO   -> la aprueba el Jefe de Planta
-type Cola = "FINALIZADO" | "REVISADO";
-
+// Una sola cola: los reportes FINALIZADOS esperan la firma del Jefe de
+// Produccion. Al validarlos pasan a REVISADO y quedan concluidos.
 export default function ControlTiemposRevisiones() {
   const router = useRouter();
   const { data: session } = useSession();
-  const { canValidate, canApprove } = useProduccionPermissions();
+  const { canValidate } = useProduccionPermissions();
   const [controles, setControles] = useState<ProduccionControl[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  // Arranca en la cola que le corresponde al permiso del usuario
-  const [cola, setCola] = useState<Cola>(canValidate ? "FINALIZADO" : "REVISADO");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
-
-  useEffect(() => {
-    setCola(canValidate ? "FINALIZADO" : "REVISADO");
-  }, [canValidate]);
 
   useEffect(() => {
     if (!session?.user?.accessToken) return;
@@ -49,20 +40,15 @@ export default function ControlTiemposRevisiones() {
     setLoading(true);
     try {
       const data = await getControlesTiempos(session?.user?.accessToken);
-      // Ambas colas en memoria; el filtro por estado se aplica al renderizar
-      setControles(data.filter(c => c.estado === 'FINALIZADO' || c.estado === 'REVISADO'));
+      setControles(data.filter(c => c.estado === 'FINALIZADO'));
     } catch(e) { console.error(e); setControles([]); }
     finally { setLoading(false); }
   };
 
-  const conteo = (estado: Cola) => controles.filter(c => c.estado === estado).length;
-
   const filteredControles = controles.filter((c) =>
-    c.estado === cola && (
-      c.producto_nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.n_lote?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.op?.toLowerCase().includes(searchTerm.toLowerCase())
-    )
+    c.producto_nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.n_lote?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.op?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Paginacion en cliente
@@ -70,40 +56,14 @@ export default function ControlTiemposRevisiones() {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedControles = filteredControles.slice(startIndex, startIndex + itemsPerPage);
 
-  useEffect(() => { setCurrentPage(1); }, [searchTerm, cola]);
+  useEffect(() => { setCurrentPage(1); }, [searchTerm]);
 
-  const esColaValidacion = cola === "FINALIZADO";
-  const puedeActuar = esColaValidacion ? canValidate : canApprove;
-  const etiquetaEstado = esColaValidacion ? "Pendiente Revisión" : "Pendiente Aprobación";
-  const etiquetaAccion = esColaValidacion ? "Validar" : "Aprobar";
-  const emptyMessage = esColaValidacion
-    ? "No hay reportes pendientes de validación."
-    : "No hay reportes pendientes de aprobación.";
+  const emptyMessage = "No hay reportes pendientes de validación.";
 
   return (
     <div className="w-full">
       <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
         <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between bg-slate-50/50 dark:bg-slate-900/50 gap-4">
-          {/* Filtro segmentado: una cola por firma */}
-          <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0">
-            {([
-              { value: "FINALIZADO" as Cola, label: "Por revisar" },
-              { value: "REVISADO" as Cola, label: "Por aprobar" },
-            ]).map((opt) => (
-              <button
-                key={opt.value}
-                onClick={() => setCola(opt.value)}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                  cola === opt.value
-                    ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm"
-                    : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
-                }`}
-              >
-                {opt.label}
-                <span className="ml-1.5 text-xs text-slate-400">{conteo(opt.value)}</span>
-              </button>
-            ))}
-          </div>
           <div className="relative w-full max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <input 
@@ -179,12 +139,8 @@ export default function ControlTiemposRevisiones() {
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-medium ${
-                        esColaValidacion
-                          ? "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
-                          : "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300"
-                      }`}>
-                        {etiquetaEstado}
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+                        Pendiente Validación
                       </span>
                     </td>
                     <td className="px-6 py-4 text-slate-600 dark:text-slate-300">
@@ -205,8 +161,8 @@ export default function ControlTiemposRevisiones() {
                         className="gap-2 border-blue-200 text-blue-700 hover:bg-blue-50 dark:border-blue-900 dark:text-blue-400"
                         onClick={() => router.push(`/page/produccion/control-tiempos/${control.id}`)}
                       >
-                        {puedeActuar ? <ShieldCheck className="h-4 w-4" /> : <CheckCircle className="h-4 w-4" />}
-                        {puedeActuar ? etiquetaAccion : "Auditar"}
+                        {canValidate ? <ShieldCheck className="h-4 w-4" /> : <CheckCircle className="h-4 w-4" />}
+                        {canValidate ? "Validar" : "Auditar"}
                       </Button>
                       <Button 
                         size="icon" 
@@ -243,12 +199,8 @@ export default function ControlTiemposRevisiones() {
                     </p>
                     <h3 className="font-bold text-slate-900 dark:text-white line-clamp-1">{control.producto_nombre}</h3>
                   </div>
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${
-                    esColaValidacion
-                      ? "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
-                      : "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300"
-                  }`}>
-                    {esColaValidacion ? "Por revisar" : "Por aprobar"}
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+                    Pendiente
                   </span>
                 </div>
                 
@@ -282,8 +234,8 @@ export default function ControlTiemposRevisiones() {
                     className="flex-1 gap-2 bg-blue-600 hover:bg-blue-700 text-white text-xs h-9"
                     onClick={() => router.push(`/page/produccion/control-tiempos/${control.id}`)}
                   >
-                    {puedeActuar ? <ShieldCheck className="h-4 w-4" /> : <CheckCircle className="h-4 w-4" />}
-                    {puedeActuar ? `${etiquetaAccion} Registro` : "Auditar Registro"}
+                    {canValidate ? <ShieldCheck className="h-4 w-4" /> : <CheckCircle className="h-4 w-4" />}
+                    {canValidate ? "Validar Registro" : "Auditar Registro"}
                   </Button>
                   <Button 
                     variant="outline" 

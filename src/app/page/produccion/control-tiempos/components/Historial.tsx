@@ -425,10 +425,10 @@ const StatusBadge = ({ estado }: { estado: string }) => {
       Pend. Revisión
     </span>
   );
-  // Validado por el Jefe de Producción; todavía falta la firma del Jefe de Planta
+  // Validado por el Jefe de Producción: el reporte queda concluido
   if (estado === 'REVISADO') return (
     <span className="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
-      Pend. Aprobación
+      Validado
     </span>
   );
   if (estado === 'APROBADO') return (

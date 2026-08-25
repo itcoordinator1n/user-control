@@ -63,7 +63,6 @@ const PERMISSION_TO_PLATFORM: Record<string, string> = {
   'PROD:BOARD':                 'produccion',
   'PROD:VALIDATE':              'produccion',
   'PROD:CATALOG':               'produccion',
-  'PROD:APPROVE':               'produccion',
   'PROD:ADMIN':                 'produccion',
   'PRODUCCION:TIEMPOS':         'produccion',
   'USER:CREATE':                'admin',

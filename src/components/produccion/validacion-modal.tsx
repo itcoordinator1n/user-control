@@ -12,7 +12,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 
-export type ValidacionMode = "finalizar" | "validar" | "aprobar" | "rechazar";
+export type ValidacionMode = "finalizar" | "validar" | "rechazar";
 
 interface ValidacionModalProps {
   open: boolean;
@@ -46,22 +46,12 @@ const COPY: Record<ValidacionMode, {
   },
   validar: {
     title: "Validar Control de Tiempos",
-    description: "Confirma que revisó los tiempos registrados. El reporte pasará a la cola de aprobación del Jefe de Planta.",
+    description: "Confirma que revisó los tiempos registrados. Con esto el reporte queda concluido y no admite más cambios.",
     commentLabel: "Comentario de la revisión (opcional)",
     commentRequired: false,
     placeholder: "Comentarios de la revisión...",
-    confirmLabel: "Validar y Enviar a Aprobación",
+    confirmLabel: "Validar y Concluir",
     confirmClass: "bg-emerald-600 hover:bg-emerald-700 text-white",
-    icon: <ShieldCheck className="h-5 w-5" />,
-  },
-  aprobar: {
-    title: "Aprobar y Cerrar Reporte",
-    description: "Esta es la aprobación final: el reporte queda concluido y no admite más cambios.",
-    commentLabel: "Comentario de la aprobación (opcional)",
-    commentRequired: false,
-    placeholder: "Comentarios de la aprobación...",
-    confirmLabel: "Aprobar y Cerrar",
-    confirmClass: "bg-blue-600 hover:bg-blue-700 text-white",
     icon: <ShieldCheck className="h-5 w-5" />,
   },
   rechazar: {

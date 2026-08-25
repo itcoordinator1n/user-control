@@ -5,7 +5,7 @@
  * (ver scripts/check-produccion-perms.ts).
  *
  * ── Por qué un interruptor y no una heurística ──────────────────────────────
- * Los slugs PROD:BOARD, PROD:VALIDATE, PROD:APPROVE y PROD:CATALOG todavía no
+ * Los slugs PROD:BOARD, PROD:VALIDATE y PROD:CATALOG todavía no
  * están sembrados en la tabla `permiso` del backend, así que nadie los trae en
  * su JWT y aplicar el gate de golpe haría desaparecer el Tablero, Revisiones y
  * el Catálogo para todo el mundo.
@@ -28,7 +28,7 @@
  */
 
 /** Slugs introducidos después del despliegue inicial del módulo. */
-export const SLUGS_NUEVOS = ["PROD:BOARD", "PROD:VALIDATE", "PROD:APPROVE", "PROD:CATALOG"];
+export const SLUGS_NUEVOS = ["PROD:BOARD", "PROD:VALIDATE", "PROD:CATALOG"];
 
 export interface ProduccionPerms {
   /** true = se están exigiendo los slugs nuevos; false = default-allow pre-seed */
@@ -37,7 +37,6 @@ export interface ProduccionPerms {
   canRegister: boolean;
   canBoard: boolean;
   canValidate: boolean;
-  canApprove: boolean;
   canCatalog: boolean;
   canAdmin: boolean;
 }
@@ -58,9 +57,9 @@ export function computeProduccionPerms(
     canView: isAdmin || has("PROD:VIEW") || has("PRODUCCION:TIEMPOS"),
     canRegister: isAdmin || has("PROD:REGISTER") || has("PRODUCCION:TIEMPOS"),
     canBoard: isAdmin || hasNuevo("PROD:BOARD"),
-    // Firmar NO lo concede PROD:ADMIN
+    // La trazabilidad es de una sola firma (registrado por / validado por),
+    // asi que PROD:VALIDATE es el unico permiso de firma. PROD:ADMIN no la concede.
     canValidate: hasNuevo("PROD:VALIDATE"),
-    canApprove: hasNuevo("PROD:APPROVE"),
     canCatalog: isAdmin || hasNuevo("PROD:CATALOG"),
     canAdmin: isAdmin,
   };

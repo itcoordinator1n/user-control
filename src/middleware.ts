@@ -32,7 +32,7 @@ const rules: Rule[] = [
   { pattern: /^\/page\/ticket-mgmt(?:\/.*)?$/, anyOf: ["TICKET:READ", "TICKET:ADMIN", "TICKET:MGMT"] },
 
   // Produccion
-  { pattern: /^\/page\/produccion(?:\/.*)?$/, anyOf: ["PROD:REGISTER", "PROD:VIEW", "PROD:BOARD", "PROD:VALIDATE", "PROD:APPROVE", "PROD:CATALOG", "PROD:ADMIN", "PRODUCCION:TIEMPOS"] },
+  { pattern: /^\/page\/produccion(?:\/.*)?$/, anyOf: ["PROD:REGISTER", "PROD:VIEW", "PROD:BOARD", "PROD:VALIDATE", "PROD:CATALOG", "PROD:ADMIN", "PRODUCCION:TIEMPOS"] },
 ];
 
 export async function middleware(req: NextRequest) {

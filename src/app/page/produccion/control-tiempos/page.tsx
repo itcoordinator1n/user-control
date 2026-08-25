@@ -12,8 +12,8 @@ import { useProduccionPermissions } from "../_hooks/use-produccion-permissions";
 export default function ControlTiemposPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { canBoard, canValidate, canApprove, canCatalog } = useProduccionPermissions();
-  const canReview = canValidate || canApprove;
+  const { canBoard, canValidate, canCatalog } = useProduccionPermissions();
+  const canReview = canValidate;
 
   // Historial es la línea base: siempre visible para quien llega al módulo
   const tabsVisibles = useMemo(
