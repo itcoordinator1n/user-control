@@ -1554,38 +1554,36 @@ export default function DetalleControlTiempos() {
             </div>
           )}
 
-          {/* 5. FIRMAS + FECHA DE VALIDACIÓN + QR — todo junto al final, sin partirse */}
-          <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-end', marginTop: '14px' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px', fontSize: '9px', flex: 1 }}>
-              <div>
-                <div style={{ borderTop: '1px solid #374151', paddingTop: '4px', marginTop: '24px' }}>
-                  <div style={{ fontWeight: 700 }}>{control.registrado_por_nombre}</div>
-                  <div style={{ color: '#555', marginTop: '1px' }}>Registrado y Finalizado - Encargado de Área</div>
-                </div>
+          {/* 5. FIRMAS + FECHA DE VALIDACIÓN */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '48px', fontSize: '9px', marginTop: '14px' }}>
+            <div>
+              <div style={{ borderTop: '1px solid #374151', paddingTop: '4px', marginTop: '24px' }}>
+                <div style={{ fontWeight: 700 }}>{control.registrado_por_nombre}</div>
+                <div style={{ color: '#555', marginTop: '1px' }}>Registrado y Finalizado - Encargado de Área</div>
               </div>
-              <div>
-                <div style={{ borderTop: '1px solid #374151', paddingTop: '4px', marginTop: '24px' }}>
-                  <div style={{ fontWeight: 700 }}>{control.revisado_por_nombre || '___________________________'}</div>
-                  <div style={{ color: '#555', marginTop: '1px' }}>Revisado y Validado - Jefe de Producción</div>
-                  <div style={{ color: '#555', marginTop: '2px' }}>
-                    Fecha de validación: <strong>{fechaValidacion}</strong>
-                  </div>
+            </div>
+            <div>
+              <div style={{ borderTop: '1px solid #374151', paddingTop: '4px', marginTop: '24px' }}>
+                <div style={{ fontWeight: 700 }}>{control.revisado_por_nombre || '___________________________'}</div>
+                <div style={{ color: '#555', marginTop: '1px' }}>Revisado y Validado - Jefe de Producción</div>
+                <div style={{ color: '#555', marginTop: '2px' }}>
+                  Fecha de validación: <strong>{fechaValidacion}</strong>
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* QR al reporte. Se imprime una sola vez, aqui — la URL no va en
-                cada pagina para no ensuciar el formato. */}
-            <div style={{ textAlign: 'center', flexShrink: 0 }}>
-              <QRCode
-                value={urlReporte}
-                size={74}
-                level="M"
-                style={{ height: '74px', width: '74px' }}
-              />
-              <div style={{ fontSize: '7px', color: '#555', marginTop: '3px', maxWidth: '80px' }}>
-                Ver en el sistema
-              </div>
+          {/* 6. QR — centrado bajo las firmas. Se imprime una sola vez; la URL
+                 no se repite en cada pagina para no ensuciar el formato. */}
+          <div style={{ textAlign: 'center', marginTop: '18px' }}>
+            <QRCode
+              value={urlReporte}
+              size={86}
+              level="M"
+              style={{ height: '86px', width: '86px', margin: '0 auto' }}
+            />
+            <div style={{ fontSize: '7.5px', color: '#555', marginTop: '4px' }}>
+              Escanee para ver este reporte en el sistema
             </div>
           </div>
 
