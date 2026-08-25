@@ -68,6 +68,8 @@ export interface ProduccionControl {
   registrado_por_nombre: string;
   revisado_por: number | null;
   revisado_por_nombre: string | null;
+  /** Fecha de la firma. Null en controles validados antes de que existiera la columna. */
+  revisado_en: string | null;
   aprobado_por: number | null;
   aprobado_por_nombre: string | null;
   actividades: ProduccionActividad[];

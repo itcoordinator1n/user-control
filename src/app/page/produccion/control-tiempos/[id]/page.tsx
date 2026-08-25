@@ -80,6 +80,8 @@ const TimerDisplay = ({ horaInicio }: { horaInicio: string }) => {
 
 import { FORMATO_ACTIVIDADES } from "@/lib/exportExcel";
 import { calcularHorasReales } from "@/lib/produccion-horas";
+import { PrintPortal } from "@/components/produccion/print-portal";
+import QRCode from "react-qr-code";
 
 export default function DetalleControlTiempos() {
   const router = useRouter();
@@ -475,6 +477,22 @@ export default function DetalleControlTiempos() {
   // El total son horas-actividad: un operario en varias actividades a la vez
   // suma su tiempo en cada una. Estas son las horas de reloj efectivas.
   const horasRealesMs = calcularHorasReales(control.actividades);
+
+  // Fecha en que se firmo el control. Los validados antes de que existiera la
+  // columna `revisado_en` no la tienen: se muestra un guion en vez de inventarla.
+  const fechaValidacion = control.revisado_en
+    ? new Date(String(control.revisado_en).replace(" ", "T")).toLocaleString("es-HN", {
+        day: "2-digit", month: "2-digit", year: "numeric",
+        hour: "2-digit", minute: "2-digit",
+      })
+    : "—";
+
+  // URL absoluta del reporte para el QR. En SSR no hay window: se resuelve en
+  // cliente, que es cuando de verdad se imprime.
+  const urlReporte =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/page/produccion/control-tiempos/${control.id}`
+      : `/page/produccion/control-tiempos/${control.id}`;
 
   return (
     <div className="container mx-auto py-6 max-w-6xl">
@@ -1326,9 +1344,10 @@ export default function DetalleControlTiempos() {
         onConfirm={handleValidacionConfirm}
       />
 
-      {/* REPORTE IMPRIMIBLE - Solo visible en @media print */}
+      {/* REPORTE IMPRIMIBLE — se monta en <body> via portal; ver print-portal.tsx */}
       {!isEnProgreso && (
-        <div className="print-report" style={{ display: 'none' }}>
+        <PrintPortal>
+        <div className="print-report">
 
           {/* 1. CABECERA */}
           <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '8px' }}>
@@ -1497,6 +1516,8 @@ export default function DetalleControlTiempos() {
           })()}
 
           {/* 4. RESUMEN POR AREA */}
+          {/* Cierre: resumen + firmas + fecha + QR, todo en la misma hoja */}
+          <div className="pr-cierre">
           {resumenPorGrupo.length > 0 && (
             <div style={{ marginBottom: '10px' }}>
               <table className="pr-summary-table" style={{ width: '55%' }}>
@@ -1533,23 +1554,44 @@ export default function DetalleControlTiempos() {
             </div>
           )}
 
-          {/* 5. FIRMAS */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px', fontSize: '8px', marginTop: '12px' }}>
-            <div>
-              <div style={{ borderTop: '1px solid #374151', paddingTop: '3px', marginTop: '22px' }}>
-                <div style={{ fontWeight: 700 }}>{control.registrado_por_nombre}</div>
-                <div style={{ color: '#555', marginTop: '1px' }}>Registrado y Finalizado - Encargado de Área</div>
+          {/* 5. FIRMAS + FECHA DE VALIDACIÓN + QR — todo junto al final, sin partirse */}
+          <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-end', marginTop: '14px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px', fontSize: '9px', flex: 1 }}>
+              <div>
+                <div style={{ borderTop: '1px solid #374151', paddingTop: '4px', marginTop: '24px' }}>
+                  <div style={{ fontWeight: 700 }}>{control.registrado_por_nombre}</div>
+                  <div style={{ color: '#555', marginTop: '1px' }}>Registrado y Finalizado - Encargado de Área</div>
+                </div>
+              </div>
+              <div>
+                <div style={{ borderTop: '1px solid #374151', paddingTop: '4px', marginTop: '24px' }}>
+                  <div style={{ fontWeight: 700 }}>{control.revisado_por_nombre || '___________________________'}</div>
+                  <div style={{ color: '#555', marginTop: '1px' }}>Revisado y Validado - Jefe de Producción</div>
+                  <div style={{ color: '#555', marginTop: '2px' }}>
+                    Fecha de validación: <strong>{fechaValidacion}</strong>
+                  </div>
+                </div>
               </div>
             </div>
-            <div>
-              <div style={{ borderTop: '1px solid #374151', paddingTop: '3px', marginTop: '22px' }}>
-                <div style={{ fontWeight: 700 }}>{control.revisado_por_nombre || '___________________________'}</div>
-                <div style={{ color: '#555', marginTop: '1px' }}>Revisado y Validado - Jefe de Producción</div>
+
+            {/* QR al reporte. Se imprime una sola vez, aqui — la URL no va en
+                cada pagina para no ensuciar el formato. */}
+            <div style={{ textAlign: 'center', flexShrink: 0 }}>
+              <QRCode
+                value={urlReporte}
+                size={74}
+                level="M"
+                style={{ height: '74px', width: '74px' }}
+              />
+              <div style={{ fontSize: '7px', color: '#555', marginTop: '3px', maxWidth: '80px' }}>
+                Ver en el sistema
               </div>
             </div>
           </div>
 
+          </div>
         </div>
+        </PrintPortal>
       )}
     </div>
   );
