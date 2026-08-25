@@ -188,7 +188,15 @@ export default function ControlTiemposRevisiones() {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-slate-600 dark:text-slate-300">
-                      {control.revisado_por_nombre ?? <span className="text-slate-400">—</span>}
+                      {/* Ternario explicito, no `??`: con JSX en la rama derecha el
+                          transform de SWC emite una temporal que se pierde al
+                          minificar y revienta en runtime (_control_revisado_por_nombre
+                          is not defined). */}
+                      {control.revisado_por_nombre ? (
+                        control.revisado_por_nombre
+                      ) : (
+                        <span className="text-slate-400">—</span>
+                      )}
                     </td>
                     <td className="px-6 py-4 text-right flex justify-end gap-2">
                       <Button 
