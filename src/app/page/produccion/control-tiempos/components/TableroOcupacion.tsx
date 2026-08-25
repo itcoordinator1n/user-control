@@ -59,7 +59,12 @@ export default function TableroOcupacion() {
     return () => clearInterval(interval);
   }, [session?.user?.accessToken]);
 
-  const totalOcupados = ocupacion.reduce((acc, area) => acc + area.operarios.length, 0);
+  // Cuenta PERSONAS distintas, no filas de intervalo: un operario puede estar
+  // en varias actividades a la vez y antes se contaba una vez por cada una.
+  const contarPersonas = (filas: { fk_operario: number }[]) =>
+    new Set(filas.map(o => o.fk_operario)).size;
+
+  const totalOcupados = contarPersonas(ocupacion.flatMap(a => a.operarios));
 
   // Derived filter options
   const areasDisponibles = ["Todas", ...Array.from(new Set(ocupacion.map(o => o.area)))];
@@ -166,7 +171,7 @@ export default function TableroOcupacion() {
                   ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
                   : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
                 }`}>
-                  {area.operarios.length} {area.operarios.length === 1 ? 'Activo' : 'Activos'}
+                  {contarPersonas(area.operarios)} {contarPersonas(area.operarios) === 1 ? 'Activo' : 'Activos'}
                 </span>
               </div>
 
@@ -178,10 +183,19 @@ export default function TableroOcupacion() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {area.operarios.map((op, idx) => (
-                      <div key={idx} className="p-3 rounded-lg border border-blue-100 bg-blue-50/40 dark:border-blue-900/40 dark:bg-blue-900/10">
+                    {area.operarios.map((op, idx) => {
+                      const simultaneas = area.operarios.filter(o => o.fk_operario === op.fk_operario).length;
+                      return (
+                      <div key={`${op.fk_operario}-${op.actividad_nombre}-${idx}`} className="p-3 rounded-lg border border-blue-100 bg-blue-50/40 dark:border-blue-900/40 dark:bg-blue-900/10">
                         <div className="flex justify-between items-start mb-2">
-                          <h3 className="font-semibold text-slate-900 dark:text-white">{op.operario_nombre}</h3>
+                          <h3 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                            {op.operario_nombre}
+                            {simultaneas > 1 && (
+                              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                                {simultaneas} a la vez
+                              </span>
+                            )}
+                          </h3>
                           <span className="flex items-center gap-1 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/50 px-2 py-0.5 rounded">
                             <Clock className="h-3 w-3" />
                             <TimerLive startTime={op.hora_inicio} />
@@ -197,7 +211,8 @@ export default function TableroOcupacion() {
                           <span><strong>Prod:</strong> {op.producto_nombre}</span>
                         </div>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>

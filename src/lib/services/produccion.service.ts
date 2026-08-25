@@ -75,6 +75,7 @@ export interface ProduccionControl {
 }
 
 export interface OcupacionOperario {
+  fk_operario: number;
   operario_nombre: string;
   actividad_nombre: string;
   hora_inicio: string;
@@ -95,6 +96,16 @@ const getHeaders = (token?: string) => {
   if (token) headers["Authorization"] = `Bearer ${token}`;
   return headers;
 };
+
+/** Extrae el campo `error` del backend; si no es JSON, devuelve el texto crudo. */
+async function mensajeError(res: Response, porDefecto: string): Promise<string> {
+  const txt = await res.text().catch(() => "");
+  try {
+    const j = JSON.parse(txt);
+    if (j?.error) return j.error;
+  } catch { /* respuesta no JSON */ }
+  return txt || `${porDefecto} (${res.status})`;
+}
 
 // --- Endpoints de Maestros ---
 
@@ -373,7 +384,8 @@ export async function addActividad(data: {
     headers: getHeaders(token),
     body: JSON.stringify(data),
   });
-  if (!res.ok) { const txt = await res.text().catch(()=>""); console.error("API ERROR", res.status, txt); throw new Error("Error adding actividad" + ": " + res.status + " " + txt); }
+  // 409 = ese operario ya tiene un cronometro corriendo en esa misma actividad
+  if (!res.ok) throw new Error(await mensajeError(res, "Error al agregar la actividad"));
   return res.json();
 }
 
@@ -383,7 +395,8 @@ export async function iniciarIntervalo(fk_actividad: string, token?: string): Pr
     headers: getHeaders(token),
     body: JSON.stringify({ fk_actividad }),
   });
-  if (!res.ok) { const txt = await res.text().catch(()=>""); console.error("API ERROR", res.status, txt); throw new Error("Error starting interval" + ": " + res.status + " " + txt); }
+  // 409 = ya hay un cronometro activo para esta actividad
+  if (!res.ok) throw new Error(await mensajeError(res, "Error al iniciar el cronometro"));
   return res.json();
 }
 

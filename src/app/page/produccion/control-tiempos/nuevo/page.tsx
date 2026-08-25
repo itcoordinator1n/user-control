@@ -284,7 +284,7 @@ export default function NuevoControlTiempos() {
       refrescarEmpleados();
     } catch (e) {
       console.error(e);
-      alert("Error al iniciar actividades");
+      alert(e instanceof Error ? e.message : "Error al iniciar actividades");
     } finally {
       setIsAddingAct(false);
     }
@@ -344,17 +344,9 @@ export default function NuevoControlTiempos() {
   };
 
   const handleNuevoIntervalo = async (actividad: ProduccionActividad) => {
-    // Validar operario globalmente
-    const isRunningElsewhere = control?.actividades.some(a => 
-      a.fk_operario === actividad.fk_operario && 
-      a.intervalos.some(i => i.hora_fin === null)
-    );
-
-    if (isRunningElsewhere) {
-      alert("Este operario ya tiene un cronómetro activo. Deténgalo primero.");
-      return;
-    }
-
+    // Ya no se valida "ocupado en otra actividad": un operario puede tener
+    // varios cronometros a la vez. El unico caso invalido (dos cronometros en
+    // ESTA misma actividad) lo rechaza el backend con 409.
     try {
       const nuevoIntervalo = await iniciarIntervalo(actividad.id, session?.user?.accessToken);
       
@@ -373,7 +365,7 @@ export default function NuevoControlTiempos() {
       });
     } catch (e) {
       console.error(e);
-      alert("Error al iniciar nuevo intervalo");
+      alert(e instanceof Error ? e.message : "Error al iniciar nuevo intervalo");
     }
   };
 
@@ -481,11 +473,13 @@ export default function NuevoControlTiempos() {
     } catch (e) { console.error(e); alert("Error al eliminar el registro"); }
   };
 
-  const operariosOcupadosIds = control?.actividades
-    .filter(a => a.intervalos.some(i => i.hora_fin === null))
-    .map(a => a.fk_operario) || [];
-
-  const empleadosDisponibles = empleados.filter(e => !operariosOcupadosIds.includes(e.int_id_empleado));
+  // Un operario puede estar en varias actividades a la vez. En vez de ocultar a
+  // los ocupados, se muestran anotando en que estan trabajando: lo unico que se
+  // impide es repetirlo en la MISMA actividad (ver opcionesOperario).
+  const actividadesEnCurso = (fkOperario: number) =>
+    (control?.actividades ?? [])
+      .filter(a => a.fk_operario === fkOperario && a.intervalos.some(i => i.hora_fin === null))
+      .map(a => a.actividad_nombre);
 
   return (
     <div className="container mx-auto py-6 max-w-6xl">
@@ -1175,8 +1169,18 @@ export default function NuevoControlTiempos() {
 
             {/* PASO 3: Operario */}
             {modalStep === 3 && (() => {
-              const operariosEnCola = new Set(pendingQueue.map(q => q.fk_operario));
-              const disponibles = empleadosDisponibles.filter(e => !operariosEnCola.has(e.int_id_empleado));
+              // Solo se descarta el duplicado exacto: mismo operario + misma actividad,
+              // ya sea en la cola o con el cronometro ya corriendo.
+              const yaEnEstaActividad = new Set([
+                ...pendingQueue
+                  .filter(q => q.actividad_nombre === nuevaAct.actividad_nombre)
+                  .map(q => q.fk_operario),
+                ...(control?.actividades ?? [])
+                  .filter(a => a.actividad_nombre === nuevaAct.actividad_nombre
+                    && a.intervalos.some(i => i.hora_fin === null))
+                  .map(a => a.fk_operario),
+              ]);
+              const disponibles = empleados.filter(e => !yaEnEstaActividad.has(e.int_id_empleado));
               return (
                 <div className="space-y-3">
                   <div className="bg-slate-50 dark:bg-slate-800/50 border rounded-lg p-3 text-sm space-y-1">
@@ -1191,12 +1195,20 @@ export default function NuevoControlTiempos() {
                   </div>
                   <Label>Asignar a operario</Label>
                   <Combobox
-                    options={disponibles.map(e => ({ value: e.int_id_empleado.toString(), label: e.nombre_completo }))}
+                    options={disponibles.map(e => {
+                      const enCurso = actividadesEnCurso(e.int_id_empleado);
+                      return {
+                        value: e.int_id_empleado.toString(),
+                        label: enCurso.length
+                          ? `${e.nombre_completo} · en ${enCurso.join(", ")}`
+                          : e.nombre_completo,
+                      };
+                    })}
                     value={nuevaAct.fk_operario ? nuevaAct.fk_operario.toString() : ""}
                     onValueChange={(val) => setNuevaAct(prev => ({ ...prev, fk_operario: parseInt(val) }))}
                     placeholder="Seleccione un operario"
                     searchPlaceholder="Buscar operario..."
-                    emptyMessage={disponibles.length === 0 ? "Todos los operarios están ocupados o asignados" : "No se encontraron resultados"}
+                    emptyMessage={disponibles.length === 0 ? "Todos los operarios ya están en esta actividad" : "No se encontraron resultados"}
                   />
                 </div>
               );

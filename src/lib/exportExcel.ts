@@ -3,6 +3,7 @@ import { saveAs } from "file-saver";
 import { ProduccionControl } from "./services/produccion.service";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { calcularHorasReales, formatHMS } from "./produccion-horas";
 
 // Categories matching the image
 export const FORMATO_ACTIVIDADES = [
@@ -430,6 +431,26 @@ export async function exportControlToExcel(control: ProduccionControl) {
     summaryTotalRow.getCell(summaryColPct).font = { bold: true };
     summaryTotalRow.getCell(summaryColPct).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFdbeafe' } };
     summaryTotalRow.getCell(summaryColPct).border = { top: { style: "medium" }, left: { style: "thin" }, bottom: { style: "thin" }, right: { style: "thin" } };
+
+    currentRow++;
+
+    // Horas reales: el TOTAL GENERAL son horas-actividad, y un operario puede
+    // estar en varias a la vez, asi que ese tiempo se cuenta en cada una. Esta
+    // fila da el tiempo de reloj efectivo, fusionando los solapes por operario.
+    const realesRow = sheet.getRow(currentRow);
+    sheet.mergeCells(currentRow, summaryColArea, currentRow, summaryColArea + 2);
+    realesRow.getCell(summaryColArea).value = "Horas reales (descontando solapes)";
+    realesRow.getCell(summaryColArea).font = { italic: true, color: { argb: "FF475569" } };
+    realesRow.getCell(summaryColArea).border = { top: { style: "thin" }, left: { style: "thin" }, bottom: { style: "thin" }, right: { style: "thin" } };
+
+    sheet.mergeCells(currentRow, summaryColHrs, currentRow, summaryColHrs + 2);
+    realesRow.getCell(summaryColHrs).value = formatHMS(calcularHorasReales(control.actividades));
+    realesRow.getCell(summaryColHrs).font = { italic: true, color: { argb: "FF475569" } };
+    realesRow.getCell(summaryColHrs).alignment = { horizontal: "center" };
+    realesRow.getCell(summaryColHrs).border = { top: { style: "thin" }, left: { style: "thin" }, bottom: { style: "thin" }, right: { style: "thin" } };
+
+    sheet.mergeCells(currentRow, summaryColPct, currentRow, summaryColPct + 2);
+    realesRow.getCell(summaryColPct).border = { top: { style: "thin" }, left: { style: "thin" }, bottom: { style: "thin" }, right: { style: "thin" } };
 
     currentRow += 2;
   }
