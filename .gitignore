@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# El proyecto usa npm (package-lock.json). Un pnpm-lock.yaml suelto hace que
+# Vercel instale con pnpm --frozen-lockfile y el build falle si se desincroniza.
+pnpm-lock.yaml
