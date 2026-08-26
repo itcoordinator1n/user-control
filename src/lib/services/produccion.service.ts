@@ -6,8 +6,15 @@ export interface ProduccionEmpleado {
 export interface ProductoBasico {
   int_id_producto: number;
   txt_nombre: string;
-  area_default?: string; // Ej: "Líquidos", "Sólidos", "Semisólidos"
+  /** Area del producto (dim_producto_360.linea_produccion). Null si no tiene. */
+  area_default?: string | null;
+  /** Codigo de material de SAP. Solo lectura: es la clave con SAP. */
+  matnr?: string | null;
+  nombre_bot?: string | null;
 }
+
+/** Valor especial de `area` para pedir los productos que no tienen ninguna. */
+export const AREA_SIN_ASIGNAR = "__sin_area__";
 
 export interface ProduccionArea {
   id: number;
@@ -120,8 +127,14 @@ export async function getEmpleadosProduccion(token?: string): Promise<Produccion
   return res.json();
 }
 
-export async function getProductos(token?: string): Promise<ProductoBasico[]> {
-  const res = await fetch(`${API_URL}/api/productos`, { headers: getHeaders(token) });
+/**
+ * Catalogo de productos. Con `area` devuelve solo los de esa linea; sin ella,
+ * todos los activos (que es lo que siguen esperando el detalle del control y
+ * el modal de asignacion de productos a actividades).
+ */
+export async function getProductos(token?: string, area?: string): Promise<ProductoBasico[]> {
+  const qs = area ? `?area=${encodeURIComponent(area)}` : "";
+  const res = await fetch(`${API_URL}/api/productos${qs}`, { headers: getHeaders(token) });
   if (!res.ok) { const txt = await res.text().catch(()=>""); console.error("API ERROR", res.status, txt); throw new Error("Error fetching productos" + ": " + res.status + " " + txt); }
   return res.json();
 }
@@ -200,6 +213,27 @@ export async function updateActividadCatalogo(id: number, data: { nombre?: strin
 export async function deleteActividadCatalogo(id: number, token?: string) {
   const res = await fetch(`${API_URL}/api/produccion/actividades-catalogo/${id}`, { method: "DELETE", headers: getHeaders(token) });
   if (!res.ok) { const txt = await res.text().catch(()=>""); throw new Error("Error deleting actividad: " + txt); }
+  return res.json();
+}
+
+/**
+ * Edita el nombre visible y/o el area de un producto.
+ *
+ * El backend valida el area contra produccion_areas y rechaza texto libre:
+ * linea_produccion alimenta los reportes de planeacion en Python.
+ * `area: null` deja el producto sin area asignada.
+ */
+export async function updateProducto(
+  id: number,
+  data: { nombre?: string; area?: string | null },
+  token?: string
+): Promise<ProductoBasico> {
+  const res = await fetch(`${API_URL}/api/productos/${id}`, {
+    method: "PUT",
+    headers: getHeaders(token),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error(await mensajeError(res, "Error al actualizar el producto"));
   return res.json();
 }
 

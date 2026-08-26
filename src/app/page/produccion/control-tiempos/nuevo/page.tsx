@@ -40,7 +40,6 @@ import {
   deleteActividad,
   deleteIntervalo,
   getAreas,
-  getAreasByProducto,
   getGruposPorArea,
   getActividadesPorGrupo,
   deleteControl,
@@ -89,8 +88,8 @@ export default function NuevoControlTiempos() {
   // State: Maestros
   const [empleados, setEmpleados] = useState<ProduccionEmpleado[]>([]);
   const [productos, setProductos] = useState<ProductoBasico[]>([]);
+  const [cargandoProductos, setCargandoProductos] = useState(false);
   const [areasCatalog, setAreasCatalog] = useState<ProduccionArea[]>([]);
-  const [areasProducto, setAreasProducto] = useState<ProduccionArea[]>([]);
   
   // State: Control (Cabecera)
   const [control, setControl] = useState<ProduccionControl | null>(null);
@@ -158,13 +157,12 @@ export default function NuevoControlTiempos() {
   useEffect(() => {
     const load = async () => {
       try {
-        const [emp, prod, areas] = await Promise.all([
+        // Los productos ya NO se precargan: dependen del area elegida
+        const [emp, areas] = await Promise.all([
           getEmpleadosProduccion(session?.user?.accessToken),
-          getProductos(session?.user?.accessToken),
           getAreas(session?.user?.accessToken)
         ]);
         setEmpleados(emp);
-        setProductos(prod);
         setAreasCatalog(areas);
       } catch (error) {
         console.error("Error loading masters:", error);
@@ -174,6 +172,20 @@ export default function NuevoControlTiempos() {
       load();
     }
   }, [session?.user?.accessToken]);
+
+  // Los productos del selector dependen del area elegida en la cabecera
+  useEffect(() => {
+    const token = session?.user?.accessToken;
+    if (!token || !formCabecera.area) { setProductos([]); return; }
+    let vigente = true;
+    setCargandoProductos(true);
+    getProductos(token, formCabecera.area)
+      .then((prods) => { if (vigente) setProductos(prods); })
+      .catch((e) => { console.error("Error cargando productos del area:", e); if (vigente) setProductos([]); })
+      .finally(() => { if (vigente) setCargandoProductos(false); });
+    // `vigente` evita que una respuesta lenta de un area anterior pise a la actual
+    return () => { vigente = false; };
+  }, [formCabecera.area, session?.user?.accessToken]);
 
   // Abre el modal y carga los grupos segun el area seleccionada
   const handleOpenModal = async () => {
@@ -185,9 +197,7 @@ export default function NuevoControlTiempos() {
     setIsModalOpen(true);
     refrescarEmpleados();
 
-    const areaObj =
-      areasCatalog.find(a => a.nombre === formCabecera.area) ??
-      areasProducto.find(a => a.nombre === formCabecera.area);
+    const areaObj = areasCatalog.find(a => a.nombre === formCabecera.area);
 
     if (areaObj) {
       setModalLoadingGrupos(true);
@@ -520,42 +530,28 @@ export default function NuevoControlTiempos() {
             />
           </div>
           
+          {/* AREA primero: filtra el selector de productos. Antes era al reves
+              (producto -> area via getAreasByProducto), pero producto_area esta
+              vacia y ese camino acababa listando las 5 areas siempre. */}
           <div className="space-y-2">
-            <Label>Producto</Label>
+            <Label>Área</Label>
             {control ? (
-              <input type="text" className="w-full px-3 py-2 border rounded-md bg-slate-100" disabled value={control.producto_nombre} />
+              <input type="text" className="w-full px-3 py-2 border rounded-md bg-slate-100" disabled value={control.area} />
             ) : (
-              <Select onValueChange={async (val) => {
-                const productId = parseInt(val);
-                const prod = productos.find(p => p.int_id_producto === productId);
-                
-                setFormCabecera({
-                  ...formCabecera, 
-                  fk_producto: productId,
-                  area: "" // Reset para forzar selección válida
-                });
-
-                // Cargar áreas específicas del producto
-                try {
-                  const pAreas = await getAreasByProducto(productId, session?.user?.accessToken);
-                  setAreasProducto(pAreas);
-                  
-                  // Si solo hay una área, seleccionarla automáticamente
-                  if (pAreas.length === 1) {
-                    setFormCabecera(prev => ({ ...prev, area: pAreas[0].nombre }));
-                  }
-                } catch (e) {
-                  console.error("Error al cargar áreas del producto:", e);
-                  setAreasProducto([]);
-                }
-              }}>
+              <Select
+                value={formCabecera.area}
+                onValueChange={(val) => {
+                  // Cambiar de area invalida el producto elegido
+                  setFormCabecera(prev => ({ ...prev, area: val, fk_producto: 0 }));
+                }}
+              >
                 <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar producto..." />
+                  <SelectValue placeholder="Seleccionar área..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {productos.map(p => (
-                    <SelectItem key={p.int_id_producto} value={p.int_id_producto.toString()}>
-                      {p.txt_nombre}
+                  {areasCatalog.map(area => (
+                    <SelectItem key={area.id} value={area.nombre}>
+                      {area.nombre}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -564,18 +560,29 @@ export default function NuevoControlTiempos() {
           </div>
 
           <div className="space-y-2">
-            <Label>Área</Label>
+            <Label>Producto</Label>
             {control ? (
-              <input type="text" className="w-full px-3 py-2 border rounded-md bg-slate-100" disabled value={control.area} />
+              <input type="text" className="w-full px-3 py-2 border rounded-md bg-slate-100" disabled value={control.producto_nombre} />
             ) : (
-              <Select value={formCabecera.area} onValueChange={(val) => setFormCabecera({...formCabecera, area: val})}>
+              <Select
+                value={formCabecera.fk_producto ? formCabecera.fk_producto.toString() : ""}
+                disabled={!formCabecera.area}
+                onValueChange={(val) =>
+                  setFormCabecera(prev => ({ ...prev, fk_producto: parseInt(val) }))
+                }
+              >
                 <SelectTrigger>
-                  <SelectValue placeholder={areasProducto.length > 0 ? "Seleccionar área..." : "Todas las áreas..."} />
+                  <SelectValue placeholder={
+                    !formCabecera.area ? "Elija primero un área"
+                    : cargandoProductos ? "Cargando..."
+                    : productos.length === 0 ? "Sin productos en esta área"
+                    : "Seleccionar producto..."
+                  } />
                 </SelectTrigger>
                 <SelectContent>
-                  {(areasProducto.length > 0 ? areasProducto : areasCatalog).map(area => (
-                    <SelectItem key={area.id} value={area.nombre}>
-                      {area.nombre}
+                  {productos.map(p => (
+                    <SelectItem key={p.int_id_producto} value={p.int_id_producto.toString()}>
+                      {p.txt_nombre}
                     </SelectItem>
                   ))}
                 </SelectContent>

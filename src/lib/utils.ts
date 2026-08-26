@@ -13,5 +13,8 @@ export function normalizeArea(area: string): string {
   return area
     .toLowerCase()
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
+    .replace(/[\u0300-\u036f]/g, "")
+    // Tambien se colapsan espacios y signos: el catalogo dice "Semisolidos"
+    // y hay controles historicos guardados como "Semi Solidos".
+    .replace(/[^a-z0-9]/g, "");
 }
