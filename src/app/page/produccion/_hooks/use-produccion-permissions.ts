@@ -25,7 +25,13 @@ export function useProduccionPermissions(): ProduccionPerms {
         ...(user?.permissions ?? []),
         ...Object.values(user?.platformPermissions ?? {}).flat(),
       ],
-      process.env.NEXT_PUBLIC_PROD_RBAC_ENFORCE === "true"
+      // Se EXIGEN los permisos salvo que se desactive explicitamente. Al
+      // principio era al reves (default-allow) porque los slugs aun no estaban
+      // sembrados y activarlo habria dejado sin Tablero ni Catalogo a todos.
+      // Ya estan sembrados y asignados a los 8 usuarios del modulo, asi que
+      // depender de una variable en Vercel solo servia para que, si faltaba,
+      // cualquiera pudiera validar tiempos.
+      process.env.NEXT_PUBLIC_PROD_RBAC_ENFORCE !== "false"
     );
   }, [session]);
 }

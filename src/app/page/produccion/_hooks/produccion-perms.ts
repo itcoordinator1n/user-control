@@ -16,10 +16,14 @@
  * un encargado sin los slugs nuevos seguiría viendo todas las pestañas incluso
  * después del seed.
  *
- * Por eso el modo es explícito, igual que `EQUIPOS_RBAC_ENFORCE` en el backend
- * (`infarma_server/src/app/middlewares/requireEquiposPerm.js`):
- *   NEXT_PUBLIC_PROD_RBAC_ENFORCE = "true"  → se exigen los slugs
- *   cualquier otro valor / ausente          → default-allow (pre-seed)
+ * Los slugs YA estan sembrados y asignados, asi que el gate se exige por
+ * defecto:
+ *   NEXT_PUBLIC_PROD_RBAC_ENFORCE = "false" → default-allow (valvula de escape)
+ *   cualquier otro valor / ausente          → se exigen los slugs
+ *
+ * Empezo al reves, como `EQUIPOS_RBAC_ENFORCE` en el backend
+ * (`infarma_server/src/app/middlewares/requireEquiposPerm.js`), mientras los
+ * permisos no existian en la BD.
  *
  * PROD:ADMIN concede las capacidades operativas (ver, registrar, tablero,
  * catálogo) pero NO firmar: validar y aprobar exigen su slug explícito, para
