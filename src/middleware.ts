@@ -33,6 +33,11 @@ const rules: Rule[] = [
 
   // Produccion
   { pattern: /^\/page\/produccion(?:\/.*)?$/, anyOf: ["PROD:REGISTER", "PROD:VIEW", "PROD:BOARD", "PROD:VALIDATE", "PROD:CATALOG", "PROD:ADMIN", "PRODUCCION:TIEMPOS"] },
+
+  // Conciliacion / Control de equipos
+  // Estaba en protectedRoutes pero SIN regla, asi que bastaba con estar
+  // autenticado: los 140 usuarios con rol Empleado podian entrar al modulo.
+  { pattern: /^\/page\/conciliacion(?:\/.*)?$/, anyOf: ["CONCILIACION:READ", "EQUIPO:READ", "EQUIPO:ADMIN"] },
 ];
 
 export async function middleware(req: NextRequest) {

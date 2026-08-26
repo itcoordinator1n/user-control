@@ -170,6 +170,7 @@ const routePermission: Record<string, string[]> = {
   "/page/vacations-permits/application": ["RRHH:PERMITS_REQUEST", "RRHH:PERMITS_VIEW", "EMPLOYEE:PERMITS"],
 
   // Producción
+  "/page/conciliacion":    ["CONCILIACION:READ", "EQUIPO:READ", "EQUIPO:ADMIN"],
   "/page/produccion/control-tiempos": ["PROD:REGISTER", "PROD:VIEW", "PROD:BOARD", "PROD:VALIDATE", "PROD:CATALOG", "PROD:ADMIN", "PRODUCCION:TIEMPOS"],
 
   // Marketing
@@ -217,7 +218,15 @@ export function AppSidebar() {
       return false;
     }
 
-    const requiredPerms = routePermission[url];
+    // Coincidencia por PREFIJO mas especifico, no por URL exacta: los subitems
+    // como /page/conciliacion/campana no tenian entrada propia en
+    // routePermission y caian en el `return true` de abajo, dejando el modulo
+    // visible para cualquiera. Se ordena por longitud para que una clave mas
+    // especifica (/page/vacations-permits/application) gane sobre la general.
+    const claveRuta = Object.keys(routePermission)
+      .filter((k) => url === k || url.startsWith(k + "/"))
+      .sort((a, b) => b.length - a.length)[0];
+    const requiredPerms = claveRuta ? routePermission[claveRuta] : undefined;
     if (!requiredPerms || requiredPerms.length === 0) return true;
 
     // Verificar si tiene al menos uno de los permisos requeridos (en la plataforma o global)
