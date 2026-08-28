@@ -29,10 +29,19 @@ export default function PasswordChangeModal({ isOpen, setOpen }: PasswordChangeM
   const [error, setError] = useState("")
   const [validationErrors, setValidationErrors] = useState<string[]>([])
 
+  // Los espacios del inicio se descartan mientras se escribe: nunca son intencionales y
+  // asi el campo no puede empezar con uno. Los del final NO se recortan en cada tecla,
+  // porque eso impediria escribir un espacio interno ("abc " volveria a "abc" y la
+  // siguiente letra quedaria pegada); se recortan al salir del campo y al enviar.
+  const sinEspaciosIniciales = (v: string) => v.replace(/^\s+/, "")
+
   const validatePassword = (password: string): string[] => {
     const errors: string[] = []
 
-    if (password.length < 8) {
+    if (password !== password.trim()) {
+      errors.push("No puede empezar ni terminar con espacios")
+    }
+    if (password.trim().length < 8) {
       errors.push("La contraseña debe tener al menos 8 caracteres")
     }
     if (!/(?=.*[a-z])/.test(password)) {
@@ -66,15 +75,21 @@ export default function PasswordChangeModal({ isOpen, setOpen }: PasswordChangeM
     setIsLoading(true)
     setError("")
 
-    // Validaciones
-    const passwordErrors = validatePassword(formData.newPassword)
+    // Se recorta antes de validar y de enviar. El backend recorta tambien (auth.js), pero
+    // hacerlo aqui evita que la comparacion con la confirmacion falle por un espacio que
+    // no se ve en un campo de tipo password.
+    const nueva = formData.newPassword.trim()
+    const confirma = formData.confirmPassword.trim()
+    setFormData({ newPassword: nueva, confirmPassword: confirma })
+
+    const passwordErrors = validatePassword(nueva)
     if (passwordErrors.length > 0) {
       setValidationErrors(passwordErrors)
       setIsLoading(false)
       return
     }
 
-    if (formData.newPassword !== formData.confirmPassword) {
+    if (nueva !== confirma) {
       setError("Las contraseñas no coinciden")
       setIsLoading(false)
       return
@@ -88,7 +103,7 @@ export default function PasswordChangeModal({ isOpen, setOpen }: PasswordChangeM
           Authorization: `Bearer ${session?.user?.accessToken}`,
           // NO Content-Type: lo gestiona automáticamente FormData
         },
-        body:JSON.stringify({ newPassword:formData.newPassword })
+        body:JSON.stringify({ newPassword: nueva })
       })
 
       if (!res.ok) {
@@ -141,7 +156,8 @@ export default function PasswordChangeModal({ isOpen, setOpen }: PasswordChangeM
                 id="newPassword"
                 type={showPassword ? "text" : "password"}
                 value={formData.newPassword}
-                onChange={(e) => handleInputChange("newPassword", e.target.value)}
+                onChange={(e) => handleInputChange("newPassword", sinEspaciosIniciales(e.target.value))}
+                onBlur={(e) => handleInputChange("newPassword", e.target.value.trim())}
                 placeholder="Ingresa tu nueva contraseña"
                 required
                 disabled={isLoading}
@@ -175,7 +191,8 @@ export default function PasswordChangeModal({ isOpen, setOpen }: PasswordChangeM
                 id="confirmPassword"
                 type={showConfirmPassword ? "text" : "password"}
                 value={formData.confirmPassword}
-                onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
+                onChange={(e) => handleInputChange("confirmPassword", sinEspaciosIniciales(e.target.value))}
+                onBlur={(e) => handleInputChange("confirmPassword", e.target.value.trim())}
                 placeholder="Confirma tu nueva contraseña"
                 required
                 disabled={isLoading}
@@ -213,6 +230,7 @@ export default function PasswordChangeModal({ isOpen, setOpen }: PasswordChangeM
             <li>• Al menos una letra mayúscula y minúscula</li>
             <li>• Al menos un número</li>
             <li>• Al menos un carácter especial (@$!%*?&)</li>
+            <li>• Sin espacios al inicio ni al final</li>
           </ul>
         </div>
       </DialogContent>
