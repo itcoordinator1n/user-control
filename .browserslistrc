@@ -1,7 +1,20 @@
+# Estos objetivos deben incluir soporte NATIVO de ?? y ?. (Chrome 80 / Safari 13.1,
+# ambos de 2020). Con objetivos mas viejos, SWC baja esos operadores a una forma con
+# variable temporal (null != (_ref = x) ? _ref : y) y el minificador del bundle pierde
+# la declaracion del temporal: queda una variable libre que en modo estricto revienta
+# con "ReferenceError: _ref is not defined" al renderizar.
+#
+# Los objetivos anteriores (Chrome 60, Safari 10, iOS 10, Android 4.4) no eran
+# alcanzables de todas formas: el bundle emite funciones flecha en el envoltorio de
+# webpack, que Android 4.4 no parsea. Bajarlos solo activaba el bug.
 > 0.2%
 not dead
 not op_mini all
-Chrome >= 60
-Safari >= 10
-iOS >= 10
-Android >= 4.4
+# UC Browser entra por el > 0.2% y no soporta ??; excluirlo evita que la lista
+# prometa un navegador que el bundle no puede correr.
+not and_uc > 0
+Chrome >= 80
+Edge >= 80
+Firefox >= 72
+Safari >= 13.1
+iOS >= 13.4
