@@ -1171,9 +1171,14 @@ export default function DetalleControlTiempos() {
                       const enCurso = actividadesEnCurso(e.int_id_empleado);
                       return {
                         value: e.int_id_empleado.toString(),
-                        label: enCurso.length
-                          ? `${e.nombre_completo} · en ${enCurso.join(", ")}`
-                          : e.nombre_completo,
+                        label: [
+                          e.nombre_completo,
+                          // Solo se marca a quien NO es de Planta: mantenimiento
+                          // participa en las actividades pero no es plantilla de
+                          // produccion, y sin la etiqueta se pierde entre los 84.
+                          e.area && e.area !== "Planta" ? e.area : null,
+                          enCurso.length ? `en ${enCurso.join(", ")}` : null,
+                        ].filter(Boolean).join(" · "),
                       };
                     })}
                     value={nuevaAct.fk_operario ? nuevaAct.fk_operario.toString() : ""}

@@ -1,6 +1,10 @@
 export interface ProduccionEmpleado {
   int_id_empleado: number;
   nombre_completo: string;
+  // Area organizacional (Planta, Mantenimiento). Opcional a proposito: si el
+  // backend desplegado es anterior al cambio, el campo no viene y el selector
+  // simplemente no muestra la etiqueta.
+  area?: string;
 }
 
 export interface ProductoBasico {
