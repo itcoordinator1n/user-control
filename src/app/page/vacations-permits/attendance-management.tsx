@@ -222,6 +222,14 @@ export default function AttendanceManagement() {
                           <span className="ml-1 text-xs text-muted-foreground">(trabajé fuera de horario)</span>
                         </span>
                       </label>
+
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">
+                          Evidencia documental
+                          <span className="ml-1 text-xs text-muted-foreground">(opcional — cita médica, convocatoria, constancia)</span>
+                        </Label>
+                        <FileUpload onFilesChange={setFiles} maxFiles={1} />
+                      </div>
                     </>
                   )}
 

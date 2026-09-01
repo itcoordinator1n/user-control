@@ -559,11 +559,15 @@ export function RequestDetailsModal({
                       </div>
                     </div>
 
-                    {/* Adjuntos para incapacidad / duelo */}
-                    {type === "permits" && (request.tipo === "incapacidad" || request.tipo === "duelo") && request.attachments?.length > 0 && (
+                    {/* Adjunto de cualquier permiso: obligatorio en incapacidad, opcional en permiso y duelo */}
+                    {type === "permits" && request.attachments?.length > 0 && (
                       <div>
                         <p className="text-xs text-muted-foreground mb-2">
-                          {request.tipo === "incapacidad" ? "Comprobante médico" : "Documento de respaldo"}
+                          {request.tipo === "incapacidad"
+                            ? "Comprobante médico"
+                            : request.tipo === "duelo"
+                            ? "Documento de respaldo"
+                            : "Evidencia documental"}
                         </p>
                         <div className="flex flex-wrap gap-3">
                           {request.attachments.map((att: { name: string; type: string; url: string }, i: number) => (

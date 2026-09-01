@@ -136,7 +136,10 @@ export function PermitPreview({
       const formData = new FormData();
       formData.append("tipo", data.tipo);
       formData.append("bool_compensatorio", data.esCompensatorio ? "true" : "false");
-      if ((data.tipo === "incapacidad" || data.tipo === "duelo") && data.files?.length) {
+      // El adjunto ya no depende del tipo: obligatorio en incapacidad, opcional en
+      // permiso y duelo. El backend valida la obligatoriedad, aqui solo se envia lo
+      // que el usuario haya seleccionado.
+      if (data.files?.length) {
         formData.append("documento", data.files[0]);
       }
       formData.append("startDateTime", startDateTime);
@@ -308,7 +311,7 @@ export function PermitPreview({
                       ? "Comprobante médico"
                       : data.tipo === "duelo"
                       ? "Documento de respaldo"
-                      : "Documentos Adjuntos"}
+                      : "Evidencia documental"}
                   </p>
                   <div className="grid grid-cols-4 gap-3">
                     {data.files.map((file, index) => (

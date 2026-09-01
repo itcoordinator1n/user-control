@@ -20,6 +20,8 @@ import {
   Calendar,
   Clock,
   Download,
+  FileText,
+  Image as ImageIcon,
   MessageSquare,
   User,
   Building2,
@@ -222,6 +224,44 @@ export function RequestDetailModal({
                     className="text-sm text-foreground bg-amber-500/10 p-4 border border-amber-500/20 rounded-lg"
                     dangerouslySetInnerHTML={{ __html: selectedRequest.employeeComments }}
                   />
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Evidencia adjunta por el solicitante. Quien aprueba es el unico que la
+                revisa, asi que se muestra para cualquier tipo de permiso. */}
+            {isPermitRequest(selectedRequest) && (selectedRequest.attachments?.length ?? 0) > 0 && (
+              <Card className="overflow-hidden border-border/50 shadow-sm">
+                <CardHeader className="bg-muted/50 pb-3 border-b border-border/50">
+                  <CardTitle className="text-xs font-semibold uppercase text-muted-foreground tracking-wider flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    {selectedRequest.tipo === "incapacidad"
+                      ? "Comprobante médico"
+                      : selectedRequest.tipo === "duelo"
+                      ? "Documento de respaldo"
+                      : "Evidencia documental"}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-4">
+                  <div className="flex flex-wrap gap-3">
+                    {selectedRequest.attachments!.map((att, i) => (
+                      <a
+                        key={i}
+                        href={att.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 border border-border/50 rounded-md px-3 py-2 text-sm text-primary hover:bg-primary/5 transition-colors"
+                      >
+                        {att.type?.startsWith("image/") ? (
+                          <ImageIcon className="h-4 w-4 shrink-0" />
+                        ) : (
+                          <FileText className="h-4 w-4 shrink-0" />
+                        )}
+                        <span className="truncate max-w-[180px]">{att.name}</span>
+                        <Download className="h-3 w-3 shrink-0 text-muted-foreground" />
+                      </a>
+                    ))}
+                  </div>
                 </CardContent>
               </Card>
             )}
