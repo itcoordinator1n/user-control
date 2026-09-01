@@ -70,7 +70,7 @@ const QUICK_ACCESS: QuickAccessCard[] = [
     href: "/page/dashboard",
     icon: BarChart3,
     color: "from-emerald-500 to-emerald-600",
-    requiredPerms: ["METRICS:GENERAL", "RRHH:ADMIN", "RRHH:DASHBOARD", "dashboard:all:view"],
+    requiredPerms: ["METRICS:GENERAL", "RRHH:ADMIN", "RRHH:DASHBOARD", "dashboard:all:view", "dashboard:team:view", "dashboard:team:tree:view", "dashboard:area:view"],
     requirePlatform: "permisos",
   },
   {

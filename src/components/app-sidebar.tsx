@@ -160,7 +160,7 @@ const sidebarNavigation: NavItem[] = [
 const routePermission: Record<string, string[]> = {
   "/page/profile":         ["USER:READ", "EMPLOYEE:PROFILE"],
   "/page/vacations-permits": ["RRHH:PERMITS_VIEW", "EMPLOYEE:PERMITS"],
-  "/page/dashboard":       ["METRICS:GENERAL", "RRHH:ADMIN", "RRHH:DASHBOARD", "dashboard:all:view"],
+  "/page/dashboard":       ["METRICS:GENERAL", "RRHH:ADMIN", "RRHH:DASHBOARD", "dashboard:all:view", "dashboard:team:view", "dashboard:team:tree:view", "dashboard:area:view"],
   "/page/admin":           ["USER:READ", "ROLE:VIEW", "ADMIN:VIEW"],
   "/page/applications":    ["RRHH:APPLICATIONS_MANAGE", "BOSS:APPLICATIONS"],
   "/page/tech":            ["TICKET:RESPOND", "TICKET:ADMIN", "TICKET:TECH"],

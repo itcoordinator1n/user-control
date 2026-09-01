@@ -14,7 +14,7 @@ const rules: Rule[] = [
   { pattern: /^\/page\/vacations-permits(?:\/.*)?$/, anyOf: ["RRHH:PERMITS_VIEW", "EMPLOYEE:PERMITS"] },
 
   // RRHH
-  { pattern: /^\/page\/dashboard(?:\/.*)?$/, anyOf: ["METRICS:GENERAL", "RRHH:ADMIN", "RRHH:DASHBOARD", "dashboard:all:view"] },
+  { pattern: /^\/page\/dashboard(?:\/.*)?$/, anyOf: ["METRICS:GENERAL", "RRHH:ADMIN", "RRHH:DASHBOARD", "dashboard:all:view", "dashboard:team:view", "dashboard:team:tree:view", "dashboard:area:view"] },
 
   // TI / Admin
   { pattern: /^\/page\/admin(?:\/.*)?$/, anyOf: ["USER:READ", "ROLE:VIEW", "ADMIN:VIEW"] },
