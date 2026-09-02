@@ -73,6 +73,25 @@ const SCHEDULE = {
   graceMins:  0,
 } as const;
 
+/**
+ * Formatea una hora "HH:mm" o "HH:mm:ss" a "HH:mm:ss" para la tabla.
+ *
+ * NO desplaza el huso. Antes restaba 6 horas aquí para compensar que la API devolvía
+ * los marcajes en UTC; hoy /attendance-history y /employee-profile ya los entregan en
+ * hora de Honduras (lo convierte el backend con CONVERT_TZ en la propia consulta), así
+ * que restar otra vez mostraba 01:55 donde correspondía 07:55.
+ *
+ * Ojo: /attendance-history-myself SÍ sigue devolviendo UTC, y su consumidor
+ * (components/attendance-table.tsx) conserva su propia compensación a propósito.
+ */
+function formatearHora(hora: string): string {
+  if (!hora) return "";
+  const [h, m, sec] = hora.split(":").map(Number);
+  if (isNaN(h) || isNaN(m)) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${pad(h)}:${pad(m)}:${pad(sec || 0)}`;
+}
+
 function toLocalMinutes(timeHHmm: string | null): number | null {
   if (!timeHHmm) return null;
   const [h, m] = timeHHmm.split(":").map(Number);
@@ -158,15 +177,22 @@ function periodToDates(period: string): { dateFrom: string; dateTo: string } {
 }
 
 /** Returns worked hours as "Xh Ym" given two "HH:mm" UTC strings. */
-function calcWorkedHours(entryUtc: string | null, exitUtc: string | null): string {
-  if (!entryUtc || !exitUtc) return "—";
-  const toLocalMins = (t: string) => {
+/**
+ * Horas trabajadas entre dos horas "HH:mm" ya en hora de Honduras.
+ *
+ * El `- 6` que había aquí se aplicaba a los dos extremos y por eso se cancelaba en la
+ * resta: el resultado era correcto por casualidad. Se quita porque los valores ya no
+ * vienen en UTC y dejarlo invitaba a "corregirlo" mal.
+ */
+function calcWorkedHours(entryTime: string | null, exitTime: string | null): string {
+  if (!entryTime || !exitTime) return "—";
+  const toMins = (t: string) => {
     const [h, m] = t.split(":").map(Number);
     if (isNaN(h) || isNaN(m)) return NaN;
-    return (h - 6) * 60 + m;
+    return h * 60 + m;
   };
-  const entry = toLocalMins(entryUtc);
-  const exit  = toLocalMins(exitUtc);
+  const entry = toMins(entryTime);
+  const exit  = toMins(exitTime);
   if (isNaN(entry) || isNaN(exit) || exit <= entry) return "—";
   const diff = exit - entry;
   const h = Math.floor(diff / 60);
@@ -283,15 +309,7 @@ export function AttendanceView({ onBack, allowedArea, onNavigateToPermission }: 
       if (!monthlyData.length) return;
 
       // Subtract 6 h (UTC → Honduras local) before writing to Excel
-      const setHoursUtil = (hour: string) => {
-        if (!hour) return "";
-        const [h, m, s] = hour.split(":").map(Number);
-        if (isNaN(h)) return "";
-        const date = new Date();
-        date.setHours(h, m, s != null ? s : 0, 0);
-        date.setHours(date.getHours() - 6);
-        return date.toTimeString().split(" ")[0];
-      };
+      const setHoursUtil = formatearHora;
 
       // Worked hours from local HH:mm:ss strings
       const calcWorkedHoursRaw = (entryRaw: string, exitRaw: string): string => {
@@ -474,14 +492,7 @@ export function AttendanceView({ onBack, allowedArea, onNavigateToPermission }: 
   };
 
   // ── Status helpers ────────────────────────────────────────────────────────
-  const setHours = (hour: string) => {
-    if (!hour) return "";
-    const [h, m, s] = hour.split(":").map(Number);
-    const date = new Date();
-    date.setHours(h, m, s != null ? s : 0, 0);
-    date.setHours(date.getHours() - 6);
-    return date.toTimeString().split(" ")[0];
-  };
+  const setHours = formatearHora;
 
   const getStatusColor = (s: string) => ({
     excellent: "bg-green-100 text-green-800",
