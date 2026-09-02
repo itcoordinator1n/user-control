@@ -64,7 +64,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import ExcelJS from "exceljs";
-import type { EmployeeProfile } from "../../_types/dashboard.types";
+import type { EmployeeProfile, PermissionInfo } from "../../_types/dashboard.types";
 
 // ─── Schedule rules ─────────────────────────────────────────────────────────
 const SCHEDULE = {
@@ -80,13 +80,6 @@ function toLocalMinutes(timeHHmm: string | null): number | null {
   return h * 60 + m; // times are already in local time
 }
 
-function isLateArrival(entryTime: string | null): boolean {
-  const mins = toLocalMinutes(entryTime);
-  if (mins === null) return false;
-  // Llegada tardía = llega DESPUÉS de las 7:00 a.m. exactas (> 7*60 = 420)
-  return mins > SCHEDULE.startLocal.h * 60 + SCHEDULE.startLocal.m + SCHEDULE.graceMins;
-}
-
 
 function getOvertimeHours(exitTime: string | null): number {
   const mins = toLocalMinutes(exitTime);
@@ -96,24 +89,34 @@ function getOvertimeHours(exitTime: string | null): number {
   return over > 0 ? Math.round((over / 60) * 10) / 10 : 0;
 }
 
-function getEffectiveStatus(record: {
-  status: string;
-  entryTime: string | null;
-  exitTime?: string | null;
-  permission?: { startTime: string | null; endTime: string | null } | null;
-}): string {
-  // Permission-justified overrides — absence/late/early departure covered by an approved permit
-  if (record.permission) {
-    if (record.status === "absent") return "permitted_absence";
-    if (record.status === "early_departure") return "permitted_early_departure";
-    // Late arrival covered by permission
-    if (isLateArrival(record.entryTime) || record.status === "late") return "permitted_late";
+/**
+ * Etiqueta del tipo de permiso. Lo resuelve el backend contra el horario del área:
+ * lo que decide no es la duración sino si el permiso solapa la entrada o la salida.
+ */
+function etiquetaPermiso(
+  type: PermissionInfo["type"],
+  startTime: string | null,
+  endTime: string | null,
+): string {
+  switch (type) {
+    case "full_day":     return "Día completo";
+    case "covers_entry": return "Cubre la entrada";
+    case "covers_exit":  return "Cubre la salida";
+    case "midday":       return startTime && endTime ? `${startTime}–${endTime}` : "Parcial";
+    default:             return startTime && endTime ? `${startTime}–${endTime}` : "Día completo";
   }
-  // Schedule-based overrides
-  if (record.status === "absent" || record.status === "incomplete") return record.status;
-  if (!record.entryTime) return record.status;
-  if (isLateArrival(record.entryTime)) return "late";
-  if (record.status === "late") return "on_time";
+}
+
+/**
+ * El estado ya viene resuelto del backend, que es donde están el horario del área,
+ * la tolerancia y las horas del permiso.
+ *
+ * Antes esta función lo recalculaba aquí contra un horario hardcodeado (07:00 sin
+ * tolerancia) que no coincidía con el del servidor, y trataba `permission` como un
+ * booleano: cualquier permiso ese día justificaba toda la jornada, aunque fuera de
+ * 14:45 a 15:45 y la persona hubiera llegado tarde por la mañana.
+ */
+function getEffectiveStatus(record: { status: string }): string {
   return record.status;
 }
 
@@ -420,7 +423,7 @@ export function AttendanceView({ onBack, allowedArea, onNavigateToPermission }: 
           const exit  = setHours(r.exitTime  ? r.exitTime  + ":00" : "");
           const effectiveStatus = getEffectiveStatus(r);
           const notesParts = [
-            r.permission ? `Permiso — ${r.permission.type === "full_day" ? "Día completo" : r.permission.type === "late_arrival" ? "Llegada tarde" : r.permission.type === "early_departure" ? "Salida temprana" : r.permission.type === "partial" ? "Parcial" : ""}` : "",
+            r.permission ? `Permiso — ${etiquetaPermiso(r.permission.type, r.permission.startTime, r.permission.endTime)}` : "",
             r.vacation   ? "Vacaciones" : "",
             r.holiday    ? `Festivo: ${r.holiday.name}${!r.holiday.isNational ? " (empresa)" : ""}` : "",
             r.notes ? r.notes : "",
@@ -501,6 +504,8 @@ export function AttendanceView({ onBack, allowedArea, onNavigateToPermission }: 
     permitted_late:             "text-indigo-600",
     permitted_absence:          "text-violet-600",
     permitted_early_departure:  "text-purple-600",
+    on_vacation:                "text-sky-600",
+    extra_day:                  "text-teal-600",
   }[s] || "text-gray-600");
 
   const getRecordStatusText = (s: string) => ({
@@ -513,6 +518,8 @@ export function AttendanceView({ onBack, allowedArea, onNavigateToPermission }: 
     permitted_late:             "Permiso — Tardanza",
     permitted_absence:          "Permiso — Ausencia",
     permitted_early_departure:  "Permiso — Salida Temp.",
+    on_vacation:                "Vacaciones",
+    extra_day:                  "Día Extra",
   }[s] || "N/A");
 
   const getRecordStatusIcon = (s: string) => ({
@@ -525,6 +532,8 @@ export function AttendanceView({ onBack, allowedArea, onNavigateToPermission }: 
     permitted_late:             <ShieldCheck className="h-4 w-4 text-indigo-600" />,
     permitted_absence:          <ShieldCheck className="h-4 w-4 text-violet-600" />,
     permitted_early_departure:  <ShieldCheck className="h-4 w-4 text-purple-600" />,
+    on_vacation:                <Plane className="h-4 w-4 text-sky-600" />,
+    extra_day:                  <CalendarDays className="h-4 w-4 text-teal-600" />,
   }[s] || <AlertCircle className="h-4 w-4 text-gray-600" />);
 
   const getAttendanceColor = (rate: number) =>
@@ -1002,7 +1011,7 @@ export function AttendanceView({ onBack, allowedArea, onNavigateToPermission }: 
                 type CardDef = { title: string; icon: React.ReactNode; filterStatus: string; chartKey: keyof typeof selectedEmployee.weeklyDistribution; total: number; color: string; subtitle?: string };
                 const cards: CardDef[] = [
                   { title: "A tiempo",    icon: <CheckCircle2 className="h-4 w-4" />, filterStatus: "on_time",    chartKey: "onTime",       total: sumDays(selectedEmployee.weeklyDistribution.onTime),      color: "green" },
-                  { title: "Tardanzas",   icon: <TimerOff     className="h-4 w-4" />, filterStatus: "late",       chartKey: "lateArrivals", total: selectedEmployee.lateArrivals,                            color: "red",   subtitle: "> 7:15 AM" },
+                  { title: "Tardanzas",   icon: <TimerOff     className="h-4 w-4" />, filterStatus: "late",       chartKey: "lateArrivals", total: selectedEmployee.lateArrivals,                            color: "red",   subtitle: "según horario del área" },
                   { title: "Ausencias",   icon: <UserX        className="h-4 w-4" />, filterStatus: "absent",     chartKey: "absences",     total: selectedEmployee.absences,                                color: "slate" },
                   { title: "Incompletos", icon: <AlertCircle  className="h-4 w-4" />, filterStatus: "incomplete", chartKey: "incomplete",   total: sumDays(selectedEmployee.weeklyDistribution.incomplete),  color: "yellow" },
                 ];
@@ -1060,6 +1069,36 @@ export function AttendanceView({ onBack, allowedArea, onNavigateToPermission }: 
                 );
               })()}
 
+              {/* Días que no cuentan para el porcentaje. Va junto a la barra de
+                  asistencia porque es lo que explica su denominador: sin esto, un
+                  95% con dos semanas de vacaciones parece un número inventado. */}
+              {selectedEmployee.excusedDays && selectedEmployee.excusedDays.total > 0 && (
+                <div className="border border-sky-200 bg-sky-50 rounded-lg p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-1.5 text-xs font-semibold text-sky-700">
+                      <ShieldCheck className="h-4 w-4 text-sky-500" />
+                      Días justificados
+                      <span className="font-normal text-gray-400 ml-0.5">no cuentan para el porcentaje</span>
+                    </div>
+                    <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-sky-100 text-sky-800">
+                      {selectedEmployee.excusedDays.total} total
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {([
+                      { k: "vacation" as const, label: "Vacaciones", icon: <Plane className="h-3 w-3" /> },
+                      { k: "permit"   as const, label: "Permisos",   icon: <ShieldCheck className="h-3 w-3" /> },
+                      { k: "holiday"  as const, label: "Feriados",   icon: <Star className="h-3 w-3" /> },
+                    ]).filter(x => selectedEmployee.excusedDays[x.k] > 0).map(x => (
+                      <span key={x.k} className="inline-flex items-center gap-1 bg-white border border-sky-200 text-sky-700 text-xs font-medium px-2 py-0.5 rounded">
+                        {x.icon}
+                        {x.label}: {selectedEmployee.excusedDays[x.k]}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Attendance bar */}
               <div className="space-y-1">
                 <div className="flex justify-between text-sm font-medium">
@@ -1089,6 +1128,10 @@ export function AttendanceView({ onBack, allowedArea, onNavigateToPermission }: 
                       <SelectItem value="absent">Inasistencias</SelectItem>
                       <SelectItem value="incomplete">Incompletos</SelectItem>
                       <SelectItem value="early_arrival">Llegada Temprana</SelectItem>
+                      <SelectItem value="on_vacation">Vacaciones</SelectItem>
+                      <SelectItem value="permitted_late">Permiso — Tardanza</SelectItem>
+                      <SelectItem value="permitted_absence">Permiso — Ausencia</SelectItem>
+                      <SelectItem value="permitted_early_departure">Permiso — Salida Temp.</SelectItem>
                     </SelectContent>
                   </Select>
 
@@ -1230,17 +1273,7 @@ export function AttendanceView({ onBack, allowedArea, onNavigateToPermission }: 
                                       {/* Permission badge — clickable, shows type */}
                                       {record.permission && (() => {
                                         const perm = record.permission;
-                                        const typeLabel = perm.type === "full_day"
-                                          ? "Día completo"
-                                          : perm.type === "late_arrival"
-                                          ? "Llegada tarde"
-                                          : perm.type === "early_departure"
-                                          ? "Salida temprana"
-                                          : perm.type === "partial"
-                                          ? "Parcial"
-                                          : perm.startTime && perm.endTime
-                                          ? `${perm.startTime}–${perm.endTime}`
-                                          : "Día completo";
+                                        const typeLabel = etiquetaPermiso(perm.type, perm.startTime, perm.endTime);
                                         return onNavigateToPermission ? (
                                           <button
                                             type="button"

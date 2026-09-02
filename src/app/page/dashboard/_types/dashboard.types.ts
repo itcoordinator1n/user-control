@@ -7,8 +7,12 @@ export interface PermissionInfo {
   startTime: string | null;
   endTime: string | null;
   reason: string;
-  /** Backend-computed type for display labelling */
-  type?: "late_arrival" | "early_departure" | "full_day" | "partial" | null;
+  /**
+   * Qué parte de la jornada cubre el permiso, resuelto en el backend contra el
+   * horario del área. Lo que importa no es la duración sino si solapa la entrada
+   * o la salida: un permiso de 14:45 a 15:45 no dice nada sobre la hora de llegada.
+   */
+  type?: "full_day" | "covers_entry" | "covers_exit" | "midday" | null;
 }
 
 export interface AttendanceRecord {
@@ -16,13 +20,24 @@ export interface AttendanceRecord {
   date: string;
   entryTime: string | null;
   exitTime: string | null;
+  /**
+   * Estado del día, ya resuelto por el backend cruzando marcaje, horario, permiso,
+   * vacación y feriado. El cliente no lo recalcula: hacerlo obligaba a duplicar aquí
+   * el horario del área y las dos copias se desincronizaban.
+   */
   status:
     | "on_time"
     | "late"
     | "early_departure"
     | "absent"
     | "incomplete"
-    | "early_arrival";
+    | "early_arrival"
+    | "extra_day"
+    // Justificados por una solicitud aprobada
+    | "on_vacation"
+    | "permitted_absence"
+    | "permitted_late"
+    | "permitted_early_departure";
   notes?: string;
   /** Approved permission that applies to this day, if any. */
   permission?: PermissionInfo | null;
@@ -48,6 +63,14 @@ export interface WeeklyDayCount {
   friday: number;
 }
 
+/** Días justificados, desglosados por motivo. */
+export interface ExcusedDays {
+  vacation: number;
+  permit: number;
+  holiday: number;
+  total: number;
+}
+
 export interface EmployeeProfile {
   id: string | null;
   name: string;
@@ -57,6 +80,11 @@ export interface EmployeeProfile {
   attendanceRate: number;
   lateArrivals: number;
   absences: number;
+  /**
+   * Días que NO entran al denominador del porcentaje, con su motivo. Explican por qué
+   * los días evaluados son menos que los días hábiles del período.
+   */
+  excusedDays: ExcusedDays;
   records: AttendanceRecord[];   // current page only
   pagination: RecordsPagination; // server-side pagination info
   /** Full-history distribution by weekday — computed by backend, not affected by page/filter. */
