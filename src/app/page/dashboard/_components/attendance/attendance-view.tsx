@@ -64,7 +64,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import ExcelJS from "exceljs";
-import type { EmployeeProfile, PermissionInfo } from "../../_types/dashboard.types";
+import type { EmployeeProfile, PermissionInfo, AttendanceRecord } from "../../_types/dashboard.types";
+import {
+  exportarAsistenciaCompleta,
+  periodoAFechas,
+  formatearHora,
+  horasTrabajadas,
+  horasExtra,
+} from "../../_lib/exportar-asistencia";
 
 // ─── Schedule rules ─────────────────────────────────────────────────────────
 const SCHEDULE = {
@@ -72,25 +79,6 @@ const SCHEDULE = {
   endLocal:   { h: 16, m: 45 },
   graceMins:  0,
 } as const;
-
-/**
- * Formatea una hora "HH:mm" o "HH:mm:ss" a "HH:mm:ss" para la tabla.
- *
- * NO desplaza el huso. Antes restaba 6 horas aquí para compensar que la API devolvía
- * los marcajes en UTC; hoy /attendance-history y /employee-profile ya los entregan en
- * hora de Honduras (lo convierte el backend con CONVERT_TZ en la propia consulta), así
- * que restar otra vez mostraba 01:55 donde correspondía 07:55.
- *
- * Ojo: /attendance-history-myself SÍ sigue devolviendo UTC, y su consumidor
- * (components/attendance-table.tsx) conserva su propia compensación a propósito.
- */
-function formatearHora(hora: string): string {
-  if (!hora) return "";
-  const [h, m, sec] = hora.split(":").map(Number);
-  if (isNaN(h) || isNaN(m)) return "";
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${pad(h)}:${pad(m)}:${pad(sec || 0)}`;
-}
 
 function toLocalMinutes(timeHHmm: string | null): number | null {
   if (!timeHHmm) return null;
@@ -135,6 +123,24 @@ function etiquetaPermiso(
  * booleano: cualquier permiso ese día justificaba toda la jornada, aunque fuera de
  * 14:45 a 15:45 y la persona hubiera llegado tarde por la mañana.
  */
+/**
+ * Las notas de un día, en texto. Es la MISMA información que la tabla pinta como
+ * insignias (permiso, vacaciones, feriado, horas extra) y por eso vive en un solo
+ * sitio: el Excel se armaba aparte y se le habían quedado fuera las horas extra.
+ */
+function notasDelRegistro(r: AttendanceRecord): string[] {
+  const extra = horasExtra(r.exitTime);
+  return [
+    r.permission
+      ? `Permiso — ${etiquetaPermiso(r.permission.type, r.permission.startTime, r.permission.endTime)}`
+      : "",
+    r.vacation ? "Vacaciones" : "",
+    r.holiday ? `Feriado: ${r.holiday.name}${!r.holiday.isNational ? " (empresa)" : ""}` : "",
+    r.notes || "",
+    extra > 0 ? `+${extra}h extra` : "",
+  ].filter(Boolean);
+}
+
 function getEffectiveStatus(record: { status: string }): string {
   return record.status;
 }
@@ -151,53 +157,6 @@ function getDayName(dateStr: string): string {
 function formatDateBadge(dateStr: string): string {
   const [y, m, d] = dateStr.split("-").map(Number);
   return `${d} ${MONTH_ABBR[m - 1]} ${y}`;
-}
-
-// ─── Period label → YYYY-MM-DD range ────────────────────────────────────────
-function periodToDates(period: string): { dateFrom: string; dateTo: string } {
-  const today = new Date();
-  const fmt = (d: Date) => d.toISOString().split("T")[0];
-  switch (period) {
-    case "Hoy": { const s = fmt(today); return { dateFrom: s, dateTo: s }; }
-    case "Esta Semana": {
-      const day = today.getDay();
-      const start = new Date(today);
-      start.setDate(today.getDate() + (day === 0 ? -6 : 1 - day));
-      return { dateFrom: fmt(start), dateTo: fmt(today) };
-    }
-    case "Este Mes": return { dateFrom: fmt(new Date(today.getFullYear(), today.getMonth(), 1)), dateTo: fmt(today) };
-    case "Último Trimestre": {
-      const start = new Date(today);
-      start.setMonth(today.getMonth() - 3);
-      return { dateFrom: fmt(start), dateTo: fmt(today) };
-    }
-    case "Este Año": return { dateFrom: fmt(new Date(today.getFullYear(), 0, 1)), dateTo: fmt(today) };
-    default: return { dateFrom: "", dateTo: "" };
-  }
-}
-
-/** Returns worked hours as "Xh Ym" given two "HH:mm" UTC strings. */
-/**
- * Horas trabajadas entre dos horas "HH:mm" ya en hora de Honduras.
- *
- * El `- 6` que había aquí se aplicaba a los dos extremos y por eso se cancelaba en la
- * resta: el resultado era correcto por casualidad. Se quita porque los valores ya no
- * vienen en UTC y dejarlo invitaba a "corregirlo" mal.
- */
-function calcWorkedHours(entryTime: string | null, exitTime: string | null): string {
-  if (!entryTime || !exitTime) return "—";
-  const toMins = (t: string) => {
-    const [h, m] = t.split(":").map(Number);
-    if (isNaN(h) || isNaN(m)) return NaN;
-    return h * 60 + m;
-  };
-  const entry = toMins(entryTime);
-  const exit  = toMins(exitTime);
-  if (isNaN(entry) || isNaN(exit) || exit <= entry) return "—";
-  const diff = exit - entry;
-  const h = Math.floor(diff / 60);
-  const m = diff % 60;
-  return m > 0 ? `${h}h ${m}m` : `${h}h`;
 }
 
 function toEmployeeKey(name: string) {
@@ -250,6 +209,9 @@ export function AttendanceView({ onBack, allowedArea, onNavigateToPermission }: 
   const [employeesPerPage, setEmployeesPerPage] = useState(10);
   const [currentEmployeePage, setCurrentEmployeePage] = useState(1);
   const [exportLoading, setExportLoading] = useState(false);
+  // Mensaje de la exportación: sin esto, "no hay datos" y "falló el servidor"
+  // se veían igual que "no pasó nada".
+  const [exportMsg, setExportMsg] = useState<string | null>(null);
   const [profileExportLoading, setProfileExportLoading] = useState(false);
 
   // ── Effective date range ──────────────────────────────────────────────────
@@ -260,7 +222,7 @@ export function AttendanceView({ onBack, allowedArea, onNavigateToPermission }: 
       if (customDateFrom && customDateTo) return { dateFrom: customDateFrom, dateTo: customDateTo };
       return { dateFrom: undefined, dateTo: undefined };
     }
-    const d = periodToDates(selectedPeriod);
+    const d = periodoAFechas(selectedPeriod);
     return { dateFrom: d.dateFrom || undefined, dateTo: d.dateTo || undefined };
   }, [isCustomRange, selectedPeriod, customDateFrom, customDateTo]);
 
@@ -290,108 +252,28 @@ export function AttendanceView({ onBack, allowedArea, onNavigateToPermission }: 
 
   // ── Export (on-demand fetch of raw records) ───────────────────────────────
   const exportToExcel = async (fileName = "asistencias.xlsx") => {
-    if (!(session && session.user ? session.user.accessToken : undefined)) return;
+    const token = session?.user?.accessToken;
+    if (!token) return;
     setExportLoading(true);
+    setExportMsg(null);
     try {
-      const params = new URLSearchParams();
-      // Respect currently selected area filter
-      if (selectedArea !== "Todas") params.set("area", selectedArea);
-      else if (allowedArea) params.set("area", allowedArea);
-      if (effectiveDates.dateFrom) params.set("dateFrom", effectiveDates.dateFrom);
-      if (effectiveDates.dateTo) params.set("dateTo", effectiveDates.dateTo);
-
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/requests/get-monthly-attendance?${params}`,
-        { headers: { "Content-Type": "application/json", Authorization: `Bearer ${session && session.user ? session.user.accessToken : ""}` } }
-      );
-      if (!res.ok) throw new Error(res.statusText);
-      const monthlyData: any[] = await res.json();
-      if (!monthlyData.length) return;
-
-      // Subtract 6 h (UTC → Honduras local) before writing to Excel
-      const setHoursUtil = formatearHora;
-
-      // Worked hours from local HH:mm:ss strings
-      const calcWorkedHoursRaw = (entryRaw: string, exitRaw: string): string => {
-        const e = (entryRaw || "").trim();
-        const x = (exitRaw  || "").trim();
-        if (!e || !x) return "—";
-        const toMins = (t: string) => {
-          const [h, m] = t.split(":").map(Number);
-          if (isNaN(h) || isNaN(m)) return NaN;
-          return h * 60 + m;
-        };
-        const diff = toMins(x) - toMins(e);
-        if (isNaN(diff) || diff <= 0) return "—";
-        const hh = Math.floor(diff / 60);
-        const mm = diff % 60;
-        return mm > 0 ? `${hh}h ${mm}m` : `${hh}h`;
-      };
-
-      const workbook = new ExcelJS.Workbook();
-      const summary = workbook.addWorksheet("Resumen Asistencia");
-      const totalRegs = monthlyData.length;
-      const uniqueEmps = new Set(monthlyData.map((r) => r.int_id_empleado)).size;
-      const countByArea: Record<string, number> = {};
-      monthlyData.forEach((r) => { countByArea[r.area] = (countByArea[r.area] || 0) + 1; });
-      const sorted = [...monthlyData].sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
-      const countByEmp: Record<string, number> = {};
-      monthlyData.forEach((r) => { countByEmp[r.nombre_empleado] = (countByEmp[r.nombre_empleado] || 0) + 1; });
-      const topEmps = Object.entries(countByEmp).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([n, c]) => [n, c]);
-
-      summary.addRows([
-        ["Total de registros", totalRegs],
-        ["Empleados únicos", uniqueEmps],
-        ["Área filtrada", selectedArea !== "Todas" ? selectedArea : "Todas las áreas"],
-        ["Período", effectiveDates.dateFrom && effectiveDates.dateTo ? `${effectiveDates.dateFrom} — ${effectiveDates.dateTo}` : "Sin filtro"],
-        ["Primer registro", (sorted[0] && sorted[0].fecha) ? sorted[0].fecha.toString() : ""],
-        ["Último registro", (sorted[sorted.length - 1] && sorted[sorted.length - 1].fecha) ? sorted[sorted.length - 1].fecha.toString() : ""],
-        [],
-        ["Registros por Área", "Cantidad"],
-        ...Object.entries(countByArea).map(([a, c]) => [a, c]),
-        [],
-        ["Top 5 Empleados", "Registros"],
-        ...topEmps,
-      ]);
-      summary.columns = [{ width: 30 }, { width: 30 }];
-
-      const detail = workbook.addWorksheet("Detalle Registros");
-      detail.addTable({
-        name: "DetalleTable", ref: "A1", headerRow: true, totalsRow: false,
-        style: { theme: "TableStyleMedium4", showRowStripes: true },
-        columns: [
-          { name: "Fecha",          filterButton: true },
-          { name: "ID Empleado",    filterButton: true },
-          { name: "Nombre",         filterButton: true },
-          { name: "Área",           filterButton: true },
-          { name: "Entrada",        filterButton: true },
-          { name: "Salida",         filterButton: true },
-          { name: "Horas Trabajadas", filterButton: true },
-        ],
-        rows: monthlyData.map((r) => [
-          r.fecha ? r.fecha.toString() : "",
-          r.int_id_empleado,
-          r.nombre_empleado,
-          r.area,
-          setHoursUtil((r.entrada || "").trim()),
-          setHoursUtil((r.salida  || "").trim()),
-          calcWorkedHoursRaw((r.entrada || "").trim(), (r.salida || "").trim()),
-        ]),
+      const filas = await exportarAsistenciaCompleta({
+        token,
+        // Respeta el filtro de área activo; si el usuario está limitado a la suya, esa.
+        area: selectedArea !== "Todas" ? selectedArea : allowedArea,
+        dateFrom: effectiveDates.dateFrom,
+        dateTo: effectiveDates.dateTo,
+        fileName,
       });
-      detail.columns = [
-        { width: 20 }, { width: 14 }, { width: 28 },
-        { width: 22 }, { width: 12 }, { width: 12 }, { width: 18 },
-      ];
-
-      const buffer = await workbook.xlsx.writeBuffer();
-      saveAs(new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), fileName);
+      // Antes, sin registros se hacía `return` en silencio y el botón parecía roto.
+      if (filas === 0) setExportMsg("No hay registros para el área y período seleccionados.");
     } catch (err) {
       console.error("Error al exportar:", err);
+      setExportMsg(err instanceof Error ? err.message : "No se pudo generar el archivo.");
     } finally {
       setExportLoading(false);
     }
   };
-
   // ── Profile export (all records with current modal filters) ──────────────
   const exportProfileToExcel = async () => {
     if (!(session && session.user ? session.user.accessToken : undefined) || !activeProfileKey || !selectedEmployee) return;
@@ -433,33 +315,30 @@ export function AttendanceView({ onBack, allowedArea, onNavigateToPermission }: 
           { name: "Entrada",          filterButton: true },
           { name: "Salida",           filterButton: true },
           { name: "Horas Trabajadas", filterButton: true },
+          { name: "Horas Extra",      filterButton: true },
           { name: "Estado",           filterButton: true },
           { name: "Notas",            filterButton: true },
         ],
         rows: records.map((r) => {
-          const entry = setHours(r.entryTime ? r.entryTime + ":00" : "");
-          const exit  = setHours(r.exitTime  ? r.exitTime  + ":00" : "");
-          const effectiveStatus = getEffectiveStatus(r);
-          const notesParts = [
-            r.permission ? `Permiso — ${etiquetaPermiso(r.permission.type, r.permission.startTime, r.permission.endTime)}` : "",
-            r.vacation   ? "Vacaciones" : "",
-            r.holiday    ? `Festivo: ${r.holiday.name}${!r.holiday.isNational ? " (empresa)" : ""}` : "",
-            r.notes ? r.notes : "",
-          ].filter(Boolean).join(" | ");
+          const entry = formatearHora(r.entryTime || "");
+          const exit  = formatearHora(r.exitTime  || "");
+          const extra = horasExtra(r.exitTime);
           return [
             r.date,
             getDayName(r.date),
             entry || "—",
             exit  || "—",
-            calcWorkedHours(r.entryTime, r.exitTime),
-            getRecordStatusText(effectiveStatus),
-            notesParts || "—",
+            horasTrabajadas(r.entryTime, r.exitTime),
+            // Numérico y no "1.8h", para que se pueda sumar en la propia hoja.
+            extra > 0 ? extra : "",
+            getRecordStatusText(getEffectiveStatus(r)),
+            notasDelRegistro(r).join(" | ") || "—",
           ];
         }),
       });
       sheet.columns = [
         { width: 14 }, { width: 12 }, { width: 12 }, { width: 12 },
-        { width: 18 }, { width: 26 }, { width: 40 },
+        { width: 18 }, { width: 13 }, { width: 26 }, { width: 46 },
       ];
 
       // Info header in a second sheet
@@ -492,7 +371,6 @@ export function AttendanceView({ onBack, allowedArea, onNavigateToPermission }: 
   };
 
   // ── Status helpers ────────────────────────────────────────────────────────
-  const setHours = formatearHora;
 
   const getStatusColor = (s: string) => ({
     excellent: "bg-green-100 text-green-800",
@@ -731,6 +609,18 @@ export function AttendanceView({ onBack, allowedArea, onNavigateToPermission }: 
           </Button>
         </div>
       </div>
+
+      {/* Resultado de la exportación: sin esto, "no hay datos" y "falló el servidor"
+          se veían igual que "el botón no hace nada". */}
+      {exportMsg && (
+        <div className="mb-4 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+          <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+          <span className="flex-1">{exportMsg}</span>
+          <button type="button" onClick={() => setExportMsg(null)} className="text-amber-600 hover:text-amber-900 font-medium">
+            Cerrar
+          </button>
+        </div>
+      )}
 
       {/* Filters */}
       {showFilters && (
@@ -1263,11 +1153,11 @@ export function AttendanceView({ onBack, allowedArea, onNavigateToPermission }: 
                                     </div>
                                   </TableCell>
                                   <TableCell className="font-mono text-sm">
-                                    {setHours(record.entryTime ? record.entryTime + ":00" : "") || <span className="text-gray-400">—</span>}
+                                    {formatearHora(record.entryTime || "") || <span className="text-gray-400">—</span>}
                                   </TableCell>
                                   <TableCell className="font-mono text-sm">
                                     {(() => {
-                                      const t = setHours(record.exitTime ? record.exitTime + ":00" : "");
+                                      const t = formatearHora(record.exitTime || "");
                                       return t ? <span className={overtime > 0 ? "text-blue-600 font-semibold" : ""}>{t}</span> : <span className="text-gray-400">—</span>;
                                     })()}
                                   </TableCell>

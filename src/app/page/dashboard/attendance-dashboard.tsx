@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useSession } from "next-auth/react";
+import { exportarAsistenciaCompleta, periodoAFechas } from "./_lib/exportar-asistencia";
 import dynamic from "next/dynamic";
 import { useDashboardPermissions } from "./_hooks/use-dashboard-permissions";
 import { useSummaryData } from "./_hooks/use-summary";
@@ -11,6 +13,7 @@ import type { DashboardView } from "./_types/dashboard.types";
 
 import {
   Download,
+  Loader2,
   Search,
   TrendingDown,
   TrendingUp,
@@ -97,10 +100,37 @@ interface SummaryProps {
 }
 
 function DashboardSummary({ canView, isAreaRestricted, userArea, onNavigate }: SummaryProps) {
+  const { data: session } = useSession();
   const { data: summary, loading } = useSummaryData();
   const [selectedArea, setSelectedArea] = useState(userArea ?? "Planta");
   const [selectedPeriod, setSelectedPeriod] = useState("Este Mes");
   const [searchTerm, setSearchTerm] = useState("");
+  const [exportando, setExportando] = useState(false);
+  const [exportMsg, setExportMsg] = useState<string | null>(null);
+
+  // Este botón no tenía onClick: se veía habilitado y no descargaba nada. Usa la misma
+  // exportación que la vista de Asistencia, con el área y el período de esta pantalla.
+  const exportar = async () => {
+    const token = session?.user?.accessToken;
+    if (!token) return;
+    setExportando(true);
+    setExportMsg(null);
+    try {
+      const { dateFrom, dateTo } = periodoAFechas(selectedPeriod);
+      const filas = await exportarAsistenciaCompleta({
+        token,
+        area: isAreaRestricted ? (userArea ?? selectedArea) : selectedArea,
+        dateFrom: dateFrom || undefined,
+        dateTo: dateTo || undefined,
+      });
+      if (filas === 0) setExportMsg("No hay registros para el área y período seleccionados.");
+    } catch (err) {
+      console.error("Error al exportar:", err);
+      setExportMsg(err instanceof Error ? err.message : "No se pudo generar el archivo.");
+    } finally {
+      setExportando(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background transition-colors duration-300 p-6">
@@ -120,11 +150,20 @@ function DashboardSummary({ canView, isAreaRestricted, userArea, onNavigate }: S
                   : "Monitorea la asistencia y métricas de rendimiento de empleados"}
             </p>
           </div>
-          <Button className="flex items-center gap-2">
-            <Download className="h-4 w-4" />
+          <Button onClick={exportar} disabled={exportando} className="flex items-center gap-2">
+            {exportando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
             Exportar a Excel
           </Button>
         </div>
+
+        {exportMsg && (
+          <div className="mb-4 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+            <span className="flex-1">{exportMsg}</span>
+            <button type="button" onClick={() => setExportMsg(null)} className="text-amber-600 hover:text-amber-900 font-medium">
+              Cerrar
+            </button>
+          </div>
+        )}
 
         {/* Filters */}
         <div className="flex items-center gap-4 mb-6">
