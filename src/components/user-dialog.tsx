@@ -123,6 +123,8 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
     area: number;
     status: boolean;
     sendWelcomeEmail: boolean;
+    /** 8 dígitos sin código de país. Es por donde recibe su usuario y su clave. */
+    phone: string;
     // Obligatorios: sin fecha de contrato y tipo no se calculan vacaciones, y sin
     // jefe las solicitudes de esta persona no le llegan a nadie.
     fechaContrato: string;
@@ -139,6 +141,7 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
     area: 1,
     status: true,
     sendWelcomeEmail: true,
+    phone: "",
     fechaContrato: "",
     tipoUsuario: "",
     jefe: "",
@@ -183,6 +186,7 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
         area: Number((user as any).area) || 1,
         status: (user as any).estado === 1,
         sendWelcomeEmail: false,
+        phone: (user as any).phone || "",
         fechaContrato: (user as any).fechaContrato || "",
         tipoUsuario: (user as any).tipoUsuario ? String((user as any).tipoUsuario) : "",
         jefe: (user as any).jefe ? String((user as any).jefe) : "",
@@ -199,6 +203,7 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
         area: 1,
         status: true,
         sendWelcomeEmail: true,
+        phone: "",
         fechaContrato: "",
         tipoUsuario: "",
         jefe: "",
@@ -221,6 +226,7 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
     if (!formData.tipoUsuario)     f.push("tipo de usuario");
     if (!formData.jefe)            f.push("jefe inmediato");
     if (!formData.puesto.trim())   f.push("puesto");
+    if (!/^\d{8}$/.test(formData.phone.trim())) f.push("teléfono de 8 dígitos");
     if (isEditing && String(formData.jefe) === String(formData.id))
       f.push("un jefe distinto de sí mismo");
     return f;
@@ -311,16 +317,24 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
         // Sin correo no hay forma de hacerle llegar la clave, así que el backend la
         // devuelve para que quien lo dio de alta se la entregue en mano.
         if (data.temporaryPassword) {
+          // No se pudo avisar por ningún canal: hay que entregarla en mano.
           alert(
             `${data.message}
 
-Contraseña temporal: ${data.temporaryPassword}
+No se pudo notificar por WhatsApp ni por correo.
+
+` +
+            `Contraseña temporal: ${data.temporaryPassword}
 
 ` +
             "Anotala ahora: no se vuelve a mostrar. La persona deberá cambiarla al entrar."
           );
         } else {
-          alert(`${data.message}${data.emailSent ? " Se le envió la contraseña por correo." : ""}`);
+          const vias = [
+            data.whatsappSent ? "WhatsApp" : null,
+            data.emailSent ? "correo" : null,
+          ].filter(Boolean).join(" y ");
+          alert(`${data.message} Se le enviaron sus credenciales por ${vias}.`);
         }
       } catch (error: any) {
         console.error(error);
@@ -451,6 +465,30 @@ Contraseña temporal: ${data.temporaryPassword}
                 Sin fecha de contrato y tipo no se le devenga ni un día de vacaciones,
                 y sin jefe sus permisos no le llegan a nadie. Antes no se pedían y por
                 eso hay empleados que ven 0 días sin explicación. */}
+            {/* Es por donde recibe su usuario y su contraseña: 65 de los empleados
+                activos no tienen correo, así que el WhatsApp es la vía principal. */}
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="phone" className="text-right">
+                Teléfono <span className="text-red-500">*</span>
+              </Label>
+              <div className="col-span-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground shrink-0">+504</span>
+                  <Input
+                    id="phone"
+                    inputMode="numeric"
+                    maxLength={8}
+                    value={formData.phone}
+                    onChange={(e) => handleChange("phone", e.target.value.replace(/\D/g, "").slice(0, 8))}
+                    placeholder="99887766"
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Ahí se le envían su usuario y su contraseña temporal por WhatsApp.
+                </p>
+              </div>
+            </div>
+
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="puesto" className="text-right">
                 Puesto <span className="text-red-500">*</span>
