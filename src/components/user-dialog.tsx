@@ -121,6 +121,12 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
     area: number;
     status: boolean;
     sendWelcomeEmail: boolean;
+    // Obligatorios: sin fecha de contrato y tipo no se calculan vacaciones, y sin
+    // jefe las solicitudes de esta persona no le llegan a nadie.
+    fechaContrato: string;
+    tipoUsuario: string;
+    jefe: string;
+    puesto: string;
   }>({
     id: 0,
     name: "",
@@ -130,7 +136,32 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
     area: 1,
     status: true,
     sendWelcomeEmail: true,
+    fechaContrato: "",
+    tipoUsuario: "",
+    jefe: "",
+    puesto: "",
   });
+
+  // Catálogos de los selectores nuevos.
+  const [tiposUsuario, setTiposUsuario] = useState<{ id: number; nombre: string }[]>([]);
+  const [posiblesJefes, setPosiblesJefes] = useState<{ id: number; nombre: string; nombreArea?: string }[]>([]);
+
+  useEffect(() => {
+    const token = session?.user?.accessToken;
+    if (!token) return;
+    const h = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/userAdministration/get-user-types`, { headers: h })
+      .then((r) => (r.ok ? r.json() : []))
+      .then((d) => setTiposUsuario(Array.isArray(d) ? d : []))
+      .catch(() => setTiposUsuario([]));
+    // La lista de jefes son los propios usuarios; se reutiliza el listado general.
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/userAdministration/get-all-users`, { headers: h })
+      .then((r) => (r.ok ? r.json() : []))
+      .then((d) => setPosiblesJefes(Array.isArray(d)
+        ? d.filter((u: any) => u.estado).map((u: any) => ({ id: u.id, nombre: u.nombre, nombreArea: u.nombreArea }))
+        : []))
+      .catch(() => setPosiblesJefes([]));
+  }, [session]);
 
   useEffect(() => {
     if (user) {
@@ -148,6 +179,10 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
         area: Number((user as any).area) || 1,
         status: (user as any).estado === 1,
         sendWelcomeEmail: false,
+        fechaContrato: (user as any).fechaContrato || "",
+        tipoUsuario: (user as any).tipoUsuario ? String((user as any).tipoUsuario) : "",
+        jefe: (user as any).jefe ? String((user as any).jefe) : "",
+        puesto: (user as any).puesto || "",
       });
     } else {
       setFormData({
@@ -159,9 +194,31 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
         area: 1,
         status: true,
         sendWelcomeEmail: true,
+        fechaContrato: "",
+        tipoUsuario: "",
+        jefe: "",
+        puesto: "",
       });
     }
   }, [user]);
+
+  /**
+   * Campos que el backend exige. Se valida también aquí para no mandar una petición
+   * que se sabe que va a fallar y para poder señalar el campo concreto.
+   */
+  const faltantes = (() => {
+    const f: string[] = [];
+    if (!formData.name.trim())     f.push("nombre");
+    if (!formData.user.trim())     f.push("usuario");
+    if (!formData.roles.length)    f.push("al menos un rol");
+    if (!formData.fechaContrato)   f.push("fecha de contrato");
+    if (!formData.tipoUsuario)     f.push("tipo de usuario");
+    if (!formData.jefe)            f.push("jefe inmediato");
+    if (!formData.puesto.trim())   f.push("puesto");
+    if (isEditing && String(formData.jefe) === String(formData.id))
+      f.push("un jefe distinto de sí mismo");
+    return f;
+  })();
 
   interface HandleChange {
     (field: string, value: string | boolean | number): void;
@@ -216,7 +273,7 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
 
         const data = await response.json();
         if (!response.ok) {
-          throw new Error(data.message || "Error al actualizar el usuario");
+          throw new Error(data.error || data.message || "Error al actualizar el usuario");
         }
 
         alert(data.message);
@@ -238,15 +295,30 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
           }
         );
 
+        const data = await response.json();
         if (!response.ok) {
-          throw new Error("Error al crear el usuario");
+          // El backend explica qué falta o por qué choca; repetirlo es más útil que
+          // un "Error al crear el usuario" genérico.
+          throw new Error(data.error || "Error al crear el usuario");
         }
 
-        const data = await response.json();
-        alert(data.message);
-      } catch (error) {
+        // Sin correo no hay forma de hacerle llegar la clave, así que el backend la
+        // devuelve para que quien lo dio de alta se la entregue en mano.
+        if (data.temporaryPassword) {
+          alert(
+            `${data.message}
+
+Contraseña temporal: ${data.temporaryPassword}
+
+` +
+            "Anotala ahora: no se vuelve a mostrar. La persona deberá cambiarla al entrar."
+          );
+        } else {
+          alert(`${data.message}${data.emailSent ? " Se le envió la contraseña por correo." : ""}`);
+        }
+      } catch (error: any) {
         console.error(error);
-        alert("Hubo un problema al enviar los datos");
+        alert(error.message || "Hubo un problema al enviar los datos");
       }
     }
 
@@ -345,6 +417,93 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
                 </SelectContent>
               </Select>
             </div>
+            {/* ── Campos obligatorios para que la persona funcione en el sistema ──
+                Sin fecha de contrato y tipo no se le devenga ni un día de vacaciones,
+                y sin jefe sus permisos no le llegan a nadie. Antes no se pedían y por
+                eso hay empleados que ven 0 días sin explicación. */}
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="puesto" className="text-right">
+                Puesto <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="puesto"
+                className="col-span-3"
+                value={formData.puesto}
+                onChange={(e) => handleChange("puesto", e.target.value)}
+                placeholder="Analista de sistemas"
+              />
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="fechaContrato" className="text-right">
+                Fecha de contrato <span className="text-red-500">*</span>
+              </Label>
+              <div className="col-span-3">
+                <Input
+                  id="fechaContrato"
+                  type="date"
+                  max={new Date().toISOString().substring(0, 10)}
+                  value={formData.fechaContrato}
+                  onChange={(e) => handleChange("fechaContrato", e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Desde esta fecha se devengan sus vacaciones.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="tipoUsuario" className="text-right">
+                Tipo de usuario <span className="text-red-500">*</span>
+              </Label>
+              <div className="col-span-3">
+                <Select
+                  value={formData.tipoUsuario}
+                  onValueChange={(value) => handleChange("tipoUsuario", value)}
+                >
+                  <SelectTrigger id="tipoUsuario">
+                    <SelectValue placeholder="Seleccionar tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {tiposUsuario.map((t) => (
+                      <SelectItem key={t.id} value={`${t.id}`}>{t.nombre}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Define la escala de días de vacaciones por año de servicio.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="jefe" className="text-right">
+                Jefe inmediato <span className="text-red-500">*</span>
+              </Label>
+              <div className="col-span-3">
+                <Select
+                  value={formData.jefe}
+                  onValueChange={(value) => handleChange("jefe", value)}
+                >
+                  <SelectTrigger id="jefe">
+                    <SelectValue placeholder="Seleccionar jefe" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-72">
+                    {posiblesJefes
+                      .filter((j) => !isEditing || j.id !== formData.id)
+                      .map((j) => (
+                        <SelectItem key={j.id} value={`${j.id}`}>
+                          {j.nombre}{j.nombreArea ? ` — ${j.nombreArea}` : ""}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  A quién le llegan sus solicitudes de permiso y vacaciones.
+                </p>
+              </div>
+            </div>
+
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="status" className="text-right">
                 Activo
@@ -394,10 +553,15 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
             >
               Cancelar
             </Button>
-            <Button type="submit">
+            <Button type="submit" disabled={faltantes.length > 0}>
               {isEditing ? "Guardar Cambios" : "Crear Usuario"}
             </Button>
           </DialogFooter>
+          {faltantes.length > 0 && (
+            <p className="text-xs text-red-600 text-right">
+              Falta completar: {faltantes.join(", ")}.
+            </p>
+          )}
         </form>
       </DialogContent>
     </Dialog>

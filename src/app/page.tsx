@@ -88,7 +88,7 @@ const QUICK_ACCESS: QuickAccessCard[] = [
     href: "/page/admin",
     icon: Users,
     color: "from-slate-600 to-slate-700",
-    requiredPerms: ["USER:READ", "ROLE:VIEW", "ADMIN:VIEW"],
+    requiredPerms: ["ADMIN:USERS", "dashboard:all:view"],
     requirePlatform: "admin",
   },
   {

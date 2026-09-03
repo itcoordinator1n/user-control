@@ -161,7 +161,7 @@ const routePermission: Record<string, string[]> = {
   "/page/profile":         ["USER:READ", "EMPLOYEE:PROFILE"],
   "/page/vacations-permits": ["RRHH:PERMITS_VIEW", "EMPLOYEE:PERMITS"],
   "/page/dashboard":       ["METRICS:GENERAL", "RRHH:ADMIN", "RRHH:DASHBOARD", "dashboard:all:view", "dashboard:team:view", "dashboard:team:tree:view", "dashboard:area:view"],
-  "/page/admin":           ["USER:READ", "ROLE:VIEW", "ADMIN:VIEW"],
+  "/page/admin":           ["ADMIN:USERS", "dashboard:all:view"],
   "/page/applications":    ["RRHH:APPLICATIONS_MANAGE", "BOSS:APPLICATIONS"],
   "/page/tech":            ["TICKET:RESPOND", "TICKET:ADMIN", "TICKET:TECH"],
   "/page/ticket-admin":    ["TICKET:ADMIN"],
