@@ -120,7 +120,8 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
     user: string;
     email: string;
     roles: number[];
-    area: number;
+    /** id de area. Cadena vacia = sin elegir; no hay area por defecto valida. */
+    area: string;
     status: boolean;
     sendWelcomeEmail: boolean;
     /** 8 dígitos sin código de país. Es por donde recibe su usuario y su clave. */
@@ -138,7 +139,7 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
     user: "",
     email: "",
     roles: [],
-    area: 1,
+    area: "",
     status: true,
     sendWelcomeEmail: true,
     phone: "",
@@ -183,7 +184,7 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
         user: (user as any).nombreUsuario,
         email: (user as any).correo || "",
         roles: roleIds,
-        area: Number((user as any).area) || 1,
+        area: (user as any).area ? String((user as any).area) : "",
         status: (user as any).estado === 1,
         sendWelcomeEmail: false,
         phone: (user as any).phone || "",
@@ -200,7 +201,7 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
         user: "",
         email: "",
         roles: [],
-        area: 1,
+        area: "",
         status: true,
         sendWelcomeEmail: true,
         phone: "",
@@ -220,6 +221,7 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
     const f: string[] = [];
     if (!isEditing && !/^\d+$/.test(formData.employeeId.trim())) f.push("número de empleado");
     if (!formData.name.trim())     f.push("nombre");
+    if (!formData.area)            f.push("área");
     if (!formData.user.trim())     f.push("usuario");
     if (!formData.roles.length)    f.push("al menos un rol");
     if (!formData.fechaContrato)   f.push("fecha de contrato");
@@ -267,7 +269,7 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
         const payload = {
           ...formData,
           email: formData.email || undefined,
-          area: Number(formData.area),
+          area: formData.area,
         };
         const response = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL}/api/userAdministration/update-user/${
@@ -448,7 +450,7 @@ No se pudo notificar por WhatsApp ni por correo.
                 Área
               </Label>
               <Select
-                value={`${formData.area}`}
+                value={formData.area}
                 onValueChange={(value) => handleChange("area", value)}
               >
                 <SelectTrigger id="area" className="col-span-3">

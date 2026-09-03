@@ -39,6 +39,8 @@ function Formulario() {
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [listo, setListo] = useState(false);
+  /** Enlace vencido o ya usado: no se puede reintentar desde aquí. */
+  const [agotado, setAgotado] = useState<string | null>(null);
 
   // El backend recorta la contraseña antes de guardarla (igual que el login), así que
   // el largo se mide sobre lo recortado: si no, "  1234  " pasaría por 8 caracteres.
@@ -60,13 +62,21 @@ function Formulario() {
       });
       const data = await res.json();
       if (!res.ok) {
-        // El backend distingue enlace inválido, ya usado y vencido; se muestra tal cual
-        // para que la persona sepa si tiene que pedir uno nuevo.
+        // 410 = el enlace ya no sirve (usado o vencido). Es un callejón sin salida:
+        // no tiene sentido dejar el formulario puesto, hay que pedir otro enlace.
+        if (res.status === 410) {
+          setAgotado(data?.error || "Este enlace ya no es válido.");
+          return;
+        }
         throw new Error(data?.error || "No se pudo restablecer la contraseña.");
       }
       setListo(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo restablecer la contraseña.");
+      // Un fallo de red aquí es indistinguible de un backend caído; se dice qué hacer
+      // en vez de dejar un mensaje técnico.
+      setError(err instanceof Error && err.message !== "Failed to fetch"
+        ? err.message
+        : "No se pudo conectar con el sistema. Revisá tu conexión y volvé a intentar.");
     } finally {
       setEnviando(false);
     }
@@ -79,6 +89,31 @@ function Formulario() {
         titulo="Enlace incompleto"
         texto="Este enlace no trae la información necesaria. Pedí uno nuevo a Sistemas."
       />
+    );
+  }
+
+  if (agotado) {
+    return (
+      <Aviso
+        icono={<AlertCircle className="h-10 w-10 text-amber-500" />}
+        titulo="Este enlace ya no sirve"
+        texto={agotado}
+      >
+        <div className="mt-4 text-left text-sm text-gray-600 bg-gray-50 border rounded-lg p-3 space-y-2">
+          <p className="font-medium text-gray-800">Qué hacer:</p>
+          <p>
+            Pedile a Recursos Humanos o a Sistemas que te reenvíe el enlace. Cada uno
+            sirve una sola vez y dura 30 minutos.
+          </p>
+          <p className="text-xs text-gray-500">
+            Si ya elegiste tu contraseña antes con este mismo enlace, no pidas otro:
+            probá entrar directamente.
+          </p>
+        </div>
+        <Button variant="outline" className="w-full mt-4" onClick={() => router.push("/page/login")}>
+          Ir a iniciar sesión
+        </Button>
+      </Aviso>
     );
   }
 
@@ -131,8 +166,20 @@ function Formulario() {
             {verClave ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
         </div>
-        <p className={`text-xs ${suficiente || !password ? "text-gray-500" : "text-red-600"}`}>
-          Al menos {LARGO_MINIMO} caracteres.
+        {/* El unico requisito real es el largo: el backend recorta y pide 8. Se
+            muestra en vivo para que nadie descubra el problema recien al enviar. */}
+        <ul className="text-xs space-y-0.5 mt-1">
+          <li className={suficiente ? "text-green-700" : "text-gray-500"}>
+            {suficiente ? "✓" : "○"} Al menos {LARGO_MINIMO} caracteres
+            {password && !suficiente && ` (llevás ${limpia.length})`}
+          </li>
+          <li className={coinciden ? "text-green-700" : "text-gray-500"}>
+            {coinciden ? "✓" : "○"} Las dos coinciden
+          </li>
+        </ul>
+        <p className="text-xs text-gray-400">
+          No hace falta que tenga mayúsculas, números ni símbolos. Los espacios al
+          principio y al final se ignoran.
         </p>
       </div>
 
