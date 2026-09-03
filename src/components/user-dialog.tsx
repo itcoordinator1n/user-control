@@ -114,6 +114,8 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
 
   const [formData, setFormData] = useState<{
     id: number;
+    /** Número de empleado de RR.HH. Lo asigna personal, no la aplicación. */
+    employeeId: string;
     name: string;
     user: string;
     email: string;
@@ -129,6 +131,7 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
     puesto: string;
   }>({
     id: 0,
+    employeeId: "",
     name: "",
     user: "",
     email: "",
@@ -172,6 +175,7 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
       console.log("[DEBUG] roleIds extracted:", roleIds);
       setFormData({
         id: user.id,
+        employeeId: String(user.id),
         name: (user as any).nombre,
         user: (user as any).nombreUsuario,
         email: (user as any).correo || "",
@@ -187,6 +191,7 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
     } else {
       setFormData({
         id: 0,
+        employeeId: "",
         name: "",
         user: "",
         email: "",
@@ -208,6 +213,7 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
    */
   const faltantes = (() => {
     const f: string[] = [];
+    if (!isEditing && !/^\d+$/.test(formData.employeeId.trim())) f.push("número de empleado");
     if (!formData.name.trim())     f.push("nombre");
     if (!formData.user.trim())     f.push("usuario");
     if (!formData.roles.length)    f.push("al menos un rol");
@@ -340,6 +346,30 @@ Contraseña temporal: ${data.temporaryPassword}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
+            {/* El número de empleado lo asigna RR.HH. en su sistema de personal: es la
+                clave con la que el reloj biométrico, las solicitudes y los roles
+                identifican a la persona. No se puede cambiar después, porque de él
+                cuelgan sus marcajes y su historial. */}
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="employeeId" className="text-right">
+                N.º de empleado {!isEditing && <span className="text-red-500">*</span>}
+              </Label>
+              <div className="col-span-3">
+                <Input
+                  id="employeeId"
+                  inputMode="numeric"
+                  value={formData.employeeId}
+                  onChange={(e) => handleChange("employeeId", e.target.value.replace(/\D/g, ""))}
+                  disabled={isEditing}
+                  placeholder="12345"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  {isEditing
+                    ? "No se puede cambiar: de él dependen sus marcajes y solicitudes."
+                    : "El que le asignó Recursos Humanos."}
+                </p>
+              </div>
+            </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="name" className="text-right">
                 Nombre

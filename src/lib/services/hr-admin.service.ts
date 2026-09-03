@@ -133,6 +133,7 @@ export interface VacacionesEmpleadoDTO {
   area: string;
   hireDate: string;
   tipo: string | null;
+  tipoId: number | null;
   /** Año de servicio en curso: con 0 años cumplidos se está en el año 1. */
   serviceYear: number;
   /** Días que corresponden al año en curso según la escala de su tipo. */
@@ -187,12 +188,37 @@ export const getVacationOverview = (
     "No se pudo cargar el saldo de vacaciones");
 };
 
-/** Cambia el ajuste manual y devuelve el saldo recalculado. */
-export const updateVacationAdjustment = (employeeId: number, adjustment: number, token?: string) =>
-  pedir<{ employeeId: number; adjustment: number; balance?: number }>(
-    `/vacations/${employeeId}/adjustment`, token,
-    { method: "PUT", body: JSON.stringify({ adjustment }) },
-    "No se pudo guardar el ajuste");
+/**
+ * Cambia los datos de vacaciones de un empleado y devuelve el saldo recalculado.
+ *
+ * Los tres campos son opcionales; se aplica solo lo que se mande. La fecha de
+ * contrato y el tipo se editan aquí además de en Administración de Usuarios porque
+ * esa pantalla exige ADMIN:USERS y la tiene una sola persona: RR.HH. trabaja en esta,
+ * y es aquí donde se detecta a quién le faltan esos datos.
+ */
+export const updateVacationData = (
+  employeeId: number,
+  datos: { adjustment?: number; hireDate?: string; tipoUsuario?: number },
+  token?: string,
+) => pedir<{ employeeId: number; balance: number | null; calculable: boolean }>(
+  `/vacations/${employeeId}`, token,
+  { method: "PUT", body: JSON.stringify(datos) },
+  "No se pudieron guardar los datos");
+
+/** Escalas de vacaciones disponibles, para el selector de tipo. */
+export interface TipoUsuarioDTO {
+  id: number;
+  nombre: string;
+  int_vacaciones_1: number;
+  int_vacaciones_2: number;
+  int_vacaciones_3: number;
+  int_vacaciones_4: number;
+  int_vacaciones_5: number;
+}
+
+export const getUserTypes = (token?: string) =>
+  pedir<TipoUsuarioDTO[]>("/user-types", token, { method: "GET" },
+    "No se pudieron cargar los tipos de usuario");
 
 // ─── Horarios por área ────────────────────────────────────────────────────────
 

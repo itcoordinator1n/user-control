@@ -127,6 +127,17 @@ export function HRAdminView({ onBack }: HRAdminViewProps) {
   const [simulacion, setSimulacion] = useState("hoy");
   const [ajusteEmpleado, setAjusteEmpleado] = useState<hrApi.VacacionesEmpleadoDTO | null>(null);
   const [ajusteValor, setAjusteValor] = useState("");
+  const [fechaValor, setFechaValor] = useState("");
+  const [tipoValor, setTipoValor] = useState("");
+  const [tiposUsuario, setTiposUsuario] = useState<hrApi.TipoUsuarioDTO[]>([]);
+
+  /** Abre el diálogo con los datos actuales del empleado cargados. */
+  const abrirDatosVacaciones = (v: hrApi.VacacionesEmpleadoDTO) => {
+    setAjusteEmpleado(v);
+    setAjusteValor(String(v.adjustment ?? 0));
+    setFechaValor(v.hireDate || "");
+    setTipoValor(v.tipoId ? String(v.tipoId) : "");
+  };
 
   // ── Grupos de horario ────────────────────────────────────────────────────────
   const [grupos, setGrupos] = useState<hrApi.ScheduleGroupDTO[]>([]);
@@ -182,6 +193,7 @@ export function HRAdminView({ onBack }: HRAdminViewProps) {
         hrApi.getTimePolicies(token),
         hrApi.getEmployees(token),
       ]);
+      setTiposUsuario(await hrApi.getUserTypes(token));
       // Las áreas sin horario configurado se descartan: no hay nada que mostrar ni editar.
       setSchedules(hor.filter(h => h.startTime && h.endTime).map(h => ({
         id: h.id, areaId: h.areaId, area: h.area,
@@ -564,9 +576,9 @@ export function HRAdminView({ onBack }: HRAdminViewProps) {
                         <Button
                           variant="ghost"
                           size="sm"
-                          title="Ajustar días"
+                          title="Editar datos de vacaciones"
                           disabled={simulacion !== "hoy"}
-                          onClick={() => { setAjusteEmpleado(v); setAjusteValor(String(v.adjustment)); }}
+                          onClick={() => abrirDatosVacaciones(v)}
                         >
                           <Edit2 className="h-4 w-4" />
                         </Button>
@@ -593,14 +605,29 @@ export function HRAdminView({ onBack }: HRAdminViewProps) {
                   </div>
                   <p className="text-xs text-amber-700 mb-2">
                     Les falta la fecha de contrato o el tipo de usuario, así que no se les puede
-                    devengar nada. En su perfil verán 0 días hasta que se completen esos datos.
+                    devengar nada. En su perfil verán 0 días hasta que se completen.
+                    Hacé clic en cada uno para cargarlos.
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {vacExcluidos.map((e) => (
-                      <span key={e.employeeId} className="inline-flex items-center gap-1 bg-white border border-amber-200 text-amber-800 text-xs px-2 py-0.5 rounded">
+                      <button
+                        key={e.employeeId}
+                        type="button"
+                        // Se corrigen desde aquí porque es donde se detectan. La otra
+                        // pantalla que pide estos datos exige ADMIN:USERS.
+                        onClick={() => abrirDatosVacaciones({
+                          employeeId: e.employeeId, name: e.name, area: e.area,
+                          hireDate: e.hireDate || "", tipo: null, tipoId: null,
+                          serviceYear: 1, annualDays: 0, daysFromPriorYears: 0,
+                          accruedThisYear: 0, monthsThisYear: 0, extraDays: 0,
+                          daysTaken: 0, adjustment: 0, balance: 0,
+                        })}
+                        className="inline-flex items-center gap-1 bg-white border border-amber-200 text-amber-800 text-xs px-2 py-0.5 rounded hover:bg-amber-100 hover:border-amber-300 transition-colors"
+                      >
                         {e.name}
                         <span className="text-amber-500">· {e.motivo}</span>
-                      </span>
+                        <Edit2 className="h-3 w-3" />
+                      </button>
                     ))}
                   </div>
                 </div>
@@ -1308,38 +1335,87 @@ export function HRAdminView({ onBack }: HRAdminViewProps) {
       </Dialog>
 
       {/* ── Dialog: editar / crear horario ──────────────────────────────────── */}
-      {/* ── Dialog: ajuste manual de días de vacaciones ──────────────────── */}
+      {/* ── Dialog: datos de vacaciones de un empleado ───────────────────── */}
       <Dialog open={!!ajusteEmpleado} onOpenChange={(open) => { if (!open) setAjusteEmpleado(null); }}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Ajustar días de vacaciones</DialogTitle>
+            <DialogTitle>Datos de vacaciones</DialogTitle>
           </DialogHeader>
           {ajusteEmpleado && (() => {
             const nuevo = Number(ajusteValor);
-            const valido = ajusteValor.trim() !== "" && Number.isFinite(nuevo) && nuevo >= -365 && nuevo <= 365;
-            // El saldo sin ajuste es el que sale del devengo puro; sobre él se aplica el
-            // valor nuevo para que se vea el efecto antes de guardar.
-            const sinAjuste = ajusteEmpleado.balance - ajusteEmpleado.adjustment;
-            const saldoNuevo = Math.round((sinAjuste + (valido ? nuevo : 0)) * 100) / 100;
+            const ajusteOk = ajusteValor.trim() !== "" && Number.isFinite(nuevo) && nuevo >= -365 && nuevo <= 365;
+            const fechaOk = /^\d{4}-\d{2}-\d{2}$/.test(fechaValor)
+              && fechaValor <= new Date().toISOString().substring(0, 10)
+              && fechaValor >= "1990-01-01";
+            const tipoOk = !!tipoValor;
+            const valido = ajusteOk && fechaOk && tipoOk;
+            // Si aún le falta la fecha o el tipo no hay saldo que mostrar todavía.
+            const calculable = !!ajusteEmpleado.hireDate;
+            const sinAjuste = calculable ? ajusteEmpleado.balance - ajusteEmpleado.adjustment : 0;
+            const saldoNuevo = Math.round((sinAjuste + (ajusteOk ? nuevo : 0)) * 100) / 100;
             return (
               <>
                 <div className="space-y-4 py-2">
                   <div>
                     <p className="font-medium">{ajusteEmpleado.name}</p>
+                    <p className="text-xs text-gray-500">{ajusteEmpleado.area}</p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label>Fecha de contrato</Label>
+                    <Input
+                      type="date"
+                      max={new Date().toISOString().substring(0, 10)}
+                      value={fechaValor}
+                      onChange={(e) => setFechaValor(e.target.value)}
+                    />
                     <p className="text-xs text-gray-500">
-                      {ajusteEmpleado.area} · contrato {ajusteEmpleado.hireDate} · año {ajusteEmpleado.serviceYear}
+                      Desde aquí se devengan sus vacaciones. Cambiarla recalcula todo su saldo.
+                    </p>
+                    {fechaValor && !fechaOk && (
+                      <p className="text-xs text-red-600">
+                        Debe ser una fecha real, no futura y posterior a 1990.
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label>Tipo de usuario</Label>
+                    <Select value={tipoValor} onValueChange={setTipoValor}>
+                      <SelectTrigger><SelectValue placeholder="Seleccionar tipo" /></SelectTrigger>
+                      <SelectContent>
+                        {tiposUsuario.map((t) => (
+                          <SelectItem key={t.id} value={String(t.id)}>
+                            {t.nombre} — {t.int_vacaciones_1}/{t.int_vacaciones_2}/{t.int_vacaciones_3}/{t.int_vacaciones_4}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-gray-500">
+                      Días que le nacen al cumplir cada año de servicio.
                     </p>
                   </div>
 
-                  <div className="rounded-lg border bg-gray-50 p-3 text-sm space-y-1">
-                    <div className="flex justify-between"><span className="text-gray-600">Días de sus {ajusteEmpleado.serviceYear - 1} año(s) completos</span><span className="font-mono">{ajusteEmpleado.daysFromPriorYears}</span></div>
-                    <div className="flex justify-between"><span className="text-gray-600">Devengado del año en curso</span><span className="font-mono">+{ajusteEmpleado.accruedThisYear}</span></div>
-                    <div className="flex justify-between"><span className="text-gray-600">Días gozados</span><span className="font-mono">−{ajusteEmpleado.daysTaken}</span></div>
-                    <div className="flex justify-between border-t pt-1 mt-1">
-                      <span className="text-gray-700 font-medium">Saldo sin ajuste</span>
-                      <span className="font-mono font-semibold">{Math.round(sinAjuste * 100) / 100}</span>
+                  {calculable && (
+                    <div className="rounded-lg border bg-gray-50 p-3 text-sm space-y-1">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Días de sus {ajusteEmpleado.serviceYear - 1} año(s) completos</span>
+                        <span className="font-mono">{ajusteEmpleado.daysFromPriorYears}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Devengado del año en curso</span>
+                        <span className="font-mono">+{ajusteEmpleado.accruedThisYear}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Días gozados</span>
+                        <span className="font-mono">−{ajusteEmpleado.daysTaken}</span>
+                      </div>
+                      <div className="flex justify-between border-t pt-1 mt-1">
+                        <span className="text-gray-700 font-medium">Saldo sin ajuste</span>
+                        <span className="font-mono font-semibold">{Math.round(sinAjuste * 100) / 100}</span>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   <div className="space-y-1">
                     <Label>Ajuste manual (días)</Label>
@@ -1351,20 +1427,27 @@ export function HRAdminView({ onBack }: HRAdminViewProps) {
                       placeholder="0"
                     />
                     <p className="text-xs text-gray-500">
-                      Admite decimales y valores negativos. Positivo suma días —por ejemplo los
-                      que traía de antes de su contrato—; negativo los resta.
+                      Admite decimales y negativos. Positivo suma días —por ejemplo los que
+                      traía de antes de su contrato—; negativo los resta.
                     </p>
-                    {!valido && ajusteValor.trim() !== "" && (
+                    {!ajusteOk && ajusteValor.trim() !== "" && (
                       <p className="text-xs text-red-600">Debe ser un número entre −365 y 365.</p>
                     )}
                   </div>
 
-                  <div className="flex items-center justify-between rounded-lg border border-sky-200 bg-sky-50 px-3 py-2">
-                    <span className="text-sm text-sky-800">Saldo resultante</span>
-                    <span className={`font-mono font-bold ${saldoNuevo < 0 ? "text-red-600" : "text-sky-900"}`}>
-                      {saldoNuevo}
-                    </span>
-                  </div>
+                  {calculable && (
+                    <div className="flex items-center justify-between rounded-lg border border-sky-200 bg-sky-50 px-3 py-2">
+                      <span className="text-sm text-sky-800">Saldo resultante</span>
+                      <span className={`font-mono font-bold ${saldoNuevo < 0 ? "text-red-600" : "text-sky-900"}`}>
+                        {saldoNuevo}
+                      </span>
+                    </div>
+                  )}
+                  {!calculable && (
+                    <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
+                      Con la fecha y el tipo cargados empezará a devengar y aparecerá en la tabla.
+                    </p>
+                  )}
                 </div>
                 <DialogFooter className="gap-2">
                   <Button variant="outline" onClick={() => setAjusteEmpleado(null)}>
@@ -1374,10 +1457,14 @@ export function HRAdminView({ onBack }: HRAdminViewProps) {
                     disabled={!valido}
                     onClick={() => {
                       setErrorApi(null);
-                      hrApi.updateVacationAdjustment(ajusteEmpleado.employeeId, nuevo, token)
+                      hrApi.updateVacationData(ajusteEmpleado.employeeId, {
+                        adjustment: nuevo,
+                        hireDate: fechaValor,
+                        tipoUsuario: Number(tipoValor),
+                      }, token)
                         .then(() => cargarVacaciones(simulacion))
                         .then(() => setAjusteEmpleado(null))
-                        .catch((e) => setErrorApi(e instanceof Error ? e.message : "No se pudo guardar el ajuste"));
+                        .catch((e) => setErrorApi(e instanceof Error ? e.message : "No se pudieron guardar los datos"));
                     }}
                   >
                     <Save className="h-4 w-4 mr-1" />Guardar
