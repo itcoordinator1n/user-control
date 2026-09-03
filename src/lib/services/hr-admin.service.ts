@@ -66,7 +66,13 @@ export interface ScheduleExceptionDTO {
   id: number;
   areaId: number;
   area: string;
-  date: string;
+  /** null = toda el área; con valor, solo esa persona (manda sobre la del área). */
+  employeeId?: number | null;
+  employeeName?: string | null;
+  /** Fecha puntual. null cuando la regla es semanal. */
+  date: string | null;
+  /** Días en que se repite (0=domingo … 6=sábado). null cuando es de fecha puntual. */
+  weekdays?: number[] | null;
   entryTime: string | null;
   exitTime: string | null;
   reason: string;
@@ -267,14 +273,27 @@ export const getScheduleExceptions = (area: string, token?: string) =>
     { method: "GET" }, "No se pudieron cargar las excepciones");
 
 export const createScheduleException = (
-  datos: { area: string; date: string; entryTime: string | null; exitTime: string | null; reason: string },
+  datos: {
+    area: string;
+    /** Una fecha puntual O los días de la semana en que se repite, nunca las dos. */
+    date?: string | null;
+    weekdays?: number[] | null;
+    entryTime: string | null; exitTime: string | null;
+    reason: string;
+    /** Sin esto la excepción es de toda el área. */
+    employeeId?: number;
+  },
   token?: string,
 ) => pedir<ScheduleExceptionDTO>("/schedule-exceptions", token, { method: "POST", body: JSON.stringify(datos) },
   "No se pudo crear la excepción");
 
 export const updateScheduleException = (
   id: number,
-  datos: Partial<{ entryTime: string | null; exitTime: string | null; reason: string; status: string }>,
+  datos: Partial<{
+    entryTime: string | null; exitTime: string | null; reason: string; status: string;
+    /** Solo para reglas que ya son semanales; el backend rechaza convertir una de fecha. */
+    weekdays: number[];
+  }>,
   token?: string,
 ) => pedir<ScheduleExceptionDTO>(`/schedule-exceptions/${id}`, token, { method: "PUT", body: JSON.stringify(datos) },
   "No se pudo guardar la excepción");

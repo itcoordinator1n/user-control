@@ -241,12 +241,28 @@ export interface HolidayConfig {
   areas: string[];     // empty = applies to all areas
 }
 
-/** A one-off override of entry/exit time for a specific date in an area. */
+/**
+ * Un horario distinto al del área. Es una de dos cosas, nunca las dos:
+ *   · `date` con valor    → vale solo para ese día
+ *   · `weekdays` con valor → se repite esos días de la semana, indefinidamente
+ * Lo segundo existe porque hay gente con un patrón fijo (entra más tarde y sale más
+ * temprano todos los martes y viernes) que sería inviable cargar fecha por fecha.
+ */
 export interface ScheduleException {
   id: number;
   areaId?: number;
   area: string;
-  date: string;               // "YYYY-MM-DD"
+  /**
+   * A quién aplica. null = a toda el área, que es como funcionaban todas hasta ahora.
+   * Con un empleado, solo a esa persona, y manda sobre la excepción del área: sirve
+   * para quien tiene horario distinto en días distintos.
+   */
+  employeeId?: number | null;
+  employeeName?: string | null;
+  /** "YYYY-MM-DD". null cuando la regla es semanal. */
+  date: string | null;
+  /** Días en que se repite, con la convención de Date.getDay(): 0=domingo … 6=sábado. */
+  weekdays?: number[] | null;
   entryTime: string | null;   // "HH:mm" — null = keep area default
   exitTime: string | null;    // "HH:mm" — null = keep area default
   reason: string;

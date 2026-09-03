@@ -37,6 +37,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { getRoleColor, getAreaFromRole } from "@/lib/role-colors";
 import { useSession } from "next-auth/react";
 
@@ -76,6 +86,62 @@ export function UserTable({
   const [users, setUsers] = useState<User[]>([]);
   const [resetPasswordDialogOpen, setResetPasswordDialogOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+
+  // Asignar la contraseña a mano: para cuando quien administra está con la persona y
+  // le conviene dictársela, sin depender de que llegue el WhatsApp.
+  const [tempDialogOpen, setTempDialogOpen] = useState(false);
+  const [tempUser, setTempUser] = useState<{ id: number; nombre: string } | null>(null);
+  const [tempPassword, setTempPassword] = useState("");
+  const [tempEnviando, setTempEnviando] = useState(false);
+
+  /** Sugerencia fácil de dictar: sin caracteres que se confundan al leerlos en voz alta. */
+  const sugerirPassword = () => {
+    const letras = "abcdefghjkmnpqrstuvwxyz";   // sin i, l, o
+    const numeros = "23456789";                  // sin 0 ni 1
+    const al = (s: string) => s[Math.floor(Math.random() * s.length)];
+    const base = Array.from({ length: 6 }, () => al(letras)).join("");
+    setTempPassword(
+      base[0].toUpperCase() + base.slice(1) + al(numeros) + al(numeros) + al(numeros),
+    );
+  };
+
+  const confirmTempPassword = async () => {
+    if (!tempUser) return;
+    setTempEnviando(true);
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/userAdministration/set-temp-password`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session?.user?.accessToken}`,
+          },
+          body: JSON.stringify({ id_usuario: tempUser.id, password: tempPassword.trim() }),
+        },
+      );
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "No se pudo asignar la contraseña");
+      alert(
+        `${data.message}
+
+Entregale estos datos:
+
+` +
+        `Usuario: ${data.usuario}
+Contraseña: ${tempPassword.trim()}` +
+        (data.enlacesAnulados ? `
+
+Se anularon ${data.enlacesAnulados} enlace(s) de restablecimiento pendientes.` : ""),
+      );
+      setTempDialogOpen(false);
+      setTempPassword("");
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "No se pudo asignar la contraseña");
+    } finally {
+      setTempEnviando(false);
+    }
+  };
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
@@ -304,7 +370,17 @@ export function UserTable({
                           onClick={() => handleResetPassword(user.id)}
                         >
                           <Key className="mr-2 h-4 w-4" />
-                          Restablecer Contraseña
+                          Enviar enlace de restablecimiento
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setTempUser({ id: user.id, nombre: user.nombre });
+                            setTempPassword("");
+                            setTempDialogOpen(true);
+                          }}
+                        >
+                          <Key className="mr-2 h-4 w-4" />
+                          Asignar contraseña temporal
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
@@ -386,6 +462,55 @@ export function UserTable({
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Asignar contraseña temporal a mano */}
+      <Dialog open={tempDialogOpen} onOpenChange={setTempDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Asignar contraseña temporal</DialogTitle>
+            <DialogDescription>
+              La escribís vos y se la entregás directamente a {tempUser?.nombre ?? "la persona"}.
+              Al entrar, el sistema le va a pedir que elija una nueva.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="space-y-1">
+              <Label htmlFor="tempPass">Contraseña temporal</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="tempPass"
+                  value={tempPassword}
+                  onChange={(e) => setTempPassword(e.target.value)}
+                  placeholder="Mínimo 8 caracteres"
+                  autoComplete="off"
+                />
+                <Button type="button" variant="outline" onClick={sugerirPassword}>
+                  Sugerir
+                </Button>
+              </div>
+              <p className={`text-xs ${tempPassword.trim().length >= 8 || !tempPassword ? "text-muted-foreground" : "text-red-600"}`}>
+                Al menos 8 caracteres. La sugerencia evita letras y números que se
+                confunden al dictarlos (i, l, o, 0, 1).
+              </p>
+            </div>
+            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
+              Si esta persona tiene un enlace de restablecimiento pendiente, se anula:
+              de lo contrario, abrirlo después pisaría esta contraseña.
+            </p>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setTempDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={confirmTempPassword}
+              disabled={tempPassword.trim().length < 8 || tempEnviando}
+            >
+              {tempEnviando ? "Guardando…" : "Asignar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Reset Password Dialog */}
       <AlertDialog
         open={resetPasswordDialogOpen}
@@ -395,8 +520,8 @@ export function UserTable({
           <AlertDialogHeader>
             <AlertDialogTitle>Restablecer Contraseña</AlertDialogTitle>
             <AlertDialogDescription>
-              Esto enviará un enlace para restablecer la contraseña al correo
-              electrónico del usuario. Podrán establecer una nueva contraseña.
+              Se le enviará por WhatsApp —y por correo si tiene— un enlace para que
+              elija su propia contraseña. Sirve una sola vez y vence a los 30 minutos.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

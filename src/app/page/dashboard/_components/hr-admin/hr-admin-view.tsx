@@ -25,6 +25,7 @@ import {
   PlayCircle,
   CalendarDays,
   AlertCircle,
+  Repeat,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -93,7 +94,35 @@ const SIMULACIONES: { clave: string; etiqueta: string; unidad?: hrApi.UnidadSimu
 
 type Tab = "schedules" | "holidays" | "exceptions" | "timebank" | "vacations";
 
-type ExceptionDraft = Omit<ScheduleException, "id" | "status" | "createdAt" | "createdBy">;
+/**
+ * El borrador del formulario. `employeeId` va como cadena porque sale de un <Select>;
+ * se excluye del Omit para que no choque con el numérico del DTO.
+ */
+type ExceptionDraft = Omit<
+  ScheduleException,
+  "id" | "status" | "createdAt" | "createdBy" | "employeeId" | "employeeName"
+> & {
+  /** "" = toda el área; con id, solo esa persona y manda sobre la del área. */
+  employeeId?: string;
+};
+
+/** Índice = Date.getDay(), igual que en la BD. El orden es el de la semana laboral. */
+const DIAS_SEMANA = [
+  { n: 1, corto: "Lun", largo: "lunes" },
+  { n: 2, corto: "Mar", largo: "martes" },
+  { n: 3, corto: "Mié", largo: "miércoles" },
+  { n: 4, corto: "Jue", largo: "jueves" },
+  { n: 5, corto: "Vie", largo: "viernes" },
+  { n: 6, corto: "Sáb", largo: "sábado" },
+  { n: 0, corto: "Dom", largo: "domingo" },
+];
+
+/** [2,5] → "martes y viernes". Para que la lista se lea, no haya que descifrarla. */
+const nombrarDias = (dias: number[]) => {
+  const nombres = DIAS_SEMANA.filter((d) => dias.includes(d.n)).map((d) => d.largo);
+  if (nombres.length <= 1) return nombres[0] ?? "";
+  return `${nombres.slice(0, -1).join(", ")} y ${nombres[nombres.length - 1]}`;
+};
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export function HRAdminView({ onBack }: HRAdminViewProps) {
@@ -117,8 +146,16 @@ export function HRAdminView({ onBack }: HRAdminViewProps) {
   const [editingException, setEditingException] = useState<ScheduleException | null>(null);
   const [exceptionFormOpen, setExceptionFormOpen] = useState(false);
   const [exDraft, setExDraft] = useState<ExceptionDraft>({
-    area: "", date: "", entryTime: null, exitTime: null, reason: "",
+    area: "", date: "", entryTime: null, exitTime: null, reason: "", employeeId: "",
   });
+  /**
+   * "fecha" = vale un día concreto · "semanal" = se repite esos días de la semana.
+   * Son excluyentes porque la fila en BD es una cosa o la otra: si valiera para las
+   * dos, no habría forma de decir qué manda el martes 12 con una regla de "todos los
+   * martes" y otra de "el 12".
+   */
+  const [exModo, setExModo] = useState<"fecha" | "semanal">("fecha");
+  const [exDias, setExDias] = useState<number[]>([]);
 
   // ── Vacaciones ───────────────────────────────────────────────────────────────
   const [vacaciones, setVacaciones] = useState<hrApi.VacacionesEmpleadoDTO[]>([]);
@@ -315,13 +352,15 @@ export function HRAdminView({ onBack }: HRAdminViewProps) {
     ? schedExceptions.filter((e) => e.area === detailArea.area)
     : [];
 
+  // El calendario solo puede pintar excepciones de fecha puntual; las semanales no
+  // tienen una y se listan aparte. Sin este filtro, parseLocalDate(null) reventaba.
   const activeExDates = areaExceptions
-    .filter((e) => e.status === "active")
-    .map((e) => parseLocalDate(e.date));
+    .filter((e) => e.status === "active" && e.date)
+    .map((e) => parseLocalDate(e.date!));
 
   const pausedExDates = areaExceptions
-    .filter((e) => e.status === "paused")
-    .map((e) => parseLocalDate(e.date));
+    .filter((e) => e.status === "paused" && e.date)
+    .map((e) => parseLocalDate(e.date!));
 
   const handleCalendarDayClick = (day: Date) => {
     const dateStr = toYYYYMMDD(day);
@@ -340,7 +379,11 @@ export function HRAdminView({ onBack }: HRAdminViewProps) {
         entryTime: null,
         exitTime: null,
         reason: "",
+        employeeId: "",
       });
+      // Se hizo clic en un día del calendario: eso es una excepción de ese día.
+      setExModo("fecha");
+      setExDias([]);
       setExceptionFormOpen(true);
     }
   };
@@ -353,9 +396,23 @@ export function HRAdminView({ onBack }: HRAdminViewProps) {
       entryTime: ex.entryTime,
       exitTime: ex.exitTime,
       reason: ex.reason,
+      employeeId: ex.employeeId ? String(ex.employeeId) : "",
     });
+    setExModo(ex.weekdays?.length ? "semanal" : "fecha");
+    setExDias(ex.weekdays ?? []);
     setFocusedDate(ex.date);
     setExceptionFormOpen(true);
+  };
+
+  const esSemanal = exModo === "semanal";
+
+  /** Falta algo para poder guardar. null = se puede. */
+  const exceptionBloqueada = (): string | null => {
+    if (esSemanal && !exDias.length) return "Elegí al menos un día de la semana.";
+    if (!esSemanal && !exDraft.date) return "Elegí la fecha.";
+    if (!exDraft.entryTime && !exDraft.exitTime)
+      return "Indicá al menos una hora de entrada o de salida distinta.";
+    return null;
   };
 
   const saveException = () =>
@@ -364,8 +421,19 @@ export function HRAdminView({ onBack }: HRAdminViewProps) {
         editingException
           ? hrApi.updateScheduleException(editingException.id, {
               entryTime: exDraft.entryTime, exitTime: exDraft.exitTime, reason: exDraft.reason,
+              // Solo se mandan los días si la regla ya era semanal: el backend rechaza
+              // convertir una excepción de fecha en recurrente por esta vía.
+              ...(esSemanal && editingException.weekdays?.length ? { weekdays: exDias } : {}),
             }, token)
-          : hrApi.createScheduleException({ ...exDraft }, token),
+          : hrApi.createScheduleException(
+              {
+                ...exDraft,
+                // Una cosa o la otra, nunca las dos: es lo que valida el backend.
+                date:     esSemanal ? null : exDraft.date,
+                weekdays: esSemanal ? exDias : null,
+                employeeId: exDraft.employeeId ? Number(exDraft.employeeId) : undefined,
+              },
+              token),
       () => { setExceptionFormOpen(false); setEditingException(null); },
     );
 
@@ -1146,7 +1214,9 @@ export function HRAdminView({ onBack }: HRAdminViewProps) {
                       onClick={() => {
                         setEditingException(null);
                         setFocusedDate(null);
-                        setExDraft({ area: detailArea.area, date: "", entryTime: null, exitTime: null, reason: "" });
+                        setExDraft({ area: detailArea.area, date: "", entryTime: null, exitTime: null, reason: "", employeeId: "" });
+                        setExModo("fecha");
+                        setExDias([]);
                         setExceptionFormOpen(true);
                       }}
                     >
@@ -1161,22 +1231,112 @@ export function HRAdminView({ onBack }: HRAdminViewProps) {
                       <p className="text-sm font-medium text-blue-800">
                         {editingException ? "Editar excepción" : "Nueva excepción"}
                       </p>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="space-y-1">
-                          <Label className="text-xs">Fecha</Label>
-                          <Input
-                            type="date"
-                            value={exDraft.date}
-                            onChange={(e) => setExDraft((d) => ({ ...d, date: e.target.value }))}
-                            className="h-8 text-sm"
-                          />
+                      {/* A quién aplica. Por defecto a toda el área, que es como
+                          funcionaban todas hasta ahora. Al elegir una persona, su
+                          horario de ese día manda sobre el del área. */}
+                      <div className="space-y-1">
+                        <Label className="text-xs">Aplica a</Label>
+                        <Select
+                          value={exDraft.employeeId || "__area__"}
+                          onValueChange={(v) => setExDraft((d) => ({ ...d, employeeId: v === "__area__" ? "" : v }))}
+                        >
+                          <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                          <SelectContent className="max-h-64">
+                            <SelectItem value="__area__">Toda el área {detailArea?.area}</SelectItem>
+                            {empleados
+                              .filter((e) => !detailArea || e.area === detailArea.area)
+                              .map((e) => (
+                                <SelectItem key={e.id} value={String(e.id)}>{e.nombre}</SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                        {exDraft.employeeId && (
+                          <p className="text-xs text-blue-700">
+                            Solo para esa persona. Su horario ese día manda sobre el del área.
+                          </p>
+                        )}
+                      </div>
+                      {/* Cuando aplica. Un dia suelto o un patron que se repite: son
+                          excluyentes porque la fila en BD es una cosa o la otra. Al
+                          editar no se puede cambiar, porque eso cambiaria lo que la
+                          regla significa; para eso se borra y se crea de nuevo. */}
+                      <div className="space-y-1">
+                        <Label className="text-xs">Cuando aplica</Label>
+                        <div className="flex gap-1">
+                          {([
+                            { v: "fecha",   t: "Un dia puntual" },
+                            { v: "semanal", t: "Se repite cada semana" },
+                          ] as const).map((o) => (
+                            <Button
+                              key={o.v}
+                              type="button"
+                              size="sm"
+                              variant={exModo === o.v ? "default" : "outline"}
+                              className="h-7 text-xs flex-1"
+                              disabled={!!editingException && exModo !== o.v}
+                              onClick={() => setExModo(o.v)}
+                            >
+                              {o.t}
+                            </Button>
+                          ))}
                         </div>
+                        {!!editingException && (
+                          <p className="text-xs text-gray-500">
+                            Para pasar de un dia puntual a una regla semanal (o al reves),
+                            eliminala y crea una nueva.
+                          </p>
+                        )}
+                      </div>
+
+                      {esSemanal && (
+                        <div className="space-y-1">
+                          <Label className="text-xs">Dias de la semana</Label>
+                          <div className="flex flex-wrap gap-1">
+                            {DIAS_SEMANA.map((d) => {
+                              const activo = exDias.includes(d.n);
+                              return (
+                                <Button
+                                  key={d.n}
+                                  type="button"
+                                  size="sm"
+                                  variant={activo ? "default" : "outline"}
+                                  className="h-7 w-12 text-xs px-0"
+                                  onClick={() =>
+                                    setExDias((prev) =>
+                                      activo ? prev.filter((x) => x !== d.n) : [...prev, d.n].sort((a, b) => a - b))
+                                  }
+                                >
+                                  {d.corto}
+                                </Button>
+                              );
+                            })}
+                          </div>
+                          <p className="text-xs text-blue-700">
+                            {exDias.length
+                              ? `Aplica todos los ${nombrarDias(exDias)}, hasta que se pause o se elimine.`
+                              : "Marca los dias en que se repite este horario."}
+                          </p>
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-2 gap-2">
+                        {!esSemanal && (
+                          <div className="space-y-1">
+                            <Label className="text-xs">Fecha</Label>
+                            <Input
+                              type="date"
+                              value={exDraft.date ?? ""}
+                              onChange={(e) => setExDraft((d) => ({ ...d, date: e.target.value }))}
+                              className="h-8 text-sm"
+                            />
+                          </div>
+                        )}
                         <div className="space-y-1">
                           <Label className="text-xs">Motivo</Label>
                           <Input
                             value={exDraft.reason}
                             onChange={(e) => setExDraft((d) => ({ ...d, reason: e.target.value }))}
-                            placeholder="Ej: Cierre anticipado"
+                            placeholder={esSemanal ? "Ej: Horario reducido de martes y viernes" : "Ej: Cierre anticipado"}
                             className="h-8 text-sm"
                           />
                         </div>
@@ -1209,17 +1369,17 @@ export function HRAdminView({ onBack }: HRAdminViewProps) {
                           />
                         </div>
                       </div>
-                      {!exDraft.entryTime && !exDraft.exitTime && exDraft.date && (
+                      {exceptionBloqueada() && (
                         <div className="flex items-start gap-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
                           <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                          Debes especificar al menos una hora de entrada o salida diferente.
+                          {exceptionBloqueada()}
                         </div>
                       )}
                       <div className="flex gap-2">
                         <Button
                           size="sm"
                           className="h-7 text-xs"
-                          disabled={!exDraft.date || (!exDraft.entryTime && !exDraft.exitTime)}
+                          disabled={!!exceptionBloqueada()}
                           onClick={saveException}
                         >
                           <Save className="h-3 w-3 mr-1" />
@@ -1248,10 +1408,14 @@ export function HRAdminView({ onBack }: HRAdminViewProps) {
                   )}
 
                   <div className="space-y-2 max-h-[340px] overflow-y-auto pr-1">
-                    {areaExceptions
-                      .sort((a, b) => a.date.localeCompare(b.date))
+                    {[...areaExceptions]
+                      // Las semanales arriba: son las que rigen siempre, mientras que
+                      // las de fecha son casos sueltos.
+                      .sort((a, b) =>
+                        Number(!a.weekdays?.length) - Number(!b.weekdays?.length)
+                        || (a.date ?? "").localeCompare(b.date ?? ""))
                       .map((ex) => {
-                        const isFocused = focusedDate === ex.date;
+                        const isFocused = !!ex.date && focusedDate === ex.date;
                         return (
                           <div
                             key={ex.id}
@@ -1267,11 +1431,33 @@ export function HRAdminView({ onBack }: HRAdminViewProps) {
                             <div className="flex items-start justify-between gap-2">
                               <div className="space-y-0.5 min-w-0">
                                 <div className="flex items-center gap-2 flex-wrap">
-                                  <span className="font-mono text-sm font-semibold">{ex.date}</span>
+                                  {ex.weekdays?.length ? (
+                                    <span className="text-sm font-semibold capitalize">
+                                      Todos los {nombrarDias(ex.weekdays)}
+                                    </span>
+                                  ) : (
+                                    <span className="font-mono text-sm font-semibold">{ex.date}</span>
+                                  )}
+                                  {!!ex.weekdays?.length && (
+                                    <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-xs">
+                                      <Repeat className="h-3 w-3 mr-0.5" />
+                                      Cada semana
+                                    </Badge>
+                                  )}
                                   {ex.status === "paused" ? (
                                     <Badge className="bg-gray-100 text-gray-600 border-gray-200 text-xs">Pausada</Badge>
                                   ) : (
                                     <Badge className="bg-amber-100 text-amber-800 border-amber-200 text-xs">Activa</Badge>
+                                  )}
+                                  {/* A quién aplica: sin esto no se distingue una
+                                      excepción de área de una de una sola persona. */}
+                                  {ex.employeeId ? (
+                                    <Badge className="bg-indigo-100 text-indigo-800 border-indigo-200 text-xs">
+                                      <User className="h-3 w-3 mr-0.5" />
+                                      {ex.employeeName || `Empleado ${ex.employeeId}`}
+                                    </Badge>
+                                  ) : (
+                                    <Badge variant="outline" className="text-xs">Toda el área</Badge>
                                   )}
                                 </div>
                                 <p className="text-xs text-gray-600 truncate">{ex.reason}</p>
