@@ -330,22 +330,42 @@ export function HRAdminView({ onBack }: HRAdminViewProps) {
     );
 
   // ─── Area detail modal ────────────────────────────────────────────────────────
+  /**
+   * Trae las excepciones de un área. Se copian TODOS los campos del DTO: el mapeo
+   * campo por campo que había antes se olvidaba de `employeeId`, `employeeName` y
+   * `weekdays`, así que una excepción de una sola persona volvía de la base bien y
+   * se pintaba como "Toda el área", y una regla semanal aparecía sin días.
+   */
+  const cargarExcepciones = useCallback(async (area: string) => {
+    if (!token) return;
+    try {
+      const filas = await hrApi.getScheduleExceptions(area, token);
+      setSchedExceptions(filas.map((f) => ({
+        ...f,
+        createdAt: f.createdAt ?? "",
+        createdBy: f.createdBy ?? undefined,
+      })));
+    } catch (e) {
+      setErrorApi(e instanceof Error ? e.message : "No se pudieron cargar las excepciones");
+    }
+  }, [token]);
+
   const openAreaDetail = async (s: AreaSchedule) => {
     setDetailArea(s);
     setFocusedDate(null);
     setExceptionFormOpen(false);
     setCalendarMonth(new Date());
     // Las excepciones se piden por área, no todas de golpe: es como las expone el API.
-    try {
-      const filas = await hrApi.getScheduleExceptions(s.area, token);
-      setSchedExceptions(filas.map((f) => ({
-        id: f.id, areaId: f.areaId, area: f.area, date: f.date,
-        entryTime: f.entryTime, exitTime: f.exitTime, reason: f.reason,
-        status: f.status, createdAt: f.createdAt ?? "", createdBy: f.createdBy ?? undefined,
-      })));
-    } catch (e) {
-      setErrorApi(e instanceof Error ? e.message : "No se pudieron cargar las excepciones");
-    }
+    await cargarExcepciones(s.area);
+  };
+
+  /**
+   * Refresca la lista del área abierta. `cargar()` no incluye las excepciones —trae
+   * horarios, festivos, políticas y empleados—, así que sin esto la lista del modal
+   * quedaba con lo que se cargó al abrirlo y no reflejaba lo recién guardado.
+   */
+  const recargarExcepciones = () => {
+    if (detailArea) void cargarExcepciones(detailArea.area);
   };
 
   const areaExceptions = detailArea
@@ -434,18 +454,21 @@ export function HRAdminView({ onBack }: HRAdminViewProps) {
                 employeeId: exDraft.employeeId ? Number(exDraft.employeeId) : undefined,
               },
               token),
-      () => { setExceptionFormOpen(false); setEditingException(null); },
+      () => { recargarExcepciones(); setExceptionFormOpen(false); setEditingException(null); },
     );
 
   const toggleExceptionStatus = (id: number) => {
     const actual = schedExceptions.find((e) => e.id === id);
     if (!actual) return;
-    void ejecutar(() => hrApi.updateScheduleException(
-      id, { status: actual.status === "active" ? "paused" : "active" }, token));
+    void ejecutar(
+      () => hrApi.updateScheduleException(
+        id, { status: actual.status === "active" ? "paused" : "active" }, token),
+      recargarExcepciones);
   };
 
   const deleteException = (id: number) =>
-    ejecutar(() => hrApi.deleteScheduleException(id, token), () => setFocusedDate(null));
+    ejecutar(() => hrApi.deleteScheduleException(id, token),
+      () => { recargarExcepciones(); setFocusedDate(null); });
 
   // ─── Holiday helpers ──────────────────────────────────────────────────────────
   const saveHoliday = () =>
@@ -1238,6 +1261,10 @@ export function HRAdminView({ onBack }: HRAdminViewProps) {
                         <Label className="text-xs">Aplica a</Label>
                         <Select
                           value={exDraft.employeeId || "__area__"}
+                          // Al editar queda fijo: el API no cambia a quien aplica una
+                          // excepcion ya creada, asi que dejarlo suelto solo lograria
+                          // que la pantalla dijera una cosa y la base guardara otra.
+                          disabled={!!editingException}
                           onValueChange={(v) => setExDraft((d) => ({ ...d, employeeId: v === "__area__" ? "" : v }))}
                         >
                           <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
@@ -1253,6 +1280,11 @@ export function HRAdminView({ onBack }: HRAdminViewProps) {
                         {exDraft.employeeId && (
                           <p className="text-xs text-blue-700">
                             Solo para esa persona. Su horario ese día manda sobre el del área.
+                          </p>
+                        )}
+                        {!!editingException && (
+                          <p className="text-xs text-gray-500">
+                            Para cambiar a quién aplica, eliminá esta excepción y creá una nueva.
                           </p>
                         )}
                       </div>
