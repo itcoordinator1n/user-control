@@ -137,8 +137,12 @@ export interface VacacionesEmpleadoDTO {
   serviceYear: number;
   /** Días que corresponden al año en curso según la escala de su tipo. */
   annualDays: number;
-  /** Días de los años ya completos. */
-  priorYears: number;
+  /**
+   * DÍAS acumulados por los años de servicio ya completos, no una cantidad de años.
+   * Con 2 años cumplidos y la escala 10/12/15/20 son 22 días: 10 del primer
+   * aniversario más 12 del segundo.
+   */
+  daysFromPriorYears: number;
   /** Devengado del año en curso hasta la fecha de referencia. */
   accruedThisYear: number;
   monthsThisYear: number;

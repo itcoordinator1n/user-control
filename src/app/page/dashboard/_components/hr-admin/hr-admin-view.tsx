@@ -530,9 +530,9 @@ export function HRAdminView({ onBack }: HRAdminViewProps) {
                     <TableHead>Área</TableHead>
                     <TableHead className="text-center">Contrato</TableHead>
                     <TableHead className="text-center">Año</TableHead>
-                    <TableHead className="text-center">Días/año</TableHead>
-                    <TableHead className="text-center">Años previos</TableHead>
-                    <TableHead className="text-center">Devengado</TableHead>
+                    <TableHead className="text-center">
+                      Devengado<br /><span className="font-normal text-gray-400">del año en curso</span>
+                    </TableHead>
                     <TableHead className="text-center">Gozados</TableHead>
                     <TableHead className="text-center">Ajuste</TableHead>
                     <TableHead className="text-center">Saldo</TableHead>
@@ -546,8 +546,6 @@ export function HRAdminView({ onBack }: HRAdminViewProps) {
                       <TableCell className="text-sm text-gray-600">{v.area}</TableCell>
                       <TableCell className="text-center font-mono text-xs">{v.hireDate}</TableCell>
                       <TableCell className="text-center">{v.serviceYear}</TableCell>
-                      <TableCell className="text-center">{v.annualDays}</TableCell>
-                      <TableCell className="text-center text-gray-600">{v.priorYears}</TableCell>
                       <TableCell className="text-center text-gray-600">{v.accruedThisYear}</TableCell>
                       <TableCell className="text-center text-gray-600">{v.daysTaken}</TableCell>
                       <TableCell className="text-center">
@@ -577,7 +575,7 @@ export function HRAdminView({ onBack }: HRAdminViewProps) {
                   ))}
                   {vacacionesFiltradas.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={11} className="text-center py-8 text-gray-500">
+                      <TableCell colSpan={9} className="text-center py-8 text-gray-500">
                         Sin resultados
                       </TableCell>
                     </TableRow>
@@ -1334,7 +1332,7 @@ export function HRAdminView({ onBack }: HRAdminViewProps) {
                   </div>
 
                   <div className="rounded-lg border bg-gray-50 p-3 text-sm space-y-1">
-                    <div className="flex justify-between"><span className="text-gray-600">Años ya completos</span><span className="font-mono">{ajusteEmpleado.priorYears}</span></div>
+                    <div className="flex justify-between"><span className="text-gray-600">Días de sus {ajusteEmpleado.serviceYear - 1} año(s) completos</span><span className="font-mono">{ajusteEmpleado.daysFromPriorYears}</span></div>
                     <div className="flex justify-between"><span className="text-gray-600">Devengado del año en curso</span><span className="font-mono">+{ajusteEmpleado.accruedThisYear}</span></div>
                     <div className="flex justify-between"><span className="text-gray-600">Días gozados</span><span className="font-mono">−{ajusteEmpleado.daysTaken}</span></div>
                     <div className="flex justify-between border-t pt-1 mt-1">
