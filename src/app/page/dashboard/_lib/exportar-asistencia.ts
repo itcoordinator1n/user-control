@@ -65,11 +65,21 @@ export function horasTrabajadas(entrada: string | null, salida: string | null): 
   return mm > 0 ? `${hh}h ${mm}m` : `${hh}h`;
 }
 
-/** Hora de salida del turno, para calcular las horas extra. */
+/**
+ * Hora de salida usada solo como respaldo. El horario real lo define RR.HH. por área
+ * (o por grupo de áreas) en Métricas → Configuración, y lo resuelve el backend.
+ */
 export const FIN_JORNADA = { h: 16, m: 45 };
 
-/** Horas extra de un día, con un decimal. 0 si salió antes del fin de jornada. */
-export function horasExtra(salida: string | null): number {
+/**
+ * Horas extra de un día.
+ *
+ * `deBackend` es el valor ya calculado contra el horario del área y redondeado a
+ * bloques de media hora; se usa cuando viene. El cálculo local es el respaldo para
+ * respuestas antiguas y da por hecho que todos salen a las 16:45.
+ */
+export function horasExtra(salida: string | null, deBackend?: number): number {
+  if (typeof deBackend === "number") return deBackend;
   if (!salida) return 0;
   const [h, m] = salida.split(":").map(Number);
   if (isNaN(h) || isNaN(m)) return 0;

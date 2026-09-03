@@ -88,11 +88,19 @@ function toLocalMinutes(timeHHmm: string | null): number | null {
 }
 
 
-function getOvertimeHours(exitTime: string | null): number {
-  const mins = toLocalMinutes(exitTime);
+/**
+ * Horas extra de un día.
+ *
+ * Se prefiere el valor que manda el backend (`overtimeHours`), que resuelve el horario
+ * real del área o de su grupo y redondea a bloques de media hora. El cálculo contra
+ * `SCHEDULE` queda solo como respaldo para respuestas antiguas sin ese campo, y es
+ * impreciso a propósito: da por hecho que todos salen a las 16:45.
+ */
+function getOvertimeHours(record: { exitTime: string | null; overtimeHours?: number }): number {
+  if (typeof record.overtimeHours === "number") return record.overtimeHours;
+  const mins = toLocalMinutes(record.exitTime);
   if (mins === null) return 0;
-  const endMins = SCHEDULE.endLocal.h * 60 + SCHEDULE.endLocal.m;
-  const over = mins - endMins;
+  const over = mins - (SCHEDULE.endLocal.h * 60 + SCHEDULE.endLocal.m);
   return over > 0 ? Math.round((over / 60) * 10) / 10 : 0;
 }
 
@@ -129,7 +137,7 @@ function etiquetaPermiso(
  * sitio: el Excel se armaba aparte y se le habían quedado fuera las horas extra.
  */
 function notasDelRegistro(r: AttendanceRecord): string[] {
-  const extra = horasExtra(r.exitTime);
+  const extra = horasExtra(r.exitTime, r.overtimeHours);
   return [
     r.permission
       ? `Permiso — ${etiquetaPermiso(r.permission.type, r.permission.startTime, r.permission.endTime)}`
@@ -322,7 +330,7 @@ export function AttendanceView({ onBack, allowedArea, onNavigateToPermission }: 
         rows: records.map((r) => {
           const entry = formatearHora(r.entryTime || "");
           const exit  = formatearHora(r.exitTime  || "");
-          const extra = horasExtra(r.exitTime);
+          const extra = horasExtra(r.exitTime, r.overtimeHours);
           return [
             r.date,
             getDayName(r.date),
@@ -1000,6 +1008,37 @@ export function AttendanceView({ onBack, allowedArea, onNavigateToPermission }: 
                 </div>
               )}
 
+              {/* Horas fuera de jornada y su destino. Se muestran siempre que las haya;
+                  el destino solo aparece si RR.HH. configuró una política vigente. */}
+              {selectedEmployee.timeBank && selectedEmployee.timeBank.hours > 0 && (
+                <div className="border border-amber-200 bg-amber-50 rounded-lg p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-700">
+                      <Clock className="h-4 w-4 text-amber-500" />
+                      Horas fuera de jornada
+                      <span className="font-normal text-gray-400 ml-0.5">en bloques de media hora</span>
+                    </div>
+                    <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-amber-100 text-amber-800">
+                      {selectedEmployee.timeBank.hours} h
+                    </span>
+                  </div>
+                  {selectedEmployee.timeBank.policies.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {selectedEmployee.timeBank.policies.map((p) => (
+                        <span key={p.id} className="inline-flex items-center gap-1 bg-white border border-amber-200 text-amber-800 text-xs font-medium px-2 py-0.5 rounded">
+                          {p.tipo === "pago_vacaciones" ? "Pago de vacaciones" : "Tiempo extra"}: {p.hours} h
+                          <span className="text-gray-400">· {p.nombre}</span>
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-500">
+                      Sin política vigente: estas horas solo se informan.
+                    </p>
+                  )}
+                </div>
+              )}
+
               {/* Attendance bar */}
               <div className="space-y-1">
                 <div className="flex justify-between text-sm font-medium">
@@ -1138,7 +1177,7 @@ export function AttendanceView({ onBack, allowedArea, onNavigateToPermission }: 
                           <TableBody>
                             {displayRecords.map((record) => {
                               const effectiveStatus = getEffectiveStatus(record);
-                              const overtime = getOvertimeHours(record.exitTime);
+                              const overtime = getOvertimeHours(record);
                               return (
                                 <TableRow key={record.id ? record.id : `${record.date}-${record.status}`} className="hover:bg-blue-50/40 transition-colors">
                                   {/* Date cell: day name (primary) + date badge */}

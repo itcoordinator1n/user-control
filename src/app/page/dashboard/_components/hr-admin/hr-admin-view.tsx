@@ -1,11 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useSession } from "next-auth/react";
+import * as hrApi from "@/lib/services/hr-admin.service";
 import {
   ArrowLeft,
   Clock,
   CalendarOff,
   DollarSign,
+  Timer,
+  Layers,
   Edit2,
   Trash2,
   Plus,
@@ -57,53 +61,6 @@ import type {
   ScheduleException,
 } from "../../_types/dashboard.types";
 
-// ─── Seed data ────────────────────────────────────────────────────────────────
-const SEED_SCHEDULES: AreaSchedule[] = [
-  { area: "Planta",         startTime: "06:45", endTime: "16:45", graceMins: 30 },
-  { area: "Administración", startTime: "07:00", endTime: "17:00", graceMins: 15 },
-  { area: "Ventas",         startTime: "07:00", endTime: "16:00", graceMins: 15 },
-  { area: "Logística",      startTime: "06:30", endTime: "16:30", graceMins: 30 },
-];
-
-const SEED_HOLIDAYS: HolidayConfig[] = [
-  { id: 1, date: "2026-01-01", name: "Año Nuevo",               isNational: true,  areas: [] },
-  { id: 2, date: "2026-04-14", name: "Jueves Santo",            isNational: true,  areas: [] },
-  { id: 3, date: "2026-04-15", name: "Viernes Santo",           isNational: true,  areas: [] },
-  { id: 4, date: "2026-09-15", name: "Día de la Independencia", isNational: true,  areas: [] },
-  { id: 5, date: "2026-12-25", name: "Navidad",                 isNational: true,  areas: [] },
-  { id: 6, date: "2026-05-01", name: "Día del Trabajo",         isNational: false, areas: ["Planta", "Logística"] },
-];
-
-const SEED_EXCEPTIONS: PayHoursException[] = [
-  {
-    id: 1, date: "2026-04-14", employeeKey: "EMP-001",
-    employeeName: "Carlos Mejía", area: "Planta",
-    reason: "Producción urgente — pedido exportación",
-    status: "approved", approvedBy: "Ana Martínez", createdAt: "2026-04-10",
-  },
-  {
-    id: 2, date: "2026-04-15", employeeKey: "EMP-034",
-    employeeName: "Luis Rodríguez", area: "Logística",
-    reason: "Despacho urgente de mercancía",
-    status: "pending", createdAt: "2026-04-11",
-  },
-];
-
-const SEED_SCHEDULE_EXCEPTIONS: ScheduleException[] = [
-  {
-    id: 1, area: "Planta", date: "2026-04-25",
-    entryTime: null, exitTime: "14:00",
-    reason: "Cierre anticipado — fin de semana largo",
-    status: "active", createdAt: "2026-04-10",
-  },
-  {
-    id: 2, area: "Planta", date: "2026-05-02",
-    entryTime: "08:00", exitTime: "15:30",
-    reason: "Mantenimiento de maquinaria",
-    status: "paused", createdAt: "2026-04-12",
-  },
-];
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function parseLocalDate(yyyyMmDd: string): Date {
   const [y, m, d] = yyyyMmDd.split("-").map(Number);
@@ -119,7 +76,7 @@ interface HRAdminViewProps {
   onBack: () => void;
 }
 
-type Tab = "schedules" | "holidays" | "exceptions";
+type Tab = "schedules" | "holidays" | "exceptions" | "timebank";
 
 type ExceptionDraft = Omit<ScheduleException, "id" | "status" | "createdAt" | "createdBy">;
 
@@ -128,7 +85,7 @@ export function HRAdminView({ onBack }: HRAdminViewProps) {
   const [activeTab, setActiveTab] = useState<Tab>("schedules");
 
   // ── Schedules ────────────────────────────────────────────────────────────────
-  const [schedules, setSchedules] = useState<AreaSchedule[]>(SEED_SCHEDULES);
+  const [schedules, setSchedules] = useState<AreaSchedule[]>([]);
   const [editingSchedule, setEditingSchedule] = useState<AreaSchedule | null>(null);
   const [scheduleDialog, setScheduleDialog] = useState(false);
   const [scheduleDraft, setScheduleDraft] = useState<AreaSchedule>({
@@ -136,7 +93,7 @@ export function HRAdminView({ onBack }: HRAdminViewProps) {
   });
 
   // ── Area detail / exceptions ──────────────────────────────────────────────────
-  const [schedExceptions, setSchedExceptions] = useState<ScheduleException[]>(SEED_SCHEDULE_EXCEPTIONS);
+  const [schedExceptions, setSchedExceptions] = useState<ScheduleException[]>([]);
   const [detailArea, setDetailArea] = useState<AreaSchedule | null>(null);
   const [calendarMonth, setCalendarMonth] = useState<Date>(new Date());
   /** date string ("YYYY-MM-DD") currently focused in the calendar */
@@ -148,22 +105,98 @@ export function HRAdminView({ onBack }: HRAdminViewProps) {
     area: "", date: "", entryTime: null, exitTime: null, reason: "",
   });
 
+  // ── Grupos de horario ────────────────────────────────────────────────────────
+  const [grupos, setGrupos] = useState<hrApi.ScheduleGroupDTO[]>([]);
+  const [grupoDialog, setGrupoDialog] = useState(false);
+  const [editingGrupo, setEditingGrupo] = useState<hrApi.ScheduleGroupDTO | null>(null);
+  const [grupoDraft, setGrupoDraft] = useState<{
+    nombre: string; startTime: string; endTime: string; graceMins: number; areaIds: number[];
+  }>({ nombre: "", startTime: "", endTime: "", graceMins: 15, areaIds: [] });
+
+  // ── Destino de las horas fuera de jornada ────────────────────────────────────
+  const [politicas, setPoliticas] = useState<hrApi.TimePolicyDTO[]>([]);
+  const [politicaDialog, setPoliticaDialog] = useState(false);
+  const [politicaDraft, setPoliticaDraft] = useState<{
+    nombre: string; tipo: hrApi.TimePolicyDTO["tipo"]; dateFrom: string; dateTo: string; employeeIds: number[];
+  }>({ nombre: "", tipo: "pago_vacaciones", dateFrom: "", dateTo: "", employeeIds: [] });
+  const [empleados, setEmpleados] = useState<{ id: number; nombre: string; area: string }[]>([]);
+
   // ── Holidays ─────────────────────────────────────────────────────────────────
-  const [holidays, setHolidays] = useState<HolidayConfig[]>(SEED_HOLIDAYS);
+  const [holidays, setHolidays] = useState<HolidayConfig[]>([]);
   const [holidayDialog, setHolidayDialog] = useState(false);
   const [holidayDraft, setHolidayDraft] = useState<Omit<HolidayConfig, "id">>({
     date: "", name: "", isNational: true, areas: [],
   });
 
   // ── Pay-hours exceptions ──────────────────────────────────────────────────────
-  const [exceptions, setExceptions] = useState<PayHoursException[]>(SEED_EXCEPTIONS);
+  const [exceptions, setExceptions] = useState<PayHoursException[]>([]);
   const [exceptionDialog, setExceptionDialog] = useState(false);
   const [exceptionDraft, setExceptionDraft] = useState<
     Omit<PayHoursException, "id" | "status" | "createdAt" | "approvedBy">
-  >({ date: "", employeeKey: "", employeeName: "", area: "", reason: "" });
+  >({ date: "", employeeId: undefined, employeeName: "", area: "", reason: "" });
   const [exceptionsFilter, setExceptionsFilter] = useState<
     "all" | "pending" | "approved" | "rejected"
   >("all");
+
+  // ─── Carga desde el API ───────────────────────────────────────────────────────
+  // Hasta ahora esta pantalla trabajaba con datos semilla y estado local: lo que se
+  // configuraba aquí no se guardaba en ningún lado.
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken as string | undefined;
+  const [cargando, setCargando] = useState(true);
+  const [errorApi, setErrorApi] = useState<string | null>(null);
+
+  const cargar = useCallback(async () => {
+    if (!token) return;
+    setCargando(true);
+    setErrorApi(null);
+    try {
+      const [hor, grp, fes, pay, pol, emp] = await Promise.all([
+        hrApi.getSchedules(token),
+        hrApi.getScheduleGroups(token),
+        hrApi.getHolidays(new Date().getFullYear(), token),
+        hrApi.getPayExceptions(token),
+        hrApi.getTimePolicies(token),
+        hrApi.getEmployees(token),
+      ]);
+      // Las áreas sin horario configurado se descartan: no hay nada que mostrar ni editar.
+      setSchedules(hor.filter(h => h.startTime && h.endTime).map(h => ({
+        id: h.id, areaId: h.areaId, area: h.area,
+        startTime: h.startTime as string, endTime: h.endTime as string,
+        graceMins: h.graceMins ?? 15,
+        grupoId: (h as { grupoId?: number | null }).grupoId ?? null,
+        grupo: (h as { grupo?: string | null }).grupo ?? null,
+        updatedAt: h.updatedAt, updatedBy: h.updatedBy,
+      })));
+      setGrupos(grp);
+      setHolidays(fes.map(f => ({ id: f.id, date: f.date, name: f.name, isNational: f.isNational, areas: f.areas })));
+      setExceptions(pay.map(e => ({
+        id: e.id, date: e.date, employeeId: e.employeeId, employeeName: e.employeeName,
+        area: e.area, reason: e.reason, status: e.status,
+        approvedBy: e.approvedBy ?? undefined, createdAt: e.createdAt ?? "",
+      })));
+      setPoliticas(pol);
+      setEmpleados(emp.map(e => ({ id: e.id, nombre: e.nombre, area: e.area })));
+    } catch (e) {
+      setErrorApi(e instanceof Error ? e.message : "No se pudo cargar la configuración");
+    } finally {
+      setCargando(false);
+    }
+  }, [token]);
+
+  useEffect(() => { void cargar(); }, [cargar]);
+
+  /** Envuelve una acción de escritura: muestra el error y recarga si sale bien. */
+  const ejecutar = async (accion: () => Promise<unknown>, alTerminar?: () => void) => {
+    setErrorApi(null);
+    try {
+      await accion();
+      await cargar();
+      alTerminar?.();
+    } catch (e) {
+      setErrorApi(e instanceof Error ? e.message : "No se pudo guardar el cambio");
+    }
+  };
 
   // ─── Schedule helpers ─────────────────────────────────────────────────────────
   const lateLimit = (s: AreaSchedule) => {
@@ -178,24 +211,43 @@ export function HRAdminView({ onBack }: HRAdminViewProps) {
     setScheduleDialog(true);
   };
 
-  const saveSchedule = () => {
-    if (editingSchedule) {
-      setSchedules((prev) =>
-        prev.map((s) => (s.area === editingSchedule.area ? scheduleDraft : s))
-      );
-    } else {
-      setSchedules((prev) => [...prev, scheduleDraft]);
-    }
-    setScheduleDialog(false);
-    setEditingSchedule(null);
-  };
+  const saveSchedule = () =>
+    ejecutar(
+      () =>
+        editingSchedule?.id
+          // La fila se identifica por id, no por nombre de área: renombrar un área
+          // dejaba huérfana la edición.
+          ? hrApi.updateSchedule(editingSchedule.id, {
+              startTime: scheduleDraft.startTime,
+              endTime: scheduleDraft.endTime,
+              graceMins: scheduleDraft.graceMins,
+            }, token)
+          : hrApi.createSchedule({
+              area: scheduleDraft.area,
+              startTime: scheduleDraft.startTime,
+              endTime: scheduleDraft.endTime,
+              graceMins: scheduleDraft.graceMins,
+            }, token),
+      () => { setScheduleDialog(false); setEditingSchedule(null); },
+    );
 
   // ─── Area detail modal ────────────────────────────────────────────────────────
-  const openAreaDetail = (s: AreaSchedule) => {
+  const openAreaDetail = async (s: AreaSchedule) => {
     setDetailArea(s);
     setFocusedDate(null);
     setExceptionFormOpen(false);
     setCalendarMonth(new Date());
+    // Las excepciones se piden por área, no todas de golpe: es como las expone el API.
+    try {
+      const filas = await hrApi.getScheduleExceptions(s.area, token);
+      setSchedExceptions(filas.map((f) => ({
+        id: f.id, areaId: f.areaId, area: f.area, date: f.date,
+        entryTime: f.entryTime, exitTime: f.exitTime, reason: f.reason,
+        status: f.status, createdAt: f.createdAt ?? "", createdBy: f.createdBy ?? undefined,
+      })));
+    } catch (e) {
+      setErrorApi(e instanceof Error ? e.message : "No se pudieron cargar las excepciones");
+    }
   };
 
   const areaExceptions = detailArea
@@ -245,62 +297,58 @@ export function HRAdminView({ onBack }: HRAdminViewProps) {
     setExceptionFormOpen(true);
   };
 
-  const saveException = () => {
-    if (editingException) {
-      setSchedExceptions((prev) =>
-        prev.map((e) => (e.id === editingException.id ? { ...e, ...exDraft } : e))
-      );
-    } else {
-      const nextId = Math.max(0, ...schedExceptions.map((e) => e.id)) + 1;
-      setSchedExceptions((prev) => [
-        ...prev,
-        { id: nextId, ...exDraft, status: "active", createdAt: new Date().toISOString().slice(0, 10) },
-      ]);
-    }
-    setExceptionFormOpen(false);
-    setEditingException(null);
-  };
+  const saveException = () =>
+    ejecutar(
+      () =>
+        editingException
+          ? hrApi.updateScheduleException(editingException.id, {
+              entryTime: exDraft.entryTime, exitTime: exDraft.exitTime, reason: exDraft.reason,
+            }, token)
+          : hrApi.createScheduleException({ ...exDraft }, token),
+      () => { setExceptionFormOpen(false); setEditingException(null); },
+    );
 
   const toggleExceptionStatus = (id: number) => {
-    setSchedExceptions((prev) =>
-      prev.map((e) =>
-        e.id === id ? { ...e, status: e.status === "active" ? "paused" : "active" } : e
-      )
-    );
+    const actual = schedExceptions.find((e) => e.id === id);
+    if (!actual) return;
+    void ejecutar(() => hrApi.updateScheduleException(
+      id, { status: actual.status === "active" ? "paused" : "active" }, token));
   };
 
-  const deleteException = (id: number) => {
-    setSchedExceptions((prev) => prev.filter((e) => e.id !== id));
-    if (focusedDate) setFocusedDate(null);
-  };
+  const deleteException = (id: number) =>
+    ejecutar(() => hrApi.deleteScheduleException(id, token), () => setFocusedDate(null));
 
   // ─── Holiday helpers ──────────────────────────────────────────────────────────
-  const saveHoliday = () => {
-    const nextId = Math.max(0, ...holidays.map((h) => h.id)) + 1;
-    setHolidays((prev) => [...prev, { id: nextId, ...holidayDraft }]);
-    setHolidayDialog(false);
-    setHolidayDraft({ date: "", name: "", isNational: true, areas: [] });
-  };
+  const saveHoliday = () =>
+    ejecutar(
+      () => hrApi.createHoliday({ ...holidayDraft }, token),
+      () => {
+        setHolidayDialog(false);
+        setHolidayDraft({ date: "", name: "", isNational: true, areas: [] });
+      },
+    );
 
-  const deleteHoliday = (id: number) =>
-    setHolidays((prev) => prev.filter((h) => h.id !== id));
+  const deleteHoliday = (id: number) => ejecutar(() => hrApi.deleteHoliday(id, token));
 
   // ─── Pay-hours exception helpers ──────────────────────────────────────────────
-  const savePayException = () => {
-    const nextId = Math.max(0, ...exceptions.map((e) => e.id)) + 1;
-    setExceptions((prev) => [
-      ...prev,
-      { id: nextId, ...exceptionDraft, status: "pending", createdAt: new Date().toISOString().slice(0, 10) },
-    ]);
-    setExceptionDialog(false);
-    setExceptionDraft({ date: "", employeeKey: "", employeeName: "", area: "", reason: "" });
-  };
-
-  const updateExceptionStatus = (id: number, status: "approved" | "rejected") => {
-    setExceptions((prev) =>
-      prev.map((e) => (e.id === id ? { ...e, status, approvedBy: "Usuario actual" } : e))
+  const savePayException = () =>
+    ejecutar(
+      () => hrApi.createPayException({
+        date: exceptionDraft.date,
+        // El backend espera el id numérico; el formulario pedía una clave de texto
+        // libre tipo "EMP-001" que no correspondía con ningún empleado real.
+        employeeId: Number(exceptionDraft.employeeId),
+        area: exceptionDraft.area,
+        reason: exceptionDraft.reason,
+      }, token),
+      () => {
+        setExceptionDialog(false);
+        setExceptionDraft({ date: "", employeeId: undefined, employeeName: "", area: "", reason: "" });
+      },
     );
-  };
+
+  const updateExceptionStatus = (id: number, status: "approved" | "rejected") =>
+    ejecutar(() => hrApi.updatePayExceptionStatus(id, status, token));
 
   const filteredExceptions =
     exceptionsFilter === "all"
@@ -332,6 +380,19 @@ export function HRAdminView({ onBack }: HRAdminViewProps) {
           </div>
         </div>
 
+        {errorApi && (
+          <div className="mb-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+            <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+            <span className="flex-1">{errorApi}</span>
+            <button type="button" onClick={() => setErrorApi(null)} className="font-medium text-red-600 hover:text-red-900">
+              Cerrar
+            </button>
+          </div>
+        )}
+        {cargando && (
+          <p className="mb-4 text-sm text-gray-500">Cargando configuración…</p>
+        )}
+
         {/* Tab bar */}
         <div className="flex gap-1 border-b">
           {(
@@ -339,6 +400,7 @@ export function HRAdminView({ onBack }: HRAdminViewProps) {
               { key: "schedules",  label: "Horarios por Área",        icon: Clock       },
               { key: "holidays",   label: "Días Festivos / Libres",    icon: CalendarOff },
               { key: "exceptions", label: "Excepciones Pago de Horas", icon: DollarSign  },
+              { key: "timebank",   label: "Horas Fuera de Jornada",    icon: Timer       },
             ] as { key: Tab; label: string; icon: React.ElementType }[]
           ).map(({ key, label, icon: Icon }) => (
             <button
@@ -355,6 +417,207 @@ export function HRAdminView({ onBack }: HRAdminViewProps) {
             </button>
           ))}
         </div>
+
+        {/* ── Grupos de horario ────────────────────────────────────────────── */}
+        {activeTab === "schedules" && (
+          <Card className="mb-6">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Layers className="h-5 w-5 text-violet-600" />
+                  Grupos de Horario
+                </CardTitle>
+                <p className="text-xs text-gray-500 mt-1">
+                  Varias áreas que salen a la misma hora. El horario del grupo manda sobre
+                  el propio del área; al eliminar el grupo, cada una vuelve al suyo.
+                </p>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setEditingGrupo(null);
+                  setGrupoDraft({ nombre: "", startTime: "", endTime: "", graceMins: 15, areaIds: [] });
+                  setGrupoDialog(true);
+                }}
+                className="flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Nuevo Grupo
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {grupos.length === 0 ? (
+                <p className="text-sm text-gray-500 py-4 text-center">
+                  No hay grupos. Cada área usa su propio horario.
+                </p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Grupo</TableHead>
+                      <TableHead>Áreas</TableHead>
+                      <TableHead className="text-center">Entrada</TableHead>
+                      <TableHead className="text-center">Salida</TableHead>
+                      <TableHead className="text-center">Tolerancia</TableHead>
+                      <TableHead className="w-24" />
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {grupos.map((g) => (
+                      <TableRow key={g.id}>
+                        <TableCell className="font-medium">{g.nombre}</TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            {g.areas.length === 0
+                              ? <span className="text-gray-400 text-xs">Sin áreas asignadas</span>
+                              : g.areas.map((a) => (
+                                  <Badge key={a} variant="outline" className="text-xs">{a}</Badge>
+                                ))}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center font-mono">{g.startTime}</TableCell>
+                        <TableCell className="text-center font-mono">{g.endTime}</TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant="outline">{g.graceMins} min</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="sm" onClick={() => {
+                              setEditingGrupo(g);
+                              setGrupoDraft({
+                                nombre: g.nombre, startTime: g.startTime, endTime: g.endTime,
+                                graceMins: g.graceMins, areaIds: g.areaIds,
+                              });
+                              setGrupoDialog(true);
+                            }}>
+                              <Edit2 className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-red-500 hover:bg-red-50"
+                              onClick={() => {
+                                if (confirm(`¿Eliminar el grupo "${g.nombre}"? Cada área volverá a su horario propio.`))
+                                  void ejecutar(() => hrApi.deleteScheduleGroup(g.id, token));
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* ── Horas fuera de jornada ───────────────────────────────────────── */}
+        {activeTab === "timebank" && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Timer className="h-5 w-5 text-amber-600" />
+                  Destino de las Horas Fuera de Jornada
+                </CardTitle>
+                <p className="text-xs text-gray-500 mt-1">
+                  Las horas que alguien se queda después de su salida se cuentan siempre, en
+                  bloques de media hora. Aquí se decide a qué se destinan; sin una política
+                  vigente solo se muestran.
+                </p>
+              </div>
+              <Button
+                size="sm"
+                onClick={() => {
+                  setPoliticaDraft({ nombre: "", tipo: "pago_vacaciones", dateFrom: "", dateTo: "", employeeIds: [] });
+                  setPoliticaDialog(true);
+                }}
+                className="flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Nueva Política
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {politicas.length === 0 ? (
+                <p className="text-sm text-gray-500 py-8 text-center">
+                  No hay políticas. Las horas fuera de jornada se calculan y se muestran,
+                  pero no se destinan a nada.
+                </p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Política</TableHead>
+                      <TableHead>Destino</TableHead>
+                      <TableHead>Período</TableHead>
+                      <TableHead>Empleados</TableHead>
+                      <TableHead className="text-center">Estado</TableHead>
+                      <TableHead className="w-24" />
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {politicas.map((pol) => (
+                      <TableRow key={pol.id}>
+                        <TableCell className="font-medium">{pol.nombre}</TableCell>
+                        <TableCell>
+                          <Badge className={pol.tipo === "pago_vacaciones"
+                            ? "bg-sky-100 text-sky-800 border-sky-200"
+                            : "bg-emerald-100 text-emerald-800 border-emerald-200"}>
+                            {hrApi.ETIQUETA_TIPO_POLITICA[pol.tipo]}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="font-mono text-sm">
+                          {pol.dateFrom === pol.dateTo ? pol.dateFrom : `${pol.dateFrom} — ${pol.dateTo}`}
+                        </TableCell>
+                        <TableCell className="text-sm max-w-[260px]">
+                          {pol.empleados.length === 0
+                            ? <span className="text-gray-400">—</span>
+                            : <span className="text-gray-700">{pol.empleados.join(", ")}</span>}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {pol.status === "active"
+                            ? <Badge className="bg-green-100 text-green-800 border-green-200">Vigente</Badge>
+                            : <Badge className="bg-gray-100 text-gray-700 border-gray-200">Cerrada</Badge>}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              title={pol.status === "active" ? "Cerrar" : "Reabrir"}
+                              onClick={() => void ejecutar(() => hrApi.updateTimePolicyStatus(
+                                pol.id, pol.status === "active" ? "closed" : "active", token))}
+                            >
+                              {pol.status === "active"
+                                ? <PauseCircle className="h-4 w-4" />
+                                : <PlayCircle className="h-4 w-4" />}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-red-500 hover:bg-red-50"
+                              onClick={() => {
+                                if (confirm(`¿Eliminar la política "${pol.nombre}"?`))
+                                  void ejecutar(() => hrApi.deleteTimePolicy(pol.id, token));
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* ── Tab: Horarios por Área ─────────────────────────────────────────── */}
         {activeTab === "schedules" && (
@@ -387,6 +650,7 @@ export function HRAdminView({ onBack }: HRAdminViewProps) {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Área</TableHead>
+                    <TableHead>Grupo</TableHead>
                     <TableHead className="text-center">Entrada</TableHead>
                     <TableHead className="text-center">Salida</TableHead>
                     <TableHead className="text-center">Tolerancia</TableHead>
@@ -409,6 +673,11 @@ export function HRAdminView({ onBack }: HRAdminViewProps) {
                             <Building2 className="h-4 w-4 text-gray-400" />
                             {s.area}
                           </div>
+                        </TableCell>
+                        <TableCell>
+                          {s.grupo
+                            ? <Badge className="bg-violet-100 text-violet-800 border-violet-200">{s.grupo}</Badge>
+                            : <span className="text-gray-400 text-xs">Horario propio</span>}
                         </TableCell>
                         <TableCell className="text-center font-mono">{s.startTime}</TableCell>
                         <TableCell className="text-center font-mono">{s.endTime}</TableCell>
@@ -512,7 +781,7 @@ export function HRAdminView({ onBack }: HRAdminViewProps) {
                 <DollarSign className="h-5 w-5 text-green-600" />
                 Excepciones — Pago de Horas (día festivo laboral)
               </CardTitle>
-              <Button size="sm" onClick={() => { setExceptionDraft({ date: "", employeeKey: "", employeeName: "", area: "", reason: "" }); setExceptionDialog(true); }} className="flex items-center gap-2">
+              <Button size="sm" onClick={() => { setExceptionDraft({ date: "", employeeId: undefined, employeeName: "", area: "", reason: "" }); setExceptionDialog(true); }} className="flex items-center gap-2">
                 <Plus className="h-4 w-4" />
                 Nueva Excepción
               </Button>
@@ -549,7 +818,7 @@ export function HRAdminView({ onBack }: HRAdminViewProps) {
                           <User className="h-4 w-4 text-gray-400" />
                           <div>
                             <p className="font-medium text-sm">{ex.employeeName}</p>
-                            <p className="text-xs text-gray-500">{ex.employeeKey}</p>
+                            <p className="text-xs text-gray-500">{ex.area}</p>
                           </div>
                         </div>
                       </TableCell>
@@ -848,6 +1117,182 @@ export function HRAdminView({ onBack }: HRAdminViewProps) {
       </Dialog>
 
       {/* ── Dialog: editar / crear horario ──────────────────────────────────── */}
+      {/* ── Dialog: grupo de horario ─────────────────────────────────────── */}
+      <Dialog open={grupoDialog} onOpenChange={setGrupoDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{editingGrupo ? "Editar Grupo" : "Nuevo Grupo de Horario"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1">
+              <Label>Nombre del grupo</Label>
+              <Input
+                value={grupoDraft.nombre}
+                onChange={(e) => setGrupoDraft((d) => ({ ...d, nombre: e.target.value }))}
+                placeholder="Administrativo"
+              />
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1">
+                <Label>Entrada</Label>
+                <Input type="time" value={grupoDraft.startTime}
+                  onChange={(e) => setGrupoDraft((d) => ({ ...d, startTime: e.target.value }))} />
+              </div>
+              <div className="space-y-1">
+                <Label>Salida</Label>
+                <Input type="time" value={grupoDraft.endTime}
+                  onChange={(e) => setGrupoDraft((d) => ({ ...d, endTime: e.target.value }))} />
+              </div>
+              <div className="space-y-1">
+                <Label>Tolerancia</Label>
+                <Input type="number" min={0} max={60} value={grupoDraft.graceMins}
+                  onChange={(e) => setGrupoDraft((d) => ({ ...d, graceMins: Number(e.target.value) }))} />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Áreas que comparten este horario</Label>
+              <div className="border rounded-md max-h-56 overflow-y-auto divide-y">
+                {schedules.map((a) => {
+                  const marcada = grupoDraft.areaIds.includes(a.areaId as number);
+                  // Un área solo puede estar en un grupo: si ya está en otro, se avisa
+                  // para que no parezca que se perdió el cambio al guardar.
+                  const enOtroGrupo = !!a.grupoId && a.grupoId !== editingGrupo?.id;
+                  return (
+                    <label key={a.areaId} className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer hover:bg-gray-50">
+                      <input
+                        type="checkbox"
+                        checked={marcada}
+                        onChange={(e) => setGrupoDraft((d) => ({
+                          ...d,
+                          areaIds: e.target.checked
+                            ? [...d.areaIds, a.areaId as number]
+                            : d.areaIds.filter((x) => x !== a.areaId),
+                        }))}
+                      />
+                      <span className="flex-1">{a.area}</span>
+                      {enOtroGrupo && !marcada && (
+                        <span className="text-xs text-amber-600">en «{a.grupo}»</span>
+                      )}
+                    </label>
+                  );
+                })}
+              </div>
+              <p className="text-xs text-gray-500">
+                {grupoDraft.areaIds.length} área{grupoDraft.areaIds.length === 1 ? "" : "s"} seleccionada
+                {grupoDraft.areaIds.length === 1 ? "" : "s"}. Las que se quiten vuelven a su horario propio.
+              </p>
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setGrupoDialog(false)}>
+              <X className="h-4 w-4 mr-1" />Cancelar
+            </Button>
+            <Button
+              onClick={() => void ejecutar(
+                () => editingGrupo
+                  ? hrApi.updateScheduleGroup(editingGrupo.id, grupoDraft, token)
+                  : hrApi.createScheduleGroup(grupoDraft, token),
+                () => { setGrupoDialog(false); setEditingGrupo(null); },
+              )}
+              disabled={!grupoDraft.nombre || !grupoDraft.startTime || !grupoDraft.endTime}
+            >
+              <Save className="h-4 w-4 mr-1" />Guardar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Dialog: política de horas fuera de jornada ───────────────────── */}
+      <Dialog open={politicaDialog} onOpenChange={setPoliticaDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Nueva Política de Horas</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1">
+              <Label>Nombre</Label>
+              <Input
+                value={politicaDraft.nombre}
+                onChange={(e) => setPoliticaDraft((d) => ({ ...d, nombre: e.target.value }))}
+                placeholder="Pago de vacaciones adeudadas — septiembre"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>¿A qué se destinan las horas?</Label>
+              <Select
+                value={politicaDraft.tipo}
+                onValueChange={(v) => setPoliticaDraft((d) => ({ ...d, tipo: v as hrApi.TimePolicyDTO["tipo"] }))}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pago_vacaciones">{hrApi.ETIQUETA_TIPO_POLITICA.pago_vacaciones}</SelectItem>
+                  <SelectItem value="horas_extra">{hrApi.ETIQUETA_TIPO_POLITICA.horas_extra}</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-gray-500">
+                {politicaDraft.tipo === "pago_vacaciones"
+                  ? "Para quien tomó vacaciones que no tenía y las devuelve quedándose."
+                  : "Para cuando se acordó pagar el tiempo extra trabajado."}
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label>Desde</Label>
+                <Input type="date" value={politicaDraft.dateFrom}
+                  onChange={(e) => setPoliticaDraft((d) => ({ ...d, dateFrom: e.target.value }))} />
+              </div>
+              <div className="space-y-1">
+                <Label>Hasta</Label>
+                <Input type="date" value={politicaDraft.dateTo}
+                  onChange={(e) => setPoliticaDraft((d) => ({ ...d, dateTo: e.target.value }))} />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Empleados</Label>
+              <div className="border rounded-md max-h-56 overflow-y-auto divide-y">
+                {empleados.map((e) => (
+                  <label key={e.id} className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer hover:bg-gray-50">
+                    <input
+                      type="checkbox"
+                      checked={politicaDraft.employeeIds.includes(e.id)}
+                      onChange={(ev) => setPoliticaDraft((d) => ({
+                        ...d,
+                        employeeIds: ev.target.checked
+                          ? [...d.employeeIds, e.id]
+                          : d.employeeIds.filter((x) => x !== e.id),
+                      }))}
+                    />
+                    <span className="flex-1">{e.nombre}</span>
+                    <span className="text-xs text-gray-400">{e.area}</span>
+                  </label>
+                ))}
+              </div>
+              <p className="text-xs text-gray-500">
+                {politicaDraft.employeeIds.length} seleccionado
+                {politicaDraft.employeeIds.length === 1 ? "" : "s"}
+              </p>
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setPoliticaDialog(false)}>
+              <X className="h-4 w-4 mr-1" />Cancelar
+            </Button>
+            <Button
+              onClick={() => void ejecutar(
+                () => hrApi.createTimePolicy(politicaDraft, token),
+                () => setPoliticaDialog(false),
+              )}
+              disabled={
+                !politicaDraft.nombre || !politicaDraft.dateFrom ||
+                !politicaDraft.dateTo || politicaDraft.employeeIds.length === 0
+              }
+            >
+              <Save className="h-4 w-4 mr-1" />Crear
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={scheduleDialog} onOpenChange={setScheduleDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -937,7 +1382,7 @@ export function HRAdminView({ onBack }: HRAdminViewProps) {
             {!holidayDraft.isNational && (
               <div className="space-y-2">
                 <Label className="text-sm">Áreas que aplica</Label>
-                {SEED_SCHEDULES.map((s) => (
+                {schedules.map((s) => (
                   <label key={s.area} className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={holidayDraft.areas.includes(s.area)}
                       onChange={(e) => setHolidayDraft((d) => ({ ...d, areas: e.target.checked ? [...d.areas, s.area] : d.areas.filter((a) => a !== s.area) }))}
@@ -970,24 +1415,33 @@ export function HRAdminView({ onBack }: HRAdminViewProps) {
               <Label>Fecha (día festivo que laborará)</Label>
               <Input type="date" value={exceptionDraft.date} onChange={(e) => setExceptionDraft((d) => ({ ...d, date: e.target.value }))} />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label>Clave empleado</Label>
-                <Input value={exceptionDraft.employeeKey} onChange={(e) => setExceptionDraft((d) => ({ ...d, employeeKey: e.target.value }))} placeholder="EMP-001" />
-              </div>
-              <div className="space-y-1">
-                <Label>Área</Label>
-                <Select value={exceptionDraft.area} onValueChange={(v) => setExceptionDraft((d) => ({ ...d, area: v }))}>
-                  <SelectTrigger><SelectValue placeholder="Área" /></SelectTrigger>
-                  <SelectContent>
-                    {SEED_SCHEDULES.map((s) => <SelectItem key={s.area} value={s.area}>{s.area}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+            {/* Un selector de empleados reales: antes se escribía a mano una clave tipo
+                "EMP-001" que no correspondía con ningún registro, y el área se elegía
+                aparte pudiendo no ser la suya. Ahora ambos salen del propio empleado. */}
             <div className="space-y-1">
-              <Label>Nombre del empleado</Label>
-              <Input value={exceptionDraft.employeeName} onChange={(e) => setExceptionDraft((d) => ({ ...d, employeeName: e.target.value }))} placeholder="Nombre completo" />
+              <Label>Empleado</Label>
+              <Select
+                value={exceptionDraft.employeeId ? String(exceptionDraft.employeeId) : ""}
+                onValueChange={(v) => {
+                  const emp = empleados.find((e) => String(e.id) === v);
+                  setExceptionDraft((d) => ({
+                    ...d,
+                    employeeId: emp ? emp.id : undefined,
+                    employeeName: emp ? emp.nombre : "",
+                    area: emp ? emp.area : "",
+                  }));
+                }}
+              >
+                <SelectTrigger><SelectValue placeholder="Buscar empleado" /></SelectTrigger>
+                <SelectContent className="max-h-72">
+                  {empleados.map((e) => (
+                    <SelectItem key={e.id} value={String(e.id)}>{e.nombre} — {e.area}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {exceptionDraft.area && (
+                <p className="text-xs text-gray-500">Área: {exceptionDraft.area}</p>
+              )}
             </div>
             <div className="space-y-1">
               <Label>Motivo</Label>
@@ -996,7 +1450,7 @@ export function HRAdminView({ onBack }: HRAdminViewProps) {
           </div>
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setExceptionDialog(false)}><X className="h-4 w-4 mr-1" />Cancelar</Button>
-            <Button onClick={savePayException} disabled={!exceptionDraft.date || !exceptionDraft.employeeKey || !exceptionDraft.employeeName || !exceptionDraft.area}>
+            <Button onClick={savePayException} disabled={!exceptionDraft.date || !exceptionDraft.employeeId || !exceptionDraft.area}>
               <Save className="h-4 w-4 mr-1" />Crear
             </Button>
           </DialogFooter>

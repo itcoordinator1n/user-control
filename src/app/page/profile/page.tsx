@@ -16,7 +16,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useEffect, useState } from "react";
 import { signIn, useSession } from "next-auth/react";
 import {
-  addHours,
   differenceInSeconds,
   formatDistanceToNow,
   isBefore,
@@ -42,10 +41,16 @@ export default function ProfilePage() {
 
   const [entryDate, setEntryDate] = useState<Date | null>(null);
   const [exitDate, setExitDate] = useState<Date | null>(null);
+  const [horarioArea, setHorarioArea] = useState<{ startTime: string; endTime: string; graceMins: number } | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [remainingTime, setRemainingTime] = useState<string>("");
   interface EntryDateResponse {
+    /** "YYYY-MM-DD HH:mm:ss" en hora de Honduras. El centinela 1970-01-01 = sin marcaje. */
     entryDate: string;
+    /** Salida REAL. null mientras la persona no haya marcado salida. */
+    exitDate: string | null;
+    /** Horario configurado de su área en Métricas → Configuración. null si no hay. */
+    schedule: { startTime: string; endTime: string; graceMins: number } | null;
   }
 
 useEffect(() => {
@@ -69,21 +74,36 @@ useEffect(() => {
         }
 
         const data: EntryDateResponse = await res.json();
-        const entry = new Date(data.entryDate);
+        // "YYYY-MM-DD HH:mm:ss" sin zona: se arma por componentes para que el
+        // navegador no lo interprete como UTC y lo corra seis horas.
+        const aFecha = (v: string | null) => {
+          if (!v) return null;
+          const [f, h] = v.split(" ");
+          const [y, mo, d] = f.split("-").map(Number);
+          const [hh, mi, ss] = (h || "00:00:00").split(":").map(Number);
+          return new Date(y, mo - 1, d, hh, mi, ss || 0);
+        };
 
-        if (data.entryDate !== "1970-01-01 00:00:00") {
-          const now = new Date();
-          if (!isMounted) return;
+        if (!isMounted) return;
+        setHorarioArea(data.schedule);
 
-          setAccumulatedTime(differenceInSeconds(now, entry));
+        const entry = aFecha(data.entryDate);
+        if (data.entryDate !== "1970-01-01 00:00:00" && entry) {
           setEntryDate(entry);
 
-          const calculatedExitDate = addHours("1970-01-01 00:00:00", 16.75);
-          setExitDate(calculatedExitDate);
+          // La salida es la REAL. Antes se pintaba una hora fija de 16:45 calculada
+          // en el cliente, que aparecía aunque la persona no hubiera marcado salida
+          // y no cambiaba aunque su área saliera a otra hora.
+          const exit = aFecha(data.exitDate);
+          setExitDate(exit);
 
-          interval = setInterval(() => {
-            setAccumulatedTime((prev) => prev + 1);
-          }, 1000);
+          // El contador se detiene en la salida; mientras no la haya, sigue corriendo.
+          setAccumulatedTime(differenceInSeconds(exit ?? new Date(), entry));
+          if (!exit) {
+            interval = setInterval(() => {
+              setAccumulatedTime((prev) => prev + 1);
+            }, 1000);
+          }
         }
       } catch (err) {
         console.error("Error al obtener la fecha de entrada:", err);
@@ -339,8 +359,21 @@ useEffect(() => {
                           hour12: true,
                         }) || "--:--"}
                       </p>
+                      {!exitDate && entryDate && (
+                        <p className="text-[11px] text-muted-foreground">Aún sin marcar</p>
+                      )}
                     </div>
                   </div>
+
+                  {/* Horario del área, el que configura RR.HH. en Métricas → Configuración.
+                      Es el mismo que decide si una entrada cuenta como tardanza. */}
+                  {horarioArea && (
+                    <p className="text-xs text-muted-foreground text-center mt-3">
+                      Jornada de tu área: {horarioArea.startTime} – {horarioArea.endTime}
+                      <span className="mx-1">·</span>
+                      tolerancia {horarioArea.graceMins} min
+                    </p>
+                  )}
 
                   
                   

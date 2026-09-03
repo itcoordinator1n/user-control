@@ -45,6 +45,10 @@ export interface AttendanceRecord {
   vacation?: { id: string; startDate: string; endDate: string } | null;
   /** Public or company holiday on this day. */
   holiday?: { name: string; isNational: boolean } | null;
+  /** Horas fuera de jornada de ese día, en bloques de media hora. */
+  overtimeHours?: number;
+  /** Motivo al que se destinan esas horas ese día, si hay una política vigente. */
+  overtimePolicy?: TimePolicyRef | null;
 }
 
 export interface RecordsPagination {
@@ -61,6 +65,24 @@ export interface WeeklyDayCount {
   wednesday: number;
   thursday: number;
   friday: number;
+}
+
+/** Destino acordado para las horas fuera de jornada de una persona. */
+export interface TimePolicyRef {
+  id: number;
+  nombre: string;
+  tipo: "pago_vacaciones" | "horas_extra";
+  hours?: number;
+}
+
+/**
+ * Horas acumuladas después de la hora de salida, en bloques de media hora.
+ * `assigned` es la parte cubierta por alguna política; el resto solo se informa.
+ */
+export interface TimeBank {
+  hours: number;
+  assigned: number;
+  policies: TimePolicyRef[];
 }
 
 /** Días justificados, desglosados por motivo. */
@@ -85,6 +107,8 @@ export interface EmployeeProfile {
    * los días evaluados son menos que los días hábiles del período.
    */
   excusedDays: ExcusedDays;
+  /** Horas fuera de jornada del período y a qué se destinan. */
+  timeBank?: TimeBank;
   records: AttendanceRecord[];   // current page only
   pagination: RecordsPagination; // server-side pagination info
   /** Full-history distribution by weekday — computed by backend, not affected by page/filter. */
@@ -192,10 +216,21 @@ export type DashboardView = "attendance" | "vacations" | "permissions" | "hr-adm
 // ─── HR Admin ────────────────────────────────────────────────────────────────
 
 export interface AreaSchedule {
+  /** id de la fila en area_schedules; null si el área aún no tiene horario. */
+  id?: number | null;
+  areaId?: number;
   area: string;
   startTime: string;   // "HH:mm" local
   endTime: string;     // "HH:mm" local
   graceMins: number;
+  /**
+   * Grupo con el que comparte jornada. Cuando lo tiene, las horas de arriba son las
+   * del grupo: son las que aplican de verdad al calcular la asistencia.
+   */
+  grupoId?: number | null;
+  grupo?: string | null;
+  updatedAt?: string | null;
+  updatedBy?: string | null;
 }
 
 export interface HolidayConfig {
@@ -209,6 +244,7 @@ export interface HolidayConfig {
 /** A one-off override of entry/exit time for a specific date in an area. */
 export interface ScheduleException {
   id: number;
+  areaId?: number;
   area: string;
   date: string;               // "YYYY-MM-DD"
   entryTime: string | null;   // "HH:mm" — null = keep area default
