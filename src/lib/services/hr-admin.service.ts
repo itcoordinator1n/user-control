@@ -126,6 +126,70 @@ export interface EmpleadoDTO {
 export const getEmployees = (token?: string) =>
   pedir<EmpleadoDTO[]>("/employees", token, { method: "GET" }, "No se pudieron cargar los empleados");
 
+/** Saldo de vacaciones de un empleado, con el desglose de cada término. */
+export interface VacacionesEmpleadoDTO {
+  employeeId: number;
+  name: string;
+  area: string;
+  hireDate: string;
+  tipo: string | null;
+  /** Año de servicio en curso: con 0 años cumplidos se está en el año 1. */
+  serviceYear: number;
+  /** Días que corresponden al año en curso según la escala de su tipo. */
+  annualDays: number;
+  /** Días de los años ya completos. */
+  priorYears: number;
+  /** Devengado del año en curso hasta la fecha de referencia. */
+  accruedThisYear: number;
+  monthsThisYear: number;
+  extraDays: number;
+  daysTaken: number;
+  /** Ajuste manual editable por RR.HH. Admite decimales y valores negativos. */
+  adjustment: number;
+  balance: number;
+}
+
+/** Empleado que no entra en el cálculo por faltarle datos. */
+export interface VacacionesExcluidoDTO {
+  employeeId: number;
+  name: string;
+  area: string;
+  hireDate: string | null;
+  motivo: string;
+}
+
+export interface VacacionesOverviewDTO {
+  employees: VacacionesEmpleadoDTO[];
+  excluded: VacacionesExcluidoDTO[];
+}
+
+export type UnidadSimulacion = "DAY" | "WEEK" | "MONTH" | "YEAR";
+
+/**
+ * Saldo de vacaciones de toda la plantilla.
+ *
+ * Con `unidad` y `cantidad` simula cómo quedaría en otra fecha: por ejemplo
+ * `("WEEK", 2)` para dentro de dos semanas, `("YEAR", 2)` para dentro de dos años.
+ * Sin ellos, la fecha de referencia es hoy.
+ */
+export const getVacationOverview = (
+  simulacion?: { unidad: UnidadSimulacion; cantidad: number },
+  token?: string,
+) => {
+  const qs = simulacion && simulacion.cantidad
+    ? `?unidad=${simulacion.unidad}&cantidad=${simulacion.cantidad}`
+    : "";
+  return pedir<VacacionesOverviewDTO>(`/vacations${qs}`, token, { method: "GET" },
+    "No se pudo cargar el saldo de vacaciones");
+};
+
+/** Cambia el ajuste manual y devuelve el saldo recalculado. */
+export const updateVacationAdjustment = (employeeId: number, adjustment: number, token?: string) =>
+  pedir<{ employeeId: number; adjustment: number; balance?: number }>(
+    `/vacations/${employeeId}/adjustment`, token,
+    { method: "PUT", body: JSON.stringify({ adjustment }) },
+    "No se pudo guardar el ajuste");
+
 // ─── Horarios por área ────────────────────────────────────────────────────────
 
 export const getSchedules = (token?: string) =>

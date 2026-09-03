@@ -9,6 +9,7 @@ import {
   CalendarOff,
   DollarSign,
   Timer,
+  Plane,
   Layers,
   Edit2,
   Trash2,
@@ -76,7 +77,21 @@ interface HRAdminViewProps {
   onBack: () => void;
 }
 
-type Tab = "schedules" | "holidays" | "exceptions" | "timebank";
+/**
+ * Escenarios de simulación. El backend solo acepta estas unidades y una cantidad
+ * acotada, porque la fecha se concatena al SQL.
+ */
+const SIMULACIONES: { clave: string; etiqueta: string; unidad?: hrApi.UnidadSimulacion; cantidad?: number }[] = [
+  { clave: "hoy",      etiqueta: "Hoy" },
+  { clave: "2sem",     etiqueta: "En 2 semanas", unidad: "WEEK",  cantidad: 2 },
+  { clave: "1mes",     etiqueta: "En 1 mes",     unidad: "MONTH", cantidad: 1 },
+  { clave: "3meses",   etiqueta: "En 3 meses",   unidad: "MONTH", cantidad: 3 },
+  { clave: "6meses",   etiqueta: "En 6 meses",   unidad: "MONTH", cantidad: 6 },
+  { clave: "1anio",    etiqueta: "En 1 año",     unidad: "YEAR",  cantidad: 1 },
+  { clave: "2anios",   etiqueta: "En 2 años",    unidad: "YEAR",  cantidad: 2 },
+];
+
+type Tab = "schedules" | "holidays" | "exceptions" | "timebank" | "vacations";
 
 type ExceptionDraft = Omit<ScheduleException, "id" | "status" | "createdAt" | "createdBy">;
 
@@ -104,6 +119,14 @@ export function HRAdminView({ onBack }: HRAdminViewProps) {
   const [exDraft, setExDraft] = useState<ExceptionDraft>({
     area: "", date: "", entryTime: null, exitTime: null, reason: "",
   });
+
+  // ── Vacaciones ───────────────────────────────────────────────────────────────
+  const [vacaciones, setVacaciones] = useState<hrApi.VacacionesEmpleadoDTO[]>([]);
+  const [vacExcluidos, setVacExcluidos] = useState<hrApi.VacacionesExcluidoDTO[]>([]);
+  const [buscarVac, setBuscarVac] = useState("");
+  const [simulacion, setSimulacion] = useState("hoy");
+  const [ajusteEmpleado, setAjusteEmpleado] = useState<hrApi.VacacionesEmpleadoDTO | null>(null);
+  const [ajusteValor, setAjusteValor] = useState("");
 
   // ── Grupos de horario ────────────────────────────────────────────────────────
   const [grupos, setGrupos] = useState<hrApi.ScheduleGroupDTO[]>([]);
@@ -197,6 +220,32 @@ export function HRAdminView({ onBack }: HRAdminViewProps) {
       setErrorApi(e instanceof Error ? e.message : "No se pudo guardar el cambio");
     }
   };
+
+  /** Carga el saldo de vacaciones, opcionalmente proyectado a otra fecha. */
+  const cargarVacaciones = useCallback(async (clave = "hoy") => {
+    if (!token) return;
+    const esc = SIMULACIONES.find((x) => x.clave === clave);
+    try {
+      const r = await hrApi.getVacationOverview(
+        esc?.unidad && esc.cantidad ? { unidad: esc.unidad, cantidad: esc.cantidad } : undefined,
+        token,
+      );
+      setVacaciones(r.employees);
+      setVacExcluidos(r.excluded);
+    } catch (e) {
+      setErrorApi(e instanceof Error ? e.message : "No se pudo cargar el saldo de vacaciones");
+    }
+  }, [token]);
+
+  useEffect(() => {
+    // La simulación se recarga desde el propio selector, no aquí, para no pedir dos veces.
+    if (activeTab === "vacations") void cargarVacaciones(simulacion);
+  }, [activeTab, cargarVacaciones, simulacion]);
+
+  const vacacionesFiltradas = vacaciones.filter((v) => {
+    const q = buscarVac.trim().toLowerCase();
+    return !q || v.name.toLowerCase().includes(q) || v.area.toLowerCase().includes(q);
+  });
 
   // ─── Schedule helpers ─────────────────────────────────────────────────────────
   const lateLimit = (s: AreaSchedule) => {
@@ -401,6 +450,7 @@ export function HRAdminView({ onBack }: HRAdminViewProps) {
               { key: "holidays",   label: "Días Festivos / Libres",    icon: CalendarOff },
               { key: "exceptions", label: "Excepciones Pago de Horas", icon: DollarSign  },
               { key: "timebank",   label: "Horas Fuera de Jornada",    icon: Timer       },
+              { key: "vacations",  label: "Días de Vacaciones",        icon: Plane       },
             ] as { key: Tab; label: string; icon: React.ElementType }[]
           ).map(({ key, label, icon: Icon }) => (
             <button
@@ -417,6 +467,149 @@ export function HRAdminView({ onBack }: HRAdminViewProps) {
             </button>
           ))}
         </div>
+
+        {/* ── Vacaciones: vista general y ajustes ──────────────────────────── */}
+        {activeTab === "vacations" && (
+          <Card>
+            <CardHeader>
+              <div className="flex flex-row items-start justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Plane className="h-5 w-5 text-sky-600" />
+                    Días de Vacaciones — Vista General
+                  </CardTitle>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Saldo de toda la plantilla con su desglose. El ajuste es editable: sirve
+                    para los días que alguien traía de antes de su fecha de contrato o para
+                    reconciliar saldos llevados a mano.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Label className="text-xs text-gray-500">Simular</Label>
+                  <Select
+                    value={simulacion}
+                    onValueChange={(v) => { setSimulacion(v); void cargarVacaciones(v); }}
+                  >
+                    <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {SIMULACIONES.map((s) => (
+                        <SelectItem key={s.clave} value={s.clave}>{s.etiqueta}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              {simulacion !== "hoy" && (
+                <div className="mt-3 flex items-start gap-2 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-800">
+                  <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                  <span>
+                    Simulación a <strong>{SIMULACIONES.find((s) => s.clave === simulacion)?.etiqueta.toLowerCase()}</strong>.
+                    Los saldos de abajo son proyectados; no se guarda nada.
+                  </span>
+                </div>
+              )}
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="relative flex-1 max-w-sm">
+                  <Input
+                    placeholder="Buscar por nombre o área…"
+                    value={buscarVac}
+                    onChange={(e) => setBuscarVac(e.target.value)}
+                  />
+                </div>
+                <span className="text-xs text-gray-500">
+                  {vacacionesFiltradas.length} de {vacaciones.length} empleados
+                </span>
+              </div>
+
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Empleado</TableHead>
+                    <TableHead>Área</TableHead>
+                    <TableHead className="text-center">Contrato</TableHead>
+                    <TableHead className="text-center">Año</TableHead>
+                    <TableHead className="text-center">Días/año</TableHead>
+                    <TableHead className="text-center">Años previos</TableHead>
+                    <TableHead className="text-center">Devengado</TableHead>
+                    <TableHead className="text-center">Gozados</TableHead>
+                    <TableHead className="text-center">Ajuste</TableHead>
+                    <TableHead className="text-center">Saldo</TableHead>
+                    <TableHead className="w-14" />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {vacacionesFiltradas.map((v) => (
+                    <TableRow key={v.employeeId}>
+                      <TableCell className="font-medium">{v.name}</TableCell>
+                      <TableCell className="text-sm text-gray-600">{v.area}</TableCell>
+                      <TableCell className="text-center font-mono text-xs">{v.hireDate}</TableCell>
+                      <TableCell className="text-center">{v.serviceYear}</TableCell>
+                      <TableCell className="text-center">{v.annualDays}</TableCell>
+                      <TableCell className="text-center text-gray-600">{v.priorYears}</TableCell>
+                      <TableCell className="text-center text-gray-600">{v.accruedThisYear}</TableCell>
+                      <TableCell className="text-center text-gray-600">{v.daysTaken}</TableCell>
+                      <TableCell className="text-center">
+                        <span className={v.adjustment < 0 ? "text-red-600" : v.adjustment > 0 ? "text-green-700" : "text-gray-400"}>
+                          {v.adjustment > 0 ? "+" : ""}{v.adjustment}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Badge className={v.balance < 0
+                          ? "bg-red-100 text-red-800 border-red-200"
+                          : "bg-green-100 text-green-800 border-green-200"}>
+                          {v.balance}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          title="Ajustar días"
+                          disabled={simulacion !== "hoy"}
+                          onClick={() => { setAjusteEmpleado(v); setAjusteValor(String(v.adjustment)); }}
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {vacacionesFiltradas.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={11} className="text-center py-8 text-gray-500">
+                        Sin resultados
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+
+              {/* Quien no entra en el cálculo. Antes desaparecía sin avisar y la pantalla
+                  le mostraba 0 días, que se confunde con "ya las gastó todas". */}
+              {vacExcluidos.length > 0 && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-amber-800 mb-2">
+                    <AlertCircle className="h-4 w-4" />
+                    {vacExcluidos.length} empleado{vacExcluidos.length === 1 ? "" : "s"} sin cálculo posible
+                  </div>
+                  <p className="text-xs text-amber-700 mb-2">
+                    Les falta la fecha de contrato o el tipo de usuario, así que no se les puede
+                    devengar nada. En su perfil verán 0 días hasta que se completen esos datos.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {vacExcluidos.map((e) => (
+                      <span key={e.employeeId} className="inline-flex items-center gap-1 bg-white border border-amber-200 text-amber-800 text-xs px-2 py-0.5 rounded">
+                        {e.name}
+                        <span className="text-amber-500">· {e.motivo}</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* ── Grupos de horario ────────────────────────────────────────────── */}
         {activeTab === "schedules" && (
@@ -1117,6 +1310,87 @@ export function HRAdminView({ onBack }: HRAdminViewProps) {
       </Dialog>
 
       {/* ── Dialog: editar / crear horario ──────────────────────────────────── */}
+      {/* ── Dialog: ajuste manual de días de vacaciones ──────────────────── */}
+      <Dialog open={!!ajusteEmpleado} onOpenChange={(open) => { if (!open) setAjusteEmpleado(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Ajustar días de vacaciones</DialogTitle>
+          </DialogHeader>
+          {ajusteEmpleado && (() => {
+            const nuevo = Number(ajusteValor);
+            const valido = ajusteValor.trim() !== "" && Number.isFinite(nuevo) && nuevo >= -365 && nuevo <= 365;
+            // El saldo sin ajuste es el que sale del devengo puro; sobre él se aplica el
+            // valor nuevo para que se vea el efecto antes de guardar.
+            const sinAjuste = ajusteEmpleado.balance - ajusteEmpleado.adjustment;
+            const saldoNuevo = Math.round((sinAjuste + (valido ? nuevo : 0)) * 100) / 100;
+            return (
+              <>
+                <div className="space-y-4 py-2">
+                  <div>
+                    <p className="font-medium">{ajusteEmpleado.name}</p>
+                    <p className="text-xs text-gray-500">
+                      {ajusteEmpleado.area} · contrato {ajusteEmpleado.hireDate} · año {ajusteEmpleado.serviceYear}
+                    </p>
+                  </div>
+
+                  <div className="rounded-lg border bg-gray-50 p-3 text-sm space-y-1">
+                    <div className="flex justify-between"><span className="text-gray-600">Años ya completos</span><span className="font-mono">{ajusteEmpleado.priorYears}</span></div>
+                    <div className="flex justify-between"><span className="text-gray-600">Devengado del año en curso</span><span className="font-mono">+{ajusteEmpleado.accruedThisYear}</span></div>
+                    <div className="flex justify-between"><span className="text-gray-600">Días gozados</span><span className="font-mono">−{ajusteEmpleado.daysTaken}</span></div>
+                    <div className="flex justify-between border-t pt-1 mt-1">
+                      <span className="text-gray-700 font-medium">Saldo sin ajuste</span>
+                      <span className="font-mono font-semibold">{Math.round(sinAjuste * 100) / 100}</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label>Ajuste manual (días)</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={ajusteValor}
+                      onChange={(e) => setAjusteValor(e.target.value)}
+                      placeholder="0"
+                    />
+                    <p className="text-xs text-gray-500">
+                      Admite decimales y valores negativos. Positivo suma días —por ejemplo los
+                      que traía de antes de su contrato—; negativo los resta.
+                    </p>
+                    {!valido && ajusteValor.trim() !== "" && (
+                      <p className="text-xs text-red-600">Debe ser un número entre −365 y 365.</p>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between rounded-lg border border-sky-200 bg-sky-50 px-3 py-2">
+                    <span className="text-sm text-sky-800">Saldo resultante</span>
+                    <span className={`font-mono font-bold ${saldoNuevo < 0 ? "text-red-600" : "text-sky-900"}`}>
+                      {saldoNuevo}
+                    </span>
+                  </div>
+                </div>
+                <DialogFooter className="gap-2">
+                  <Button variant="outline" onClick={() => setAjusteEmpleado(null)}>
+                    <X className="h-4 w-4 mr-1" />Cancelar
+                  </Button>
+                  <Button
+                    disabled={!valido}
+                    onClick={() => {
+                      setErrorApi(null);
+                      hrApi.updateVacationAdjustment(ajusteEmpleado.employeeId, nuevo, token)
+                        .then(() => cargarVacaciones(simulacion))
+                        .then(() => setAjusteEmpleado(null))
+                        .catch((e) => setErrorApi(e instanceof Error ? e.message : "No se pudo guardar el ajuste"));
+                    }}
+                  >
+                    <Save className="h-4 w-4 mr-1" />Guardar
+                  </Button>
+                </DialogFooter>
+              </>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
+
       {/* ── Dialog: grupo de horario ─────────────────────────────────────── */}
       <Dialog open={grupoDialog} onOpenChange={setGrupoDialog}>
         <DialogContent className="max-w-lg">
