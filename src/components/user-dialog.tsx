@@ -182,7 +182,7 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
         employeeId: String(user.id),
         name: (user as any).nombre,
         user: (user as any).nombreUsuario,
-        email: (user as any).correo || "",
+        email: correoMostrable((user as any).correo),
         roles: roleIds,
         area: (user as any).area ? String((user as any).area) : "",
         status: (user as any).estado === 1,
@@ -212,6 +212,21 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
       });
     }
   }, [user]);
+
+  /**
+   * El correo guardado solo se muestra si de verdad lo es.
+   *
+   * 65 de los 148 empleados activos tienen el literal "Sin correo" en esa columna.
+   * Al cargarlo en un <input type="email"> el navegador bloqueaba el envio del
+   * formulario pidiendo un "@", y como no habia forma de vaciar el campo el usuario
+   * quedaba imposible de editar: parecia que el correo fuera obligatorio cuando en
+   * realidad no lo es. Lo que no tiene forma de correo se trata como vacio, y al
+   * guardar se limpia.
+   */
+  const correoMostrable = (v: unknown) => {
+    const t = String(v ?? "").trim();
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t) ? t : "";
+  };
 
   /**
    * Campos que el backend exige. Se valida también aquí para no mandar una petición
@@ -268,7 +283,10 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
       try {
         const payload = {
           ...formData,
-          email: formData.email || undefined,
+          // Va siempre, incluso vacia: es lo que le dice al backend que se borre el
+          // correo. Mandar undefined dejaba la columna intacta y hacia imposible
+          // quitar uno equivocado desde la aplicacion.
+          email: formData.email.trim(),
           area: formData.area,
         };
         const response = await fetch(
@@ -413,15 +431,23 @@ No se pudo notificar por WhatsApp ni por correo.
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="email" className="text-right">
                 Email
+                <span className="block text-xs font-normal text-muted-foreground">
+                  opcional
+                </span>
               </Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => handleChange("email", e.target.value)}
-                className="col-span-3"
-              
-              />
+              <div className="col-span-3">
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => handleChange("email", e.target.value)}
+                  placeholder="Dejalo vacío si no tiene"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  No todos tienen correo. Sin él, las credenciales y los enlaces de
+                  restablecimiento salen solo por WhatsApp.
+                </p>
+              </div>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label className="text-right">Roles</Label>

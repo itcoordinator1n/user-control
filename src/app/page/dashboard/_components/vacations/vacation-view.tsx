@@ -207,6 +207,22 @@ export function VacationView({ onBack, allowedArea }: VacationViewProps) {
     }).length;
   };
 
+  /**
+   * Porcentaje de uso: días gozados sobre el derecho total del período
+   * (gozados + saldo pendiente). Devuelve null cuando no se puede calcular.
+   *
+   * El divisor puede ser cero o negativo, y para 24 de los 146 empleados lo es: el
+   * ajuste manual `int_dias_vacaciones` de RR.HH. está en negativo para gran parte
+   * del personal, así que el saldo también. Sin este resguardo la división daba
+   * Infinity, NaN o un porcentaje negativo y eso llegaba tal cual a la pantalla.
+   */
+  const getUsagePercent = (daysUsed: number, daysAccumulated: number): number | null => {
+    const total = Number(daysUsed) + Number(daysAccumulated);
+    if (!Number.isFinite(total) || total <= 0) return null;
+    const pct = (Number(daysUsed) / total) * 100;
+    return Number.isFinite(pct) ? Math.min(100, Math.max(0, Math.round(pct))) : null;
+  };
+
   const getVacationStatusColor = (status: string) => {
     const s = status?.toLowerCase();
     if (s === "approved" || s === "aprobada") return "text-green-600";
@@ -810,21 +826,19 @@ export function VacationView({ onBack, allowedArea }: VacationViewProps) {
                       </div>
                       */}
                       <div className="w-20">
-                        <Progress
-                          value={
-                            (//employee.daysUsed / employee.daysAvailable
-                              1) *
-                            100
-                          }
-                          className="h-2"
-                        />
-                        <p className="text-xs text-gray-500 text-center mt-1">
-                          {Math.round(
-                            (employee.daysUsed / (employee.daysUsed + employee.daysAccumulated)) *
-                            100
-                          )}
-                          % uso
-                        </p>
+                        {(() => {
+                          const pct = getUsagePercent(employee.daysUsed, employee.daysAccumulated);
+                          return (
+                            <>
+                              <Progress value={pct ?? 0} className="h-2" />
+                              <p className="text-xs text-gray-500 text-center mt-1">
+                                {/* Sin saldo positivo no hay porcentaje que tenga
+                                    sentido; se dice eso en vez de inventar un número. */}
+                                {pct === null ? "sin saldo" : `${pct}% uso`}
+                              </p>
+                            </>
+                          );
+                        })()}
                       </div>
                     </div>
                   </div>
