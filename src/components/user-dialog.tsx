@@ -33,11 +33,12 @@ interface User {
   status: string;
 }
 interface Rol {
-  id_rol: number;
-  id_usuario_creador: number;
-  nombre_rol: string;
-  area: number;
-  dte_fecha_creacion: string; // o Date si prefieres trabajar con objetos Date
+  id: number;
+  nombreRol: string;
+  /** Nombre del área dueña del rol. Se muestra porque hay nombres que solos no
+   *  distinguen nada: "Jefe" (Administración) y "Jefe de Planta" (Planta). */
+  area: string | null;
+  colorEtiqueta?: string | null;
 }
 interface Area {
   colorEtiqueta: string;
@@ -58,10 +59,20 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
   const [areas, setAreas] = useState<Area[]>([]);
 
   useEffect(() => {
+    /**
+     * Antes pedía `/api/rolAdministration/get-roles`, que está PAGINADO y sin
+     * parámetros devuelve solo los 10 primeros por id. De los 18 roles existentes
+     * quedaban fuera 8, entre ellos Jefe de Planta, Supervisor, Operario y
+     * Coordinador de Área: no había forma de asignarlos desde esta pantalla.
+     *
+     * `get-all-roles` no pagina, exige el mismo ADMIN:USERS que el resto de las
+     * llamadas de este diálogo, y hace LEFT JOIN con área, así que tampoco pierde
+     * un rol al que le falte el área.
+     */
     const fetchRoles = async () => {
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/rolAdministration/get-roles`,
+          `${process.env.NEXT_PUBLIC_API_URL}/api/userAdministration/get-all-roles`,
           {
             headers: {
               "Content-Type": "application/json",
@@ -69,13 +80,12 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
             },
           }
         );
-        console.log("Respuesta",response)
-        if (response.ok) {
-          const data = await response.json();
-          setRoles(data.roles);
-        } else {
-          console.error("Error al obtener los roles");
+        if (!response.ok) {
+          console.error("Error al obtener los roles:", response.status);
+          return;
         }
+        const data = await response.json();
+        setRoles(Array.isArray(data) ? data : []);
       } catch (error) {
         console.error("Error de red:", error);
       }
@@ -112,6 +122,10 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
 
   const isEditing = !!user;
 
+  const [tiposContratacion, setTiposContratacion] = useState<
+    { id: number; nombre: string; acumulaVacaciones: boolean; nota: string | null }[]
+  >([]);
+
   const [formData, setFormData] = useState<{
     id: number;
     /** Número de empleado de RR.HH. Lo asigna personal, no la aplicación. */
@@ -123,6 +137,10 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
     /** id de area. Cadena vacia = sin elegir; no hay area por defecto valida. */
     area: string;
     status: boolean;
+    /** Sujeto a control de asistencia: si ficha en el biométrico. */
+    marcaAsistencia: boolean;
+    /** Relación laboral (tabla tipo_contratacion). Decide si devenga vacaciones. */
+    tipoContratacion: string;
     sendWelcomeEmail: boolean;
     /** 8 dígitos sin código de país. Es por donde recibe su usuario y su clave. */
     phone: string;
@@ -141,6 +159,8 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
     roles: [],
     area: "",
     status: true,
+    marcaAsistencia: true,
+    tipoContratacion: "1",
     sendWelcomeEmail: true,
     phone: "",
     fechaContrato: "",
@@ -161,6 +181,10 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
       .then((r) => (r.ok ? r.json() : []))
       .then((d) => setTiposUsuario(Array.isArray(d) ? d : []))
       .catch(() => setTiposUsuario([]));
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/userAdministration/get-contract-types`, { headers: h })
+      .then((r) => (r.ok ? r.json() : []))
+      .then((d) => setTiposContratacion(Array.isArray(d) ? d : []))
+      .catch(() => setTiposContratacion([]));
     // La lista de jefes son los propios usuarios; se reutiliza el listado general.
     fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/userAdministration/get-all-users`, { headers: h })
       .then((r) => (r.ok ? r.json() : []))
@@ -186,6 +210,10 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
         roles: roleIds,
         area: (user as any).area ? String((user as any).area) : "",
         status: (user as any).estado === 1,
+        marcaAsistencia: (user as any).marcaAsistencia !== false,
+        // 1 = Permanente, que es lo que era todo el mundo antes de que existiera
+        // el catálogo; sirve de valor por defecto para las fichas ya cargadas.
+        tipoContratacion: String((user as any).tipoContratacion ?? 1),
         sendWelcomeEmail: false,
         phone: (user as any).phone || "",
         fechaContrato: (user as any).fechaContrato || "",
@@ -203,6 +231,8 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
         roles: [],
         area: "",
         status: true,
+        marcaAsistencia: true,
+        tipoContratacion: "1",
         sendWelcomeEmail: true,
         phone: "",
         fechaContrato: "",
@@ -452,20 +482,25 @@ No se pudo notificar por WhatsApp ni por correo.
             <div className="grid grid-cols-4 items-center gap-4">
               <Label className="text-right">Roles</Label>
               <div className="col-span-3 space-y-2">
-                {roles.map((role,index) => (
-                  <div
-                    key={`${role.id_rol} - ${index}`}
-                    className="flex items-center space-x-2"
-                  >
+                {roles.length === 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    No se pudieron cargar los roles. Recargá la página.
+                  </p>
+                )}
+                {roles.map((role) => (
+                  <div key={role.id} className="flex items-center space-x-2">
                     <Checkbox
-                      id={`role-${role.id_rol}`}
-                      checked={formData.roles.includes(role.id_rol)}
+                      id={`role-${role.id}`}
+                      checked={formData.roles.includes(role.id)}
                       onCheckedChange={(checked: boolean) =>
-                        handleRoleChange(role.id_rol, checked)
+                        handleRoleChange(role.id, checked)
                       }
                     />
-                    <Label htmlFor={`role-${role.id_rol}`}>
-                      {role.nombre_rol}
+                    <Label htmlFor={`role-${role.id}`} className="font-normal">
+                      {role.nombreRol}
+                      {role.area && (
+                        <span className="text-muted-foreground"> · {role.area}</span>
+                      )}
                     </Label>
                   </div>
                 ))}
@@ -572,6 +607,39 @@ No se pudo notificar por WhatsApp ni por correo.
               </div>
             </div>
 
+            {/* Vinculo laboral. Es otro eje que el tipo de usuario: aquel dice CUANTOS
+                dias corresponden por ano; este, si corresponden. Un practicante puede
+                ser quimico y aun asi no devengar. */}
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="tipoContratacion" className="text-right">
+                Contratación <span className="text-red-500">*</span>
+              </Label>
+              <div className="col-span-3">
+                <Select
+                  value={formData.tipoContratacion}
+                  onValueChange={(value) => handleChange("tipoContratacion", value)}
+                >
+                  <SelectTrigger id="tipoContratacion">
+                    <SelectValue placeholder="Seleccionar contratación" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {tiposContratacion.map((t) => (
+                      <SelectItem key={t.id} value={`${t.id}`}>{t.nombre}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {(() => {
+                    const t = tiposContratacion.find((x) => String(x.id) === formData.tipoContratacion);
+                    if (!t) return "Permanente, temporal o practicante.";
+                    return t.acumulaVacaciones
+                      ? "Devenga vacaciones, marca asistencia y solicita permisos."
+                      : "No devenga vacaciones ni ve esa sección. Marca asistencia y solicita permisos con normalidad.";
+                  })()}
+                </p>
+              </div>
+            </div>
+
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="jefe" className="text-right">
                 Jefe inmediato <span className="text-red-500">*</span>
@@ -616,6 +684,34 @@ No se pudo notificar por WhatsApp ni por correo.
                 >
                   {formData.status ? "Usuario activo" : "Usuario inactivo"}
                 </Label>
+              </div>
+            </div>
+            {/* Quien no ficha —personal externo, quien anda en la calle, o quien por su
+                cargo no marca— salía como ausente todos los días y hundía el porcentaje
+                de su área. Apagarlo lo saca de los listados y de los cálculos de
+                asistencia; no le quita el usuario ni afecta permisos ni vacaciones. */}
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="marca-asistencia" className="text-right">
+                Control de asistencia
+              </Label>
+              <div className="col-span-3">
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="marca-asistencia"
+                    checked={formData.marcaAsistencia}
+                    onCheckedChange={(checked) => handleChange("marcaAsistencia", checked)}
+                  />
+                  <Label htmlFor="marca-asistencia" className="text-sm text-muted-foreground">
+                    {formData.marcaAsistencia
+                      ? "Marca en el biométrico"
+                      : "No marca en el biométrico"}
+                  </Label>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {formData.marcaAsistencia
+                    ? "Entra en los listados y porcentajes de asistencia de su área."
+                    : "Queda fuera de los porcentajes de asistencia de su área. Sus permisos y vacaciones no cambian."}
+                </p>
               </div>
             </div>
             {!isEditing && (

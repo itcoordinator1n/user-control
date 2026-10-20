@@ -25,6 +25,13 @@ export default function AttendanceManagement() {
   const [endTime, setEndTime] = useState("")
   const [reason, setReason] = useState("")
   const [vacationDays, setvacationDays] = useState(0)
+  /**
+   * Si la persona devenga vacaciones. Arranca en true para no parpadear ocultando la
+   * pestaña mientras carga, y porque es lo que vale para la enorme mayoría. Lo decide
+   * el API, no el token: un token emitido antes de este cambio no trae el vínculo.
+   */
+  const [accruesVacations, setAccruesVacations] = useState(true)
+  const [contractType, setContractType] = useState<string | null>(null)
   const [permitComments, setPermitComments] = useState("")
   const [vacationStartDate, setVacationStartDate] = useState<Date | null>(null)
   const [halfDay, setHalfDay] = useState(false);
@@ -85,6 +92,10 @@ export default function AttendanceManagement() {
         })
         const data = await res.json()
         setvacationDays(data.diasVacaciones || 0)
+        // Sin la clave se asume que sí devenga: es el comportamiento de siempre y
+        // evita esconderle la pestaña a alguien por una respuesta antigua.
+        setAccruesVacations(data.accruesVacations !== false)
+        setContractType(data.contractType ?? null)
       } catch (error: any) {
         console.error("Error al obtener días:", error.message || error)
       }
@@ -127,14 +138,30 @@ export default function AttendanceManagement() {
         <h1 className="mb-6 mt-4 ml-4 sm:ml-0 text-3xl font-extrabold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">Gestión de Asistencia</h1>
 
         <Tabs defaultValue="permisos" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 bg-muted/50 p-1 rounded-lg">
+          {/* Temporales y practicantes no devengan vacaciones, así que no se les ofrece
+              la pestaña. Los permisos y la asistencia les aplican igual que a todos.
+              Esto es solo la pantalla: el rechazo de verdad está en el API. */}
+          <TabsList className={`grid w-full ${accruesVacations ? "grid-cols-2" : "grid-cols-1"} bg-muted/50 p-1 rounded-lg`}>
             <TabsTrigger value="permisos" className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm transition-all rounded-md">
               <span>Permisos</span>
             </TabsTrigger>
-            <TabsTrigger value="vacaciones" className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm transition-all rounded-md">
-              <span>Vacaciones</span>
-            </TabsTrigger>
+            {accruesVacations && (
+              <TabsTrigger value="vacaciones" className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm transition-all rounded-md">
+                <span>Vacaciones</span>
+              </TabsTrigger>
+            )}
           </TabsList>
+
+          {!accruesVacations && (
+            <div className="mt-4 flex items-start gap-2 rounded-lg border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+              <Info className="h-4 w-4 mt-0.5 shrink-0" />
+              <span>
+                Tu tipo de contratación
+                {contractType ? <strong> ({contractType})</strong> : null} no devenga
+                vacaciones. Podés solicitar permisos con normalidad.
+              </span>
+            </div>
+          )}
 
           <TabsContent value="permisos" className="mt-6">
             <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">

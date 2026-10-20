@@ -42,7 +42,6 @@ import {
   getAreas,
   getGruposPorArea,
   getActividadesPorGrupo,
-  deleteControl,
   ProduccionControl,
   ProduccionActividad,
   ProduccionEmpleado,
@@ -379,6 +378,17 @@ export default function NuevoControlTiempos() {
     }
   };
 
+  /**
+   * Borrar una actividad esta reservado a un solo usuario. El servidor lo exige igual
+   * (responde 403 a cualquier otro), asi que esto es solo para no mostrar un boton que
+   * no va a funcionar. Vaciar un reporte de sus actividades equivale a perderlo, y asi
+   * se perdio el lote 170655.
+   */
+  const ID_PUEDE_BORRAR_ACTIVIDADES = 12231;
+  const puedeBorrarActividades =
+    String((session?.user as { idEmployee?: string | number } | undefined)?.idEmployee ?? "")
+      === String(ID_PUEDE_BORRAR_ACTIVIDADES);
+
   const handleEliminarActividad = async (actividadId: string) => {
     if (!confirm("¿Está seguro de eliminar esta actividad y todos sus tiempos registrados?")) return;
     
@@ -469,20 +479,6 @@ export default function NuevoControlTiempos() {
     router.push("/page/produccion/control-tiempos?tab=revisiones");
   };
 
-  const handleEliminarControl = async () => {
-    if (!control) return;
-    if (!confirm("¿Está seguro de eliminar TODO el registro de control de tiempos y todas sus actividades? Esta acción no se puede deshacer.")) return;
-    try {
-      const ok = await deleteControl(control.id, session?.user?.accessToken);
-      if (ok) {
-        alert("Registro eliminado exitosamente");
-        router.push("/page/produccion/control-tiempos");
-      } else {
-        alert("No se pudo eliminar el registro. Verifique si tiene actividades en progreso.");
-      }
-    } catch (e) { console.error(e); alert("Error al eliminar el registro"); }
-  };
-
   // Un operario puede estar en varias actividades a la vez. En vez de ocultar a
   // los ocupados, se muestran anotando en que estan trabajando: lo unico que se
   // impide es repetirlo en la MISMA actividad (ver opcionesOperario).
@@ -502,16 +498,6 @@ export default function NuevoControlTiempos() {
             {control ? "Registro en Progreso" : "Nuevo Control de Tiempos"}
           </h1>
         </div>
-        {control && (
-          <Button 
-            variant="ghost" 
-            onClick={handleEliminarControl}
-            className="ml-auto text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 gap-2"
-          >
-            <Trash2 className="h-4 w-4" />
-            <span className="hidden sm:inline">Eliminar Registro</span>
-          </Button>
-        )}
       </div>
 
       {/* CABECERA */}
@@ -951,9 +937,11 @@ export default function NuevoControlTiempos() {
                               <Button variant="outline" onClick={() => setResumenActividad(act)} className="gap-2 text-slate-600 border-slate-200 hover:bg-slate-50">
                                 <Eye className="h-4 w-4" /> Ver Resumen
                               </Button>
-                              <Button variant="outline" onClick={() => handleEliminarActividad(act.id)} className="gap-2 text-red-600 border-red-200 hover:bg-red-50" title="Eliminar Acción">
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                              {puedeBorrarActividades && (
+                                <Button variant="outline" onClick={() => handleEliminarActividad(act.id)} className="gap-2 text-red-600 border-red-200 hover:bg-red-50" title="Eliminar Acción">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
                             </>
                           )}
                         </div>
@@ -1037,14 +1025,16 @@ export default function NuevoControlTiempos() {
                                 <Eye className="h-4 w-4" />
                                 Ver Resumen
                               </Button>
-                              <Button 
-                                variant="outline"
-                                onClick={() => handleEliminarActividad(act.id)}
-                                className="gap-2 text-red-600 border-red-200 hover:bg-red-50 dark:border-red-800 dark:hover:bg-red-900/30"
-                                title="Eliminar Acción"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                              {puedeBorrarActividades && (
+                                <Button 
+                                  variant="outline"
+                                  onClick={() => handleEliminarActividad(act.id)}
+                                  className="gap-2 text-red-600 border-red-200 hover:bg-red-50 dark:border-red-800 dark:hover:bg-red-900/30"
+                                  title="Eliminar Acción"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
                             </>
                           )}
                         </div>

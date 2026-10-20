@@ -11,7 +11,7 @@ import { SmartPagination } from "@/components/smart-pagination";
 import { normalizeArea } from "@/lib/utils";
 import { useProduccionPermissions } from "../../_hooks/use-produccion-permissions";
 import { useSession } from "next-auth/react";
-import { getControlesTiempos, deleteControl, ProduccionControl } from "@/lib/services/produccion.service";
+import { getControlesTiempos, ProduccionControl } from "@/lib/services/produccion.service";
 import { exportControlToExcel } from "@/lib/exportExcel";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -37,8 +37,6 @@ export default function ControlTiemposHistory() {
   const itemsPerPage = 10;
 
   // Delete confirmation state
-  const [deleteTarget, setDeleteTarget] = useState<ProduccionControl | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (!session?.user?.accessToken) return;
@@ -52,25 +50,6 @@ export default function ControlTiemposHistory() {
       setControles(data);
     } catch(e) { console.error(e); setControles([]); }
     finally { setLoading(false); }
-  };
-
-  const handleDeleteConfirm = async () => {
-    if (!deleteTarget) return;
-    setIsDeleting(true);
-    try {
-      const ok = await deleteControl(deleteTarget.id, session?.user?.accessToken);
-      if (ok) {
-        setControles(prev => prev.filter(c => c.id !== deleteTarget.id));
-        setDeleteTarget(null);
-      } else {
-        alert("No se pudo eliminar el registro. Verifique si tiene actividades en progreso.");
-      }
-    } catch (e) {
-      console.error(e);
-      alert("Error al eliminar el registro.");
-    } finally {
-      setIsDeleting(false);
-    }
   };
 
   // Areas derivadas del propio dataset, AGRUPADAS SIN TILDES.
@@ -278,17 +257,6 @@ export default function ControlTiemposHistory() {
                         >
                           <FileSpreadsheet className="h-4 w-4" />
                         </Button>
-                        {control.estado !== "REVISADO" && control.estado !== "APROBADO" && (
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-8 w-8 text-slate-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-                            onClick={() => setDeleteTarget(control)}
-                            title="Eliminar registro"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
                       </div>
                     </td>
                   </tr>
@@ -323,15 +291,6 @@ export default function ControlTiemposHistory() {
                   </div>
                   <div className="flex items-center gap-2 ml-2">
                     <StatusBadge estado={control.estado} />
-                    {control.estado !== "REVISADO" && control.estado !== "APROBADO" && (
-                      <button
-                        onClick={() => setDeleteTarget(control)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                        title="Eliminar"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    )}
                   </div>
                 </div>
                 
@@ -371,44 +330,6 @@ export default function ControlTiemposHistory() {
       </div>
 
       {/* MODAL CONFIRMACIÓN DE BORRADO */}
-      <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
-        <DialogContent className="sm:max-w-[420px]">
-          <DialogHeader>
-            <div className="flex items-center gap-3 mb-1">
-              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30">
-                <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
-              </div>
-              <DialogTitle className="text-base">Eliminar Registro</DialogTitle>
-            </div>
-          </DialogHeader>
-          {deleteTarget && (
-            <div className="py-2 space-y-3">
-              <p className="text-sm text-muted-foreground">
-                ¿Está seguro de que desea eliminar este registro? Esta acción eliminará también todas las actividades e intervalos de tiempo asociados y <strong>no se puede deshacer</strong>.
-              </p>
-              <div className="bg-slate-50 dark:bg-slate-800/50 border rounded-lg p-3 text-sm space-y-1">
-                <p className="font-semibold text-slate-800 dark:text-white">{deleteTarget.producto_nombre}</p>
-                <p className="text-slate-500">Lote: <span className="text-slate-700 dark:text-slate-300 font-medium">{deleteTarget.n_lote}</span></p>
-                <p className="text-slate-500">OP: <span className="text-slate-700 dark:text-slate-300 font-medium">{deleteTarget.op}</span></p>
-                <p className="text-slate-500">Fecha: <span className="text-slate-700 dark:text-slate-300 font-medium">{format(new Date(deleteTarget.fecha), "dd MMM yyyy", { locale: es })}</span></p>
-              </div>
-            </div>
-          )}
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setDeleteTarget(null)} disabled={isDeleting}>
-              Cancelar
-            </Button>
-            <Button
-              onClick={handleDeleteConfirm}
-              disabled={isDeleting}
-              className="bg-red-600 hover:bg-red-700 text-white gap-2"
-            >
-              {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-              Eliminar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

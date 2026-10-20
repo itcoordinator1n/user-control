@@ -499,13 +499,10 @@ export async function deleteIntervalo(id_intervalo: string, token?: string): Pro
   return res.ok;
 }
 
-export async function deleteControl(id_control: string, token?: string): Promise<boolean> {
-  const res = await fetch(`${API_URL}/api/produccion/controles/${id_control}`, {
-    method: "DELETE",
-    headers: getHeaders(token),
-  });
-  return res.ok;
-}
+// deleteControl se retiro a proposito: los reportes de control de tiempos no se
+// pueden eliminar. El endpoint del servidor responde 403 a cualquiera, asi que
+// tampoco sirve volver a agregar esta funcion. Si hay que retirar un registro
+// equivocado, el camino es anularlo, no destruirlo.
 
 // --- Tablero de Ocupación ---
 
