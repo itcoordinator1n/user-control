@@ -38,6 +38,23 @@ const rules: Rule[] = [
   // Estaba en protectedRoutes pero SIN regla, asi que bastaba con estar
   // autenticado: los 140 usuarios con rol Empleado podian entrar al modulo.
   { pattern: /^\/page\/conciliacion(?:\/.*)?$/, anyOf: ["CONCILIACION:READ", "EQUIPO:READ", "EQUIPO:ADMIN"] },
+
+  // Mercadeo
+  // El modulo entero estaba fuera del middleware: no figuraba ni en `rules` ni en
+  // `protectedRoutes`, asi que cualquier usuario autenticado entraba escribiendo la
+  // URL. Lo unico que hacia el permiso era ocultar el enlace del menu.
+  // Los slugs son los mismos que declara `app-sidebar.tsx` (routePermission), para que
+  // el menu y la puerta digan lo mismo.
+  { pattern: /^\/page\/marketingDashboard(?:\/.*)?$/, anyOf: ["MARKETING:DASHBOARD", "COMPARISON:VIEW"] },
+  { pattern: /^\/page\/comparisonByDates(?:\/.*)?$/, anyOf: ["COMPARISON:VIEW", "COMPARISON:MANAGE"] },
+  { pattern: /^\/page\/comparisonTable(?:\/.*)?$/,   anyOf: ["COMPARISON:VIEW", "COMPARISON:MANAGE"] },
+  { pattern: /^\/page\/comparison(?:\/.*)?$/,        anyOf: ["COMPARISON:VIEW", "COMPARISON:MANAGE"] },
+  // `products` es el CRUD de las listas de comparacion. El sidebar lo declara con
+  // PRODUCT:READ / PRODUCT:CREATE, pero esos permisos NO EXISTEN en la tabla `permiso`:
+  // usarlos aqui dejaria la pagina inaccesible para todos. Se exige COMPARISON:MANAGE,
+  // que es justamente "gestionar listas de productos para comparacion de precios" y lo
+  // tienen las 4 personas de Mercadeo.
+  { pattern: /^\/page\/products(?:\/.*)?$/,          anyOf: ["COMPARISON:MANAGE"] },
 ];
 
 export async function middleware(req: NextRequest) {
@@ -57,6 +74,11 @@ export async function middleware(req: NextRequest) {
     '/page/ticket-mgmt',
     '/page/produccion',
     '/page/conciliacion',
+    '/page/marketingDashboard',
+    '/page/comparisonByDates',
+    '/page/comparisonTable',
+    '/page/comparison',
+    '/page/products',
   ];
 
   const isPublic = (path: string) => publicRoutes.includes(path);
